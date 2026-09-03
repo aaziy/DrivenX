@@ -208,9 +208,15 @@ describe("login audit trail [SOW §17]", () => {
     expect(rows).toHaveLength(2);
   });
 
-  it("does not write an audit row for an unknown email", async () => {
+  it("does not write a login audit row for an unknown email", async () => {
     // There is no actor to attribute it to, and a FK to a non-existent user would fail.
+    // Scoped to login actions: since P0-09, creating the fixture user in beforeEach
+    // legitimately produces its own CREATE row, so a total count proves nothing.
     await authenticate("nobody@drivenx.ae", PASSWORD);
-    expect(await prisma.auditLog.count()).toBe(0);
+
+    const loginRows = await prisma.auditLog.count({
+      where: { action: { in: ["LOGIN", "LOGIN_FAILED"] } },
+    });
+    expect(loginRows).toBe(0);
   });
 });

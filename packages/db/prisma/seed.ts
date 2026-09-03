@@ -13,7 +13,7 @@
 import { PERMISSIONS, DEFAULT_ROLES, resolveRolePermissions } from "@drivenx/auth/permissions";
 import { hashPassword } from "@drivenx/auth/password";
 
-import { prisma } from "../src/index.js";
+import { prisma, withoutAudit } from "../src/index.js";
 
 async function seedPermissions(): Promise<Map<string, string>> {
   for (const permission of PERMISSIONS) {
@@ -117,9 +117,16 @@ async function seedSuperAdmin(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log("Seeding DrivenX...");
-  const permissionIds = await seedPermissions();
-  await seedRoles(permissionIds);
-  await seedSuperAdmin();
+
+  // Suppressed: seeding writes ~200 rows on a fresh database, and letting those into
+  // the audit log would bury the genuine user activity SOW §17 exists to surface under
+  // system noise on day one.
+  await withoutAudit(async () => {
+    const permissionIds = await seedPermissions();
+    await seedRoles(permissionIds);
+    await seedSuperAdmin();
+  });
+
   console.log("Seed complete.");
 }
 

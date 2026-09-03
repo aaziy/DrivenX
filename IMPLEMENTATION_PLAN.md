@@ -763,6 +763,7 @@ application-level rules get bypassed eventually.
 | Ledger design proves wrong under Phase 2 | Expensive rework | Phase 2 exit test is exactly this — detected early by design |
 | Scope creep during UAT | Timeline slip | UAT findings triage into P0–P3; new *features* go to a change list, not the sprint |
 | Solo developer, no second pair of eyes | Bugs ship | Dedicated QA day per milestone; automated invariants as the safety net |
+| **Audit rows are not transactionally atomic with the mutation** (P0-09) | A mutation outside a transaction can commit while its audit write fails, leaving a gap in a contractually required log (SOW §17). Raw SQL bypasses auditing entirely. | Accepted for Phase 0: the audit error propagates and rolls back any enclosing transaction. The complete fix is Postgres triggers with the actor passed via `SET LOCAL`, which also closes the raw-SQL bypass — scheduled into **P4-02**. |
 
 ---
 
