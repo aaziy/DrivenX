@@ -1,0 +1,30 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Environment — never commit real credentials (SOW §20)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Test artefacts
+playwright-report/
+test-results/
+blob-report/
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
+
+# Local data volumes
+.docker-data/
+
+# Prisma generated client — regenerated from schema.prisma on install
+packages/db/generated/
+coverage/

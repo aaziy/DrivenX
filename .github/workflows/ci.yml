@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# IMPLEMENTATION_PLAN.md §3.3 — a red pipeline blocks merge. No overrides.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  verify:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: drivenx
+          POSTGRES_PASSWORD: drivenx_dev
+          POSTGRES_DB: drivenx_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drivenx -d drivenx_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
+      TEST_DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
+      AUTH_SECRET: ci-only-not-a-real-secret
+      NEXTAUTH_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The generated Prisma client is gitignored, so nothing typechecks or runs
+      # until it exists. This must come before lint and typecheck.
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      # Integration and reconciliation suites need the schema applied to the test
+      # database — without this they fail on missing tables.
+      - name: Migrate test database
+        run: pnpm db:migrate:test
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Reconciliation tests
+        run: pnpm test:reconciliation
+
+      - name: Build
+        run: pnpm build
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # E2E is slow and proves wiring, not logic (§2.2). Main branch only.
+    if: github.ref == 'refs/heads/main'
+    needs: verify
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: drivenx
+          POSTGRES_PASSWORD: drivenx_dev
+          POSTGRES_DB: drivenx
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drivenx -d drivenx"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx?schema=public
+      AUTH_SECRET: ci-only-not-a-real-secret
+      NEXTAUTH_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Migrate and seed
+        run: pnpm db:migrate:deploy && pnpm db:seed
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
