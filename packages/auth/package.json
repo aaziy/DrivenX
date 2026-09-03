@@ -1,0 +1,24 @@
+{
+  "name": "@drivenx/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Authentication, RBAC and password policy for DrivenX",
+  "exports": {
+    ".": "./src/index.ts",
+    "./permissions": "./src/permissions.ts",
+    "./rbac": "./src/rbac.ts",
+    "./password": "./src/password.ts",
+    "./session": "./src/session.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@drivenx/db": "workspace:*",
+    "@node-rs/argon2": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}
