@@ -1,0 +1,21 @@
+{
+  "name": "@drivenx/storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Document storage for DrivenX — S3-compatible, provider-agnostic",
+  "exports": {
+    ".": "./src/index.ts",
+    "./validation": "./src/validation.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/s3-request-presigner": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

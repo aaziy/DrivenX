@@ -39,9 +39,22 @@ jobs:
       TEST_DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
       AUTH_SECRET: ci-only-not-a-real-secret
       NEXTAUTH_URL: http://localhost:3000
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: me-central-1
+      S3_BUCKET: drivenx-documents
+      S3_ACCESS_KEY_ID: drivenx
+      S3_SECRET_ACCESS_KEY: drivenx_dev_secret
+      S3_FORCE_PATH_STYLE: "true"
 
     steps:
       - uses: actions/checkout@v4
+
+      # MinIO is started from docker-compose rather than as a GitHub service
+      # container: the MinIO image needs a `server /data` command, which the
+      # `services:` block cannot supply. Reusing the compose file also keeps CI and
+      # local development on identical storage configuration.
+      - name: Start MinIO
+        run: docker compose up -d --wait minio minio-init
 
       - uses: pnpm/action-setup@v4
 

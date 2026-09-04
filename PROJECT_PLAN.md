@@ -169,6 +169,7 @@ drivenx/
 │  │  └─ documents/         expiry rules
 │  ├─ db/                   Prisma schema, migrations, seed
 │  ├─ auth/                 session, RBAC, permission catalogue
+│  ├─ storage/              S3-compatible document storage, upload validation
 │  └─ ui/                   shared components, tables, forms
 ├─ docs/                    §20 handover documentation (written as we go, not at the end)
 └─ docker-compose.yml       postgres + minio + web + worker
