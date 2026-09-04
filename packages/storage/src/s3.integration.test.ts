@@ -11,8 +11,8 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ObjectNotFoundError } from "./adapter.js";
-import { type S3Storage, s3StorageFromEnv } from "./s3.js";
+import { ObjectNotFoundError } from "./adapter";
+import { type S3Storage, s3StorageFromEnv } from "./s3";
 
 const PDF_BYTES = new Uint8Array([
   0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, ...new Array(256).fill(0x41),

@@ -7,7 +7,7 @@
  * configuration change plus one adapter — not a search through the codebase.
  */
 
-import type { AllowedMimeType } from "./validation.js";
+import type { AllowedMimeType } from "./validation";
 
 export interface StoredObject {
   key: string;

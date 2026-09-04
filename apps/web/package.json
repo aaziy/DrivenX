@@ -1,0 +1,29 @@
+{
+  "name": "@drivenx/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@drivenx/auth": "workspace:*",
+    "@drivenx/core": "workspace:*",
+    "@drivenx/db": "workspace:*",
+    "@drivenx/storage": "workspace:*",
+    "@node-rs/argon2": "catalog:",
+    "@prisma/client": "catalog:",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
+  }
+}

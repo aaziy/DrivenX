@@ -8,8 +8,8 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { prisma, withAuditContext, withoutAudit } from "../index.js";
-import { REDACTED } from "./serialise.js";
+import { prisma, withAuditContext, withoutAudit } from "../index";
+import { REDACTED } from "./serialise";
 
 const PASSWORD_HASH = "$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA";
 

@@ -15,11 +15,11 @@
  * register rather than left as a surprise.
  */
 
-import type { Prisma as PrismaNamespace, PrismaClient } from "../../generated/client/index.js";
-import { Prisma } from "../../generated/client/index.js";
+import type { Prisma as PrismaNamespace, PrismaClient } from "../../generated/client";
+import { Prisma } from "../../generated/client";
 
-import { currentAuditActor, isAuditSuppressed } from "./context.js";
-import { diffRecords, sanitiseRecord } from "./serialise.js";
+import { currentAuditActor, isAuditSuppressed } from "./context";
+import { diffRecords, sanitiseRecord } from "./serialise";
 
 /** Never audited: the audit table itself, or we recurse forever. */
 const EXCLUDED_MODELS = new Set(["AuditLog"]);

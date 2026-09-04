@@ -208,6 +208,24 @@ describe("login audit trail [SOW §17]", () => {
     expect(rows).toHaveLength(2);
   });
 
+  it("does not also log the failure-counter columns as a business change", async () => {
+    // Session bookkeeping (failedLogins, lockedUntil, lastLoginAt) must not produce
+    // its own UPDATE rows. Two entries per sign-in attempt would triple the volume of
+    // the log and bury the changes anyone actually reads it for.
+    await authenticate("staff@drivenx.ae", WRONG);
+    await authenticate("staff@drivenx.ae", PASSWORD);
+
+    const updates = await prisma.auditLog.findMany({
+      where: { entityType: "User", action: "UPDATE" },
+    });
+    expect(updates).toHaveLength(0);
+
+    const loginRows = await prisma.auditLog.findMany({
+      where: { action: { in: ["LOGIN", "LOGIN_FAILED"] } },
+    });
+    expect(loginRows).toHaveLength(2);
+  });
+
   it("does not write a login audit row for an unknown email", async () => {
     // There is no actor to attribute it to, and a FK to a non-existent user would fail.
     // Scoped to login actions: since P0-09, creating the fixture user in beforeEach

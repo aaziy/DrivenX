@@ -21,8 +21,8 @@ import {
   type SignedUrlOptions,
   type StorageAdapter,
   type StoredObject,
-} from "./adapter.js";
-import { contentDisposition } from "./validation.js";
+} from "./adapter";
+import { contentDisposition } from "./validation";
 
 export interface S3StorageConfig {
   endpoint?: string | undefined;

@@ -10,8 +10,8 @@
  * connection pool within minutes, so in non-production we stash it on globalThis.
  */
 
-import { createAuditExtension } from "./audit/extension.js";
-import { PrismaClient } from "../generated/client/index.js";
+import { createAuditExtension } from "./audit/extension";
+import { PrismaClient } from "../generated/client";
 
 function createClient() {
   // Query logging is opt-in even in development: genuinely useful when tuning a
@@ -39,11 +39,11 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.drivenxPrisma = prisma;
 }
 
-export * from "../generated/client/index.js";
+export * from "../generated/client";
 export {
   withAuditContext,
   withoutAudit,
   currentAuditActor,
   isAuditSuppressed,
   type AuditActor,
-} from "./audit/context.js";
+} from "./audit/context";

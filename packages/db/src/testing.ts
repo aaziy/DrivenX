@@ -13,8 +13,8 @@
  * concurrent files cannot truncate each other's data.
  */
 
-import { prisma } from "./index.js";
-import { isTestDatabaseUrl, redactUrl } from "./test-guard.js";
+import { prisma } from "./index";
+import { isTestDatabaseUrl, redactUrl } from "./test-guard";
 
 /**
  * Tables are discovered from the catalogue rather than hard-coded.

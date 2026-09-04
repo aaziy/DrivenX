@@ -13,7 +13,7 @@
 import { PERMISSIONS, DEFAULT_ROLES, resolveRolePermissions } from "@drivenx/auth/permissions";
 import { hashPassword } from "@drivenx/auth/password";
 
-import { prisma, withoutAudit } from "../src/index.js";
+import { prisma, withoutAudit } from "../src/index";
 
 async function seedPermissions(): Promise<Map<string, string>> {
   for (const permission of PERMISSIONS) {

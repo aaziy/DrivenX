@@ -5,7 +5,7 @@
 
 import { afterAll, beforeAll, beforeEach } from "vitest";
 
-import { assertTestDatabase, prisma, truncateAll } from "./testing.js";
+import { assertTestDatabase, prisma, truncateAll } from "./testing";
 
 beforeAll(() => {
   assertTestDatabase();

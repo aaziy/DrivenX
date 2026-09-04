@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 
 import { hash } from "@node-rs/argon2";
 
-import { prisma } from "@drivenx/db";
+import { prisma, withoutAudit } from "@drivenx/db";
 
 import {
   ARGON2_OPTIONS,
@@ -109,9 +109,15 @@ export async function authenticate(
       policy,
       now,
     );
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { failedLogins: next.failedLogins, lockedUntil: next.lockedUntil },
+    // Suppressed: the counter and lockout stamp are session bookkeeping, not business
+    // data. The explicit LOGIN_FAILED row below records the event with the right
+    // attribution; letting the extension also log the column change would double every
+    // sign-in attempt and bury real activity in the log people actually read.
+    await withoutAudit(async () => {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLogins: next.failedLogins, lockedUntil: next.lockedUntil },
+      });
     });
     await prisma.auditLog.create({
       data: {
@@ -135,13 +141,15 @@ export async function authenticate(
   }
 
   const cleared = registerSuccessfulLogin();
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      failedLogins: cleared.failedLogins,
-      lockedUntil: cleared.lockedUntil,
-      lastLoginAt: now,
-    },
+  await withoutAudit(async () => {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        failedLogins: cleared.failedLogins,
+        lockedUntil: cleared.lockedUntil,
+        lastLoginAt: now,
+      },
+    });
   });
   await prisma.auditLog.create({
     data: { actorId: user.id, entityType: "User", entityId: user.id, action: "LOGIN" },
