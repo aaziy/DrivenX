@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "DrivenX — Vehicle Rental & Lease-to-Own Management System",
+  "description": "DrivenX \u2014 Vehicle Rental & Lease-to-Own Management System",
   "packageManager": "pnpm@10.28.2",
   "engines": {
     "node": ">=22"
@@ -29,6 +29,7 @@
     "db:migrate:test": "node scripts/migrate-test-db.mjs",
     "db:reset": "prisma migrate reset --force --schema packages/db/prisma/schema.prisma",
     "db:seed": "tsx packages/db/prisma/seed.ts",
+    "db:seed:golden": "tsx packages/db/prisma/seed-golden.ts",
     "db:studio": "prisma studio --schema packages/db/prisma/schema.prisma",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

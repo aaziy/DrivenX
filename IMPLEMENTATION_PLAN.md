@@ -84,6 +84,14 @@ largest-remainder allocation.
 
 ### 2.4 Golden dataset
 
+> **Sequencing note (resolved during P0-12).** The dataset below describes suppliers,
+> vehicles, customers and contracts — none of which exist until milestones 1A–1D. It is
+> therefore built incrementally: Phase 0 delivers the deterministic identifier
+> generators, the fixed reference clock (`GOLDEN_TODAY`) and one staff account per SOW
+> §2 role; each subsequent milestone adds its own entities. The generators are already
+> sized for the full set. Staff accounts come first because the two-track cadence in
+> §2.1 depends on QA being able to sign in as each persona from 1A onward.
+
 A deterministic seed (fixed IDs, fixed dates, `Math.random` never called) with realistic UAE data:
 
 - Emirates ID `784-YYYY-NNNNNNN-N`, 15-digit TRN, Dubai plates (`A 12345`), UAE mobile `+9715XXXXXXXX`
