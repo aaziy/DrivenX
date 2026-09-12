@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "catalog:"
+    "@prisma/client": "catalog:",
+    "@drivenx/core": "workspace:*"
   },
   "devDependencies": {
     "@drivenx/auth": "workspace:*",

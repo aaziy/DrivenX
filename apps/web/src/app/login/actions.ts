@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { authenticate } from "@drivenx/auth/session";
 
+import { requestLogger, toUserMessage } from "@/lib/log";
 import { startSession } from "@/lib/session";
 
 const LoginSchema = z.object({
@@ -26,9 +27,20 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
     return { error: parsed.error.issues[0]?.message ?? "Check the details you entered." };
   }
 
-  const result = await authenticate(parsed.data.email, parsed.data.password);
+  const log = await requestLogger();
+
+  let result: Awaited<ReturnType<typeof authenticate>>;
+  try {
+    result = await authenticate(parsed.data.email, parsed.data.password);
+  } catch (error) {
+    return { error: await toUserMessage("login", error) };
+  }
 
   if (!result.ok) {
+    // The email is recorded; the password is never passed to the logger, and would be
+    // redacted by field name if it ever were.
+    log.warn("login rejected", { email: parsed.data.email, reason: result.reason });
+
     switch (result.reason) {
       case "locked_out": {
         // Telling the user the account is locked is a deliberate disclosure: they
@@ -48,6 +60,7 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
     }
   }
 
+  log.info("login succeeded", { userId: result.principal.id });
   await startSession(result.principal.id);
   redirect("/");
 }

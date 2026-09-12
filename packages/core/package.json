@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "DrivenX domain layer — pure logic, zero framework imports",
+  "description": "DrivenX domain layer \u2014 pure logic, zero framework imports",
   "exports": {
     ".": "./src/index.ts",
     "./money": "./src/money/index.ts",
-    "./pricing": "./src/pricing/index.ts"
+    "./pricing": "./src/pricing/index.ts",
+    "./redaction": "./src/redaction.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

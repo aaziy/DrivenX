@@ -28,7 +28,7 @@ const config: NextConfig = {
 
   // Workspace packages ship TypeScript source rather than build output, so Next
   // compiles them itself. Keeps the monorepo free of a build step per package.
-  transpilePackages: ["@drivenx/core", "@drivenx/db", "@drivenx/auth", "@drivenx/storage"],
+  transpilePackages: ["@drivenx/core", "@drivenx/db", "@drivenx/auth", "@drivenx/storage", "@drivenx/logger"],
 
   serverExternalPackages: ["@prisma/client", "@node-rs/argon2"],
 

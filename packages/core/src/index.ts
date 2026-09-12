@@ -8,3 +8,4 @@
 
 export * as Money from "./money";
 export type { Fils } from "./money/money";
+export * from "./redaction";

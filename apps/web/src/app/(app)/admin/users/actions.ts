@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { validatePassword } from "@drivenx/auth/password";
-import { hashPassword } from "@drivenx/auth/password";
+import { hashPassword, validatePassword } from "@drivenx/auth/password";
 import { prisma } from "@drivenx/db";
+import { UserFacingError } from "@drivenx/logger";
 
 import { asActor, requirePermission } from "@/lib/auth";
+import { requestLogger, toUserMessage } from "@/lib/log";
 
 export interface UserFormState {
   error?: string;
@@ -53,16 +54,23 @@ export async function createUser(
     return { error: "That role no longer exists." };
   }
 
-  await asActor(principal, async () => {
-    await prisma.user.create({
-      data: {
-        email,
-        fullName,
-        passwordHash: await hashPassword(password),
-        roles: { create: { roleId } },
-      },
+  try {
+    await asActor(principal, async () => {
+      await prisma.user.create({
+        data: {
+          email,
+          fullName,
+          passwordHash: await hashPassword(password),
+          roles: { create: { roleId } },
+        },
+      });
     });
-  });
+  } catch (error) {
+    // The checks above are not a guarantee: two administrators submitting the same
+    // email at once both pass them, and the loser hits a unique constraint. The user
+    // sees a reference code, not the constraint text.
+    return { error: await toUserMessage("createUser", error) };
+  }
 
   revalidatePath("/admin/users");
   return { success: `Created ${fullName}.` };
@@ -74,11 +82,17 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
   // Locking yourself out of the only Super Admin account is unrecoverable without
   // database access, so it is refused rather than merely discouraged.
   if (userId === principal.id) {
-    throw new Error("You cannot deactivate your own account.");
+    throw new UserFacingError("You cannot deactivate your own account.");
   }
 
   await asActor(principal, async () => {
     await prisma.user.update({ where: { id: userId }, data: { isActive } });
+  });
+
+  const log = await requestLogger();
+  log.info(isActive ? "user reactivated" : "user deactivated", {
+    targetUserId: userId,
+    actorId: principal.id,
   });
 
   revalidatePath("/admin/users");

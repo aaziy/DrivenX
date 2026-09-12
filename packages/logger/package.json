@@ -1,0 +1,19 @@
+{
+  "name": "@drivenx/logger",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Structured logging and request correlation for DrivenX",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@drivenx/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

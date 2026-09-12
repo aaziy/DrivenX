@@ -13,19 +13,9 @@
  *    contracts land in milestone 1D — mutation succeeds, audit write explodes.
  */
 
-export const REDACTED = "[redacted]";
+import { isSensitiveField, REDACTED, redactRecord, redactValue } from "@drivenx/core/redaction";
 
-/**
- * Field names whose values never reach the audit log.
- * Matching is on the lowercased name so `passwordHash`, `password_hash` and
- * `newPassword` are all caught.
- */
-const SENSITIVE_PATTERNS = ["password", "secret", "token", "apikey", "accesskey", "credential"];
-
-export function isSensitiveField(fieldName: string): boolean {
-  const normalised = fieldName.toLowerCase().replace(/_/g, "");
-  return SENSITIVE_PATTERNS.some((pattern) => normalised.includes(pattern));
-}
+export { isSensitiveField, REDACTED };
 
 /**
  * Fields excluded from diffs because they change on every write and carry no
@@ -34,32 +24,11 @@ export function isSensitiveField(fieldName: string): boolean {
 const NOISE_FIELDS = new Set(["updatedAt"]);
 
 /** Convert a value into something `JSON.stringify` and a Prisma Json column accept. */
-export function toJsonValue(value: unknown): unknown {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "bigint") return value.toString();
-  if (value instanceof Date) return value.toISOString();
-  if (Buffer.isBuffer(value)) return `[binary ${value.byteLength} bytes]`;
-  if (Array.isArray(value)) return value.map(toJsonValue);
-
-  if (typeof value === "object") {
-    const output: Record<string, unknown> = {};
-    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      output[key] = isSensitiveField(key) ? REDACTED : toJsonValue(nested);
-    }
-    return output;
-  }
-
-  return value;
-}
+export const toJsonValue = (value: unknown): unknown => redactValue(value);
 
 /** JSON-safe, secret-free snapshot of a whole record. */
-export function sanitiseRecord(record: Record<string, unknown>): Record<string, unknown> {
-  const output: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(record)) {
-    output[key] = isSensitiveField(key) ? REDACTED : toJsonValue(value);
-  }
-  return output;
-}
+export const sanitiseRecord = (record: Record<string, unknown>): Record<string, unknown> =>
+  redactRecord(record);
 
 export interface RecordDiff {
   before: Record<string, unknown>;

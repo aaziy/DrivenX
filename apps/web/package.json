@@ -13,6 +13,7 @@
     "@drivenx/auth": "workspace:*",
     "@drivenx/core": "workspace:*",
     "@drivenx/db": "workspace:*",
+    "@drivenx/logger": "workspace:*",
     "@drivenx/storage": "workspace:*",
     "@node-rs/argon2": "catalog:",
     "@prisma/client": "catalog:",

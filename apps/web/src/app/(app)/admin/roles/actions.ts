@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@drivenx/db";
 
 import { asActor, requirePermission } from "@/lib/auth";
+import { requestLogger, toUserMessage } from "@/lib/log";
 
 export interface RoleFormState {
   error?: string;
@@ -48,15 +49,27 @@ export async function updateRolePermissions(
     return { success: "No changes to save." };
   }
 
-  await asActor(principal, async () => {
-    if (toRevoke.length > 0) {
-      await prisma.rolePermission.deleteMany({
-        where: { roleId, permissionId: { in: toRevoke } },
-      });
-    }
-    for (const permissionId of toGrant) {
-      await prisma.rolePermission.create({ data: { roleId, permissionId } });
-    }
+  try {
+    await asActor(principal, async () => {
+      if (toRevoke.length > 0) {
+        await prisma.rolePermission.deleteMany({
+          where: { roleId, permissionId: { in: toRevoke } },
+        });
+      }
+      for (const permissionId of toGrant) {
+        await prisma.rolePermission.create({ data: { roleId, permissionId } });
+      }
+    });
+  } catch (error) {
+    return { error: await toUserMessage("updateRolePermissions", error) };
+  }
+
+  const log = await requestLogger();
+  log.info("role permissions changed", {
+    roleKey: role.key,
+    granted: toGrant.length,
+    revoked: toRevoke.length,
+    actorId: principal.id,
   });
 
   revalidatePath("/admin/roles");
