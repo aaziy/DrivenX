@@ -46,8 +46,8 @@ services:
       RUSTFS_ACCESS_KEY: drivenx
       RUSTFS_SECRET_KEY: drivenx_dev_secret
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web console
+      # Only the S3 API is published; nothing in this project uses RustFS's other ports.
+      - "9000:9000"
     volumes:
       - drivenx-s3data:/data
 
