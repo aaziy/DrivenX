@@ -38,7 +38,6 @@ jobs:
       DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
       TEST_DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
       AUTH_SECRET: ci-only-not-a-real-secret
-      NEXTAUTH_URL: http://localhost:3000
       S3_ENDPOINT: http://localhost:9000
       S3_REGION: me-central-1
       S3_BUCKET: drivenx-documents
@@ -49,19 +48,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # MinIO is started from docker-compose rather than as a GitHub service
-      # container: the MinIO image needs a `server /data` command, which the
-      # `services:` block cannot supply. Reusing the compose file also keeps CI and
-      # local development on identical storage configuration.
-      - name: Start MinIO
-        # --wait is limited to the long-running server. minio-init is a one-shot that
-        # exits once the bucket exists, and --wait counts any exited container as a
-        # failure, exit code 0 included, which failed this step on every run since the
-        # storage work landed. `run --rm` executes the one-shot and returns its real
-        # exit code, so a bucket that could not be created still fails the build.
+      # The S3-compatible server starts from docker-compose rather than as a GitHub
+      # service container, so CI and local development run the same pinned image with
+      # the same configuration.
+      #
+      # It is pulled explicitly first. The previous images (minio/minio and minio/mc)
+      # disappeared from Docker Hub, and this step failed within a second on every run
+      # while machines with a cached copy kept passing.
+      - name: Start S3 server
         run: |
-          docker compose up -d --wait minio
-          docker compose run --rm minio-init
+          docker compose pull s3
+          docker compose up -d s3
 
       - uses: pnpm/action-setup@v4
 
@@ -72,6 +69,11 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      # Creates the documents bucket once the server answers. The script waits for the
+      # server itself, so there is no health check to keep in step with the image.
+      - name: Ensure storage bucket
+        run: pnpm storage:ensure-bucket
 
       # The generated Prisma client is gitignored, so nothing typechecks or runs
       # until it exists. This must come before lint and typecheck.

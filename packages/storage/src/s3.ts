@@ -1,9 +1,10 @@
 /**
  * S3-compatible storage adapter.
  *
- * Runs against MinIO locally and any S3-compatible provider in production — the only
- * difference is configuration. `forcePathStyle` is what makes MinIO work: it addresses
- * buckets as `host/bucket` rather than `bucket.host`, which has no DNS entry locally.
+ * Runs against a local S3-compatible server in development and CI, and any S3-compatible
+ * provider in production. The only difference between them is configuration.
+ * `forcePathStyle` addresses buckets as `host/bucket` rather than `bucket.host`, which
+ * has no DNS entry locally.
  */
 
 import {
@@ -42,21 +43,29 @@ function isNotFound(error: unknown): boolean {
   return name === "NoSuchKey" || name === "NotFound" || status === 404;
 }
 
+/**
+ * The one place configuration becomes a client, so the adapter and bucket setup cannot
+ * drift into talking to the server differently.
+ */
+export function buildS3Client(config: S3StorageConfig): S3Client {
+  return new S3Client({
+    region: config.region,
+    endpoint: config.endpoint,
+    forcePathStyle: config.forcePathStyle ?? false,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+  });
+}
+
 export class S3Storage implements StorageAdapter {
   private readonly client: S3Client;
   private readonly bucket: string;
 
   constructor(config: S3StorageConfig) {
     this.bucket = config.bucket;
-    this.client = new S3Client({
-      region: config.region,
-      endpoint: config.endpoint,
-      forcePathStyle: config.forcePathStyle ?? false,
-      credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-      },
-    });
+    this.client = buildS3Client(config);
   }
 
   async put(input: PutObjectInput): Promise<StoredObject> {
@@ -122,24 +131,28 @@ export class S3Storage implements StorageAdapter {
 }
 
 /**
- * Build the adapter from environment configuration.
+ * Read storage configuration from the environment.
  *
  * Throws on missing values rather than defaulting: a silently misconfigured bucket
  * means uploads that appear to succeed and documents that cannot be retrieved later.
  */
-export function s3StorageFromEnv(env: NodeJS.ProcessEnv = process.env): S3Storage {
+export function s3ConfigFromEnv(env: NodeJS.ProcessEnv = process.env): S3StorageConfig {
   const required = (name: string): string => {
     const value = env[name];
     if (!value) throw new Error(`Storage misconfigured: ${name} is not set.`);
     return value;
   };
 
-  return new S3Storage({
+  return {
     endpoint: env["S3_ENDPOINT"],
     region: required("S3_REGION"),
     bucket: required("S3_BUCKET"),
     accessKeyId: required("S3_ACCESS_KEY_ID"),
     secretAccessKey: required("S3_SECRET_ACCESS_KEY"),
     forcePathStyle: env["S3_FORCE_PATH_STYLE"] === "true",
-  });
+  };
+}
+
+export function s3StorageFromEnv(env: NodeJS.ProcessEnv = process.env): S3Storage {
+  return new S3Storage(s3ConfigFromEnv(env));
 }

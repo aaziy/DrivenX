@@ -1,5 +1,5 @@
 /**
- * P0-10 integration tests — real MinIO, no mocks.
+ * P0-10 integration tests against a real S3-compatible server (RustFS locally and in CI), no mocks.
  *
  * Plan requirement: "upload/retrieve round-trip; oversized rejected; .exe rejected".
  * The rejection cases are unit tested in validation.test.ts; this file covers the

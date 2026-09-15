@@ -3,7 +3,7 @@
  *
  * SOW §20 requires DrivenX to own their hosting outright, and §18 leaves the door open
  * to changing providers. Every call site depends on this interface rather than on the
- * AWS SDK, so moving from MinIO to S3, Cloudflare R2 or a UAE-hosted equivalent is a
+ * AWS SDK, so moving between RustFS, S3, Cloudflare R2 or a UAE-hosted equivalent is a
  * configuration change plus one adapter — not a search through the codebase.
  */
 

@@ -32,6 +32,7 @@
     "db:seed": "tsx packages/db/prisma/seed.ts",
     "db:seed:golden": "tsx packages/db/prisma/seed-golden.ts",
     "db:studio": "prisma studio --schema packages/db/prisma/schema.prisma",
+    "storage:ensure-bucket": "tsx packages/storage/scripts/ensure-bucket.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v && docker compose up -d",

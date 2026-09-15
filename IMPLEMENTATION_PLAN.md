@@ -772,6 +772,7 @@ application-level rules get bypassed eventually.
 | Scope creep during UAT | Timeline slip | UAT findings triage into P0–P3; new *features* go to a change list, not the sprint |
 | Solo developer, no second pair of eyes | Bugs ship | Dedicated QA day per milestone; automated invariants as the safety net |
 | **Audit rows are not transactionally atomic with the mutation** (P0-09) | A mutation outside a transaction can commit while its audit write fails, leaving a gap in a contractually required log (SOW §17). Raw SQL bypasses auditing entirely. | Accepted for Phase 0: the audit error propagates and rolls back any enclosing transaction. The complete fix is Postgres triggers with the actor passed via `SET LOCAL`, which also closes the raw-SQL bypass — scheduled into **P4-02**. |
+| **A development image disappears from its registry** (happened in Phase 0) | Docker Hub stopped serving `minio/minio` and `minio/mc`. CI failed on every push from 4 September because a fresh runner could not pull them, while machines with a cached copy kept passing and hid it. | Replaced with RustFS, pinned to a version. Images are never `latest`. Bucket setup goes through the AWS SDK, so it no longer depends on any one server's command-line tool. The CI rehearsal pulls images fresh. After every push, the real Actions result is checked instead of inferred from local runs. |
 
 ---
 

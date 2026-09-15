@@ -26,40 +26,31 @@ services:
       timeout: 5s
       retries: 12
 
-  minio:
-    image: minio/minio:latest
-    container_name: drivenx-minio
+  # S3-compatible document storage for development and CI.
+  #
+  # RustFS rather than MinIO: Docker Hub stopped serving the minio/minio and minio/mc
+  # images. CI failed on every push because a fresh runner could not pull them, while
+  # machines with a cached copy kept working and hid the problem. The tag is pinned, so
+  # an upstream change cannot break the build without a deliberate bump in this file.
+  #
+  # The bucket is created by `pnpm storage:ensure-bucket`, which waits for this service
+  # to start answering, so no health check or init container is needed.
+  #
+  # Production storage is a separate, still-open decision. The application talks to any
+  # S3-compatible service through packages/storage.
+  s3:
+    image: rustfs/rustfs:1.0.0-rc.6
+    container_name: drivenx-s3
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: drivenx
-      MINIO_ROOT_PASSWORD: drivenx_dev_secret
+      RUSTFS_ACCESS_KEY: drivenx
+      RUSTFS_SECRET_KEY: drivenx_dev_secret
     ports:
       - "9000:9000" # S3 API
       - "9001:9001" # Web console
     volumes:
-      - drivenx-minio:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-
-  # One-shot: creates the documents bucket, then exits.
-  minio-init:
-    image: minio/mc:latest
-    container_name: drivenx-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 drivenx drivenx_dev_secret &&
-      mc mb --ignore-existing local/drivenx-documents &&
-      mc anonymous set none local/drivenx-documents &&
-      echo 'bucket ready';
-      "
+      - drivenx-s3data:/data
 
 volumes:
   drivenx-pgdata:
-  drivenx-minio:
+  drivenx-s3data:

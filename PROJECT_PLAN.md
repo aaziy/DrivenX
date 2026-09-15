@@ -52,8 +52,8 @@ a stored field. Adding brokerage later = adding two ledger categories, not a mig
 | Database | PostgreSQL 16 | Partial indexes, `jsonb`, generated columns, real transactions |
 | ORM / migrations | Prisma | Schema file doubles as the DB documentation required by §20 |
 | Tenancy | Single company | DrivenX only. Retrofit path kept open (see §3.8) |
-| Auth | Auth.js (credentials) + server-side session | No third-party identity vendor to hand over |
-| File storage | S3-compatible behind an interface | MinIO locally; swap the endpoint for prod, no code change |
+| Auth | Self-managed signed session cookie over our own argon2 login (replaced the planned Auth.js in P0-11) | Permissions resolve per request, which a token carrying roles cannot do; no auth vendor to hand over |
+| File storage | S3-compatible behind an interface | RustFS locally and in CI, pinned (replaced MinIO when its images left Docker Hub); swap the endpoint for prod, no code change |
 | Background jobs | Postgres-backed queue + cron worker | No Redis dependency until we actually need one |
 | Money | `BigInt` fils (1 AED = 100 fils) | Never floats. See §3.1 |
 | Deployment | **Deferred** — Docker Compose is the dev target | Decide before Phase 0 closes |
@@ -172,7 +172,7 @@ drivenx/
 │  ├─ storage/              S3-compatible document storage, upload validation
 │  └─ ui/                   shared components, tables, forms
 ├─ docs/                    §20 handover documentation (written as we go, not at the end)
-└─ docker-compose.yml       postgres + minio + web + worker
+└─ docker-compose.yml       postgres + s3 (RustFS) + web + worker
 ```
 
 ---
