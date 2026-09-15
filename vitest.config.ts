@@ -14,7 +14,10 @@ const testDatabaseUrl = process.env.TEST_DATABASE_URL ?? "";
 
 const databaseProject = {
   environment: "node" as const,
-  passWithNoTests: true,
+  // No `passWithNoTests` here. Like `fileParallelism` below, it is a root-level option
+  // that Vitest silently ignores inside a project, so an empty project still exits 1.
+  // That failed the reconciliation step in CI; the flag now lives on that one script,
+  // and should be dropped from it once P1D-14 adds the first reconciliation test.
   /**
    * These files truncate shared tables, so two running at once will delete each
    * other's fixtures mid-test.

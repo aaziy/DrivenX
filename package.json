@@ -21,7 +21,7 @@
     "test:watch": "vitest",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "test:reconciliation": "vitest run --project reconciliation",
+    "test:reconciliation": "vitest run --project reconciliation --passWithNoTests",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
     "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",

@@ -54,7 +54,14 @@ jobs:
       # `services:` block cannot supply. Reusing the compose file also keeps CI and
       # local development on identical storage configuration.
       - name: Start MinIO
-        run: docker compose up -d --wait minio minio-init
+        # --wait is limited to the long-running server. minio-init is a one-shot that
+        # exits once the bucket exists, and --wait counts any exited container as a
+        # failure, exit code 0 included, which failed this step on every run since the
+        # storage work landed. `run --rm` executes the one-shot and returns its real
+        # exit code, so a bucket that could not be created still fails the build.
+        run: |
+          docker compose up -d --wait minio
+          docker compose run --rm minio-init
 
       - uses: pnpm/action-setup@v4
 
