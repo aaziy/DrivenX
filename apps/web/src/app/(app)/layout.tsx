@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { can, type PermissionKey } from "@drivenx/auth";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Nav, type NavGroup } from "@/components/nav";
+import { Nav, type NavGroup, type NavItem } from "@/components/nav";
+import { unreadCount, visibleTypes } from "@/lib/notifications";
 import { currentLocale } from "@/i18n/locale";
 import { requireUser } from "@/lib/auth";
 
@@ -52,12 +53,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     currentLocale(),
   ]);
 
-  const groups: NavGroup[] = NAV_DEFINITION.map((group) => ({
-    label: t(group.labelKey),
-    items: group.items
+  // Notifications are not gated by one permission: they are visible to anyone who can
+  // see at least one kind of notification, which is a question about the catalogue
+  // rather than a single key.
+  const notificationTypes = visibleTypes(principal);
+  const unread = notificationTypes.length > 0 ? await unreadCount(principal) : 0;
+
+  const groups: NavGroup[] = NAV_DEFINITION.map((group) => {
+    const items: NavItem[] = group.items
       .filter((item) => can(principal, item.permission))
-      .map(({ href, labelKey }) => ({ href, label: t(labelKey) })),
-  })).filter((group) => group.items.length > 0);
+      .map(({ href, labelKey }) => ({ href, label: t(labelKey) }));
+
+    if (group.labelKey === "overview" && notificationTypes.length > 0) {
+      items.push({
+        href: "/notifications",
+        label: t("notifications"),
+        badge: unread > 0 ? unread : undefined,
+      });
+    }
+
+    return { label: t(group.labelKey), items };
+  }).filter((group) => group.items.length > 0);
 
   return (
     <div className="shell">

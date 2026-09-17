@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 export interface NavItem {
   href: string;
   label: string;
+  /** An unread count, shown beside the label. Omitted when there is nothing waiting. */
+  badge?: number | undefined;
 }
 
 export interface NavGroup {
@@ -38,7 +40,8 @@ export function Nav({ groups, ariaLabel }: { groups: NavGroup[]; ariaLabel: stri
               className="nav-link"
               aria-current={isCurrent(item.href) ? "page" : undefined}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
             </Link>
           ))}
         </div>
