@@ -6,38 +6,34 @@
  * derived from the clock, so the dataset is byte-identical on every run and a failing
  * test can be reproduced exactly.
  *
- * Checksums are computed properly rather than faked. Emirates ID carries a Luhn digit,
- * VIN a mod-11 digit, IBAN a mod-97 pair — and milestone 1A adds validation for these.
- * Seeding data that fails our own validators would make the golden dataset useless the
- * day that validation lands.
+ * The *rules* live in `@drivenx/core` — these generators only compose them. That is
+ * deliberate: the application validates an Emirates ID with the same function used to
+ * mint one here, so fixture data cannot drift into a shape the real form would reject.
  */
 
+import {
+  ibanCheckDigits,
+  luhnCheckDigit,
+  vinCheckCharacter,
+} from "@drivenx/core";
+
+// Re-exported so callers of the golden dataset can check their own expectations without
+// reaching past it into core.
+export {
+  formatEmiratesId,
+  isValidEmiratesId,
+  isValidIban,
+  isValidTrn,
+  isValidUaeMobile,
+  isValidVin,
+  luhnCheckDigit,
+  normaliseUaeMobile,
+  vinCheckCharacter,
+} from "@drivenx/core";
+
 // ---------------------------------------------------------------------------
-// Emirates ID — 784-YYYY-NNNNNNN-C, Luhn check digit over the first 14 digits
+// Emirates ID — 784-YYYY-NNNNNNN-C
 // ---------------------------------------------------------------------------
-
-export function luhnCheckDigit(digits: string): number {
-  let sum = 0;
-  let double = true; // The check digit sits to the right, so doubling starts here.
-
-  for (let i = digits.length - 1; i >= 0; i -= 1) {
-    let value = Number(digits[i]);
-    if (double) {
-      value *= 2;
-      if (value > 9) value -= 9;
-    }
-    sum += value;
-    double = !double;
-  }
-
-  return (10 - (sum % 10)) % 10;
-}
-
-export function isValidEmiratesId(value: string): boolean {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length !== 15 || !digits.startsWith("784")) return false;
-  return luhnCheckDigit(digits.slice(0, 14)) === Number(digits[14]);
-}
 
 export function emiratesId(index: number, birthYear: number): string {
   const serial = String(1000000 + ((index * 7919) % 8999999)).padStart(7, "0");
@@ -92,31 +88,6 @@ export function mobileNumber(index: number): string {
 /** I, O and Q are excluded from VINs to avoid confusion with 1 and 0. */
 const VIN_ALPHABET = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
 
-const VIN_TRANSLITERATION: Record<string, number> = {
-  A: 1, B: 2, C: 3, D: 4, E: 5, F: 6, G: 7, H: 8,
-  J: 1, K: 2, L: 3, M: 4, N: 5, P: 7, R: 9,
-  S: 2, T: 3, U: 4, V: 5, W: 6, X: 7, Y: 8, Z: 9,
-};
-
-const VIN_WEIGHTS = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
-
-function vinCheckCharacter(vin: string): string {
-  let sum = 0;
-  for (let i = 0; i < 17; i += 1) {
-    const character = vin[i]!;
-    const value = /\d/.test(character) ? Number(character) : (VIN_TRANSLITERATION[character] ?? 0);
-    sum += value * VIN_WEIGHTS[i]!;
-  }
-  const remainder = sum % 11;
-  return remainder === 10 ? "X" : String(remainder);
-}
-
-export function isValidVin(vin: string): boolean {
-  if (vin.length !== 17) return false;
-  if (/[IOQ]/.test(vin)) return false;
-  return vin[8] === vinCheckCharacter(vin);
-}
-
 /**
  * Deterministic bit-mixing hash (murmur3 finaliser).
  *
@@ -151,39 +122,12 @@ export function vin(index: number): string {
 // IBAN — UAE: AE + 2 check digits + 3-digit bank code + 16-digit account
 // ---------------------------------------------------------------------------
 
-function mod97(input: string): number {
-  // Processed in chunks: the full number exceeds Number.MAX_SAFE_INTEGER.
-  let remainder = 0;
-  for (const character of input) {
-    remainder = (remainder * 10 + Number(character)) % 97;
-  }
-  return remainder;
-}
-
-function toNumeric(input: string): string {
-  return [...input]
-    .map((character) =>
-      /[A-Z]/.test(character) ? String(character.charCodeAt(0) - 55) : character,
-    )
-    .join("");
-}
-
-export function isValidIban(iban: string): boolean {
-  const compact = iban.replace(/\s/g, "").toUpperCase();
-  if (!/^AE\d{21}$/.test(compact)) return false;
-  const rearranged = compact.slice(4) + compact.slice(0, 4);
-  return mod97(toNumeric(rearranged)) === 1;
-}
-
 export function iban(index: number): string {
   const bankCode = String(33 + (index % 60)).padStart(3, "0");
   const account = String(1000000000000000 + index * 7919).slice(0, 16);
   const bban = `${bankCode}${account}`;
 
-  const rearranged = toNumeric(`${bban}AE00`);
-  const checkDigits = String(98 - mod97(rearranged)).padStart(2, "0");
-
-  return `AE${checkDigits}${bban}`;
+  return `AE${ibanCheckDigits(bban)}${bban}`;
 }
 
 // ---------------------------------------------------------------------------

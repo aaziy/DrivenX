@@ -9,6 +9,7 @@
 export * as Money from "./money";
 export type { Fils } from "./money/money";
 export * from "./redaction";
+export * from "./identifiers";
 export * from "./time";
 export * from "./documents/expiry";
 export * from "./documents/categories";
