@@ -1,0 +1,20 @@
+{
+  "name": "@drivenx/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scheduled jobs for DrivenX — expiry scans, and later instalment generation",
+  "scripts": {
+    "expiry-scan": "tsx src/index.ts expiry-scan",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@drivenx/core": "workspace:*",
+    "@drivenx/db": "workspace:*",
+    "@drivenx/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "catalog:"
+  }
+}
