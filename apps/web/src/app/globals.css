@@ -36,6 +36,8 @@
 
   --radius: 8px;
   --radius-sm: 5px;
+  /* One height for every single-line control. See the control rules below. */
+  --control-height: 36px;
   --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 8%);
 
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -415,9 +417,7 @@ table.data tbody tr:hover {
  * browser default beside its styled siblings — passing every test and looking broken.
  * Naming what must keep native rendering instead means the next field type added is
  * styled without anyone remembering to come here. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(
-    [type="file"]
-  ),
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
 select,
 textarea {
   font: inherit;
@@ -429,6 +429,35 @@ textarea {
   padding: 8px 10px;
   width: 100%;
   transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+/* Every single-line control is exactly one height, rather than whatever its padding and
+ * intrinsic content happen to add up to. `box-sizing: border-box` above makes that
+ * literal, so a control type the stylesheet has not met before cannot come out a
+ * different size from the ones beside it — which is how the file input ended up ten
+ * pixels taller than its row. Textareas are excluded: they are multi-line by nature. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+select {
+  height: var(--control-height);
+}
+
+/* The button inside a file input is a separate control with its own native look, so it
+ * needs styling of its own even though the field around it is styled. */
+input[type="file"] {
+  padding-block: 0;
+  line-height: calc(var(--control-height) - 2px);
+}
+
+input[type="file"]::file-selector-button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  margin-inline-end: 10px;
+  cursor: pointer;
 }
 
 input:focus-visible,
