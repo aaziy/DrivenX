@@ -70,7 +70,7 @@ These run on every commit from 1D onward. Any failure is a build-breaker, no exc
 | INV-1 | For any contract: `Σ installments.amountFils == Σ contractCharges expanded` — no rounding drift |
 | INV-2 | For any payment: `Σ allocations.amountFils == payment.amountFils` |
 | INV-3 | For any installment: `paidFils == Σ its allocations` and `paidFils <= amountFils` |
-| INV-4 | For any contract: `Σ ledger REVENUE == Σ instalments.netFils` (excluding deposits). VAT is collected for the FTA and is never revenue |
+| INV-4 | For any contract: `Σ ledger REVENUE == Σ instalments.netFils`. VAT is collected for the FTA and is never revenue |
 | INV-5 | A contract's consideration is its down payment plus its scheduled charges plus any buyout, all net of VAT. Nothing on a contract is a refundable liability — the client takes no deposits (answered 2026-09-17) |
 | INV-6 | Dashboard monthly profit == `Σ ledger revenue − Σ ledger cost` for that `periodMonth` |
 | INV-7 | Ledger is append-only — no `UPDATE`/`DELETE` reaches `ledger_entries`; corrections carry `reversesId` |
@@ -249,7 +249,7 @@ change take effect immediately, and finds both actions in the audit log. Full pi
 | ID | Task |
 |---|---|
 | P1C-01 | **`calculateDeal()`** — pure, in `packages/core/pricing`, zero I/O |
-| P1C-02 | Inputs: vehicle, supplier, supplier monthly cost, customer monthly rental, duration, deposit, annual insurance charge, insurance cost, expected maintenance, other costs |
+| P1C-02 | Inputs: vehicle, supplier, supplier monthly cost, customer monthly rental, duration, down payment, annual insurance charge, insurance cost, expected maintenance, other costs |
 | P1C-03 | Outputs: monthly revenue, monthly cost, monthly gross profit, total contract revenue, total cost, expected total profit, margin %, first-year revenue incl. insurance |
 | P1C-04 | Deal Calculator UI — thin form over the pure function, live recalculation |
 | P1C-05 | Save calculation as a quote, attach to a lead, convert to contract |
@@ -378,10 +378,11 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 **Tests**
 - Reconciliation: **INV-8** extended — a maintenance cost posted today changes vehicle profitability
   and monthly profit by exactly that amount, and by nothing else
-- Integration: deposit forfeiture posts `revenue.other` net of deductions, never gross
+- Integration: a return settlement posts excess mileage and damages as separate revenue lines, each
+  net of VAT — never one lumped gross figure
 - E2E: handover → maintenance → fine → return with settlement → final P&L
-- QA negatives: return mileage below handover mileage, settlement exceeding the deposit, an accident
-  on a vehicle with no active contract
+- QA negatives: return mileage below handover mileage, a settlement raised on a contract that is
+  already closed, an accident on a vehicle with no active contract
 
 **The real exit test:** vehicle profitability reflects maintenance, fines and repairs **with zero
 changes to the 1E reporting layer.** If 1E needed edits, §3.2 of the plan was implemented wrong and
@@ -606,7 +607,7 @@ model Contract {
   endDate               DateTime
   durationMonths        Int
   monthlyRentalFils     BigInt
-  securityDepositFils   BigInt   @default(0)   // LIABILITY — never revenue (INV-5)
+  downPaymentFils       BigInt   @default(0)   // Consideration, not refundable — posts revenue (INV-5)
   mileageAllowanceKm    Int?
   excessMileageRateFils BigInt?
   paymentDayOfMonth     Int      @default(1)

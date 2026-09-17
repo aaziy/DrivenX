@@ -205,9 +205,11 @@ contracts ─┬─ contract_charges ── installments ── payment_allocati
 leads ───── converts to ──► contracts
 ```
 
-**Deliberate call:** `security_deposit` is modelled as a **liability**, not revenue. It never posts
-to `revenue.*`. On return it either refunds or converts to `revenue.other` net of deductions.
-Getting this wrong overstates profit on every single contract.
+**Deliberate call:** there is no refundable deposit to model. The client takes a **down payment** on
+some contracts and does not return it (answered 2026-09-17), so it is consideration like any other
+charge: it posts to `revenue.*` on its charge date. The liability that *does* exist is **VAT
+collected** — 5% sits on top of every net price, belongs to the FTA, and never touches `revenue.*`.
+Getting that one wrong overstates profit on every single contract.
 
 ---
 
@@ -268,7 +270,7 @@ dashboard alert links straight to the customer.
 
 #### 1D · Contracts, Payments & Insurance (~2 wks) — §9, §10, §11
 - [ ] Contract CRUD: number, customer, vehicle, supplier, type, dates, duration, monthly rental,
-      deposit, mileage allowance, excess mileage rate, payment day, terms
+      down payment, mileage allowance, excess mileage rate, payment day, terms
 - [ ] Types: Long-Term Rental, Lease-to-Own, B2B Rental, Other
 - [ ] Status machine: Draft → Pending → Active → Completed / Overdue / Cancelled
 - [ ] Charge composition → automatic installment generation across the full duration
@@ -321,7 +323,7 @@ an automated reconciliation test.
 - [ ] **Accidents (§13):** location, description, photos, police report, insurance claim, repair
       cost, responsibility, status → posts `cost.repair`
 - [ ] **Advanced expenses:** categorised, allocatable to vehicle / contract / company overhead
-- [ ] **Final settlement on return:** excess mileage, damages, outstanding, deposit resolution
+- [ ] **Final settlement on return:** excess mileage (settled here), damages, outstanding balance
 - [ ] **PDF generation** for contracts, invoices, statements, handover and return reports
 - [ ] Advanced reporting and drill-down across all new cost categories
 
