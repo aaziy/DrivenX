@@ -145,6 +145,46 @@ describe("validateUpload", () => {
     expect(result.valid).toBe(false);
     if (!result.valid) expect(result.errors).toHaveLength(2);
   });
+
+  // -- Codes, so a rejection can be read in Arabic --
+
+  it("returns a code for every English sentence, in the same order", () => {
+    const result = validateUpload(
+      { fileName: "bad.exe", bytes: new Uint8Array([0x4d, 0x5a, ...new Array(2048).fill(0)]) },
+      { maxBytes: 512 },
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.issues.map((issue) => issue.code)).toEqual(["tooLarge", "unsupportedType"]);
+      expect(result.issues).toHaveLength(result.errors.length);
+    }
+  });
+
+  it.each([
+    ["empty", new Uint8Array(0), DEFAULT_MAX_UPLOAD_BYTES],
+    ["unsupportedType", EXE, DEFAULT_MAX_UPLOAD_BYTES],
+  ])("reports %s", (code, input, maxBytes) => {
+    const result = validateUpload({ fileName: "f", bytes: input }, { maxBytes });
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.issues.map((issue) => issue.code)).toContain(code);
+  });
+
+  it("carries the size limit as a parameter, so the message can state it", () => {
+    // Otherwise the translated sentence has to hardcode a number that the environment
+    // can change through S3_MAX_UPLOAD_BYTES.
+    const result = validateUpload(
+      { fileName: "big.pdf", bytes: new Uint8Array(3 * 1024 * 1024) },
+      { maxBytes: 2 * 1024 * 1024 },
+    );
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.issues.find((issue) => issue.code === "tooLarge")?.params).toEqual({
+        limitMb: 2,
+      });
+    }
+  });
 });
 
 describe("sanitiseFileName", () => {

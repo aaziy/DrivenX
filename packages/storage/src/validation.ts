@@ -171,9 +171,28 @@ export interface UploadValidationOptions {
   maxBytes?: number;
 }
 
+/** A rejected upload as a code, for callers that show it in their own language. */
+export type UploadIssueCode = "empty" | "tooLarge" | "unsupportedType";
+
+export interface UploadIssue {
+  code: UploadIssueCode;
+  params?: Record<string, number>;
+}
+
 export type UploadValidation =
   | { valid: true; mimeType: AllowedMimeType; fileName: string; sizeBytes: number }
-  | { valid: false; errors: string[] };
+  | {
+      valid: false;
+      /** English sentences, for logs, scripts and tests. */
+      errors: string[];
+      /**
+       * The same failures as codes, in the same order. The web app renders these in
+       * English or Arabic; a fixed English sentence cannot be shown to someone whose
+       * interface is in Arabic, and an upload rejection is exactly the moment they most
+       * need to understand what went wrong.
+       */
+      issues: UploadIssue[];
+    };
 
 export function validateUpload(
   candidate: UploadCandidate,
@@ -181,25 +200,32 @@ export function validateUpload(
 ): UploadValidation {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_UPLOAD_BYTES;
   const errors: string[] = [];
+  const issues: UploadIssue[] = [];
   const sizeBytes = candidate.bytes.byteLength;
 
+  const fail = (issue: UploadIssue, message: string) => {
+    issues.push(issue);
+    errors.push(message);
+  };
+
   if (sizeBytes === 0) {
-    errors.push("File is empty.");
+    fail({ code: "empty" }, "File is empty.");
   }
   if (sizeBytes > maxBytes) {
     const limitMb = Math.floor(maxBytes / (1024 * 1024));
-    errors.push(`File is larger than the ${limitMb} MB limit.`);
+    fail({ code: "tooLarge", params: { limitMb } }, `File is larger than the ${limitMb} MB limit.`);
   }
 
   const sniffed = sniffMimeType(candidate.bytes);
   if (sniffed === null) {
-    errors.push(
+    fail(
+      { code: "unsupportedType" },
       "Unsupported file type. Upload a PDF or an image (JPEG, PNG, WebP or HEIC).",
     );
   }
 
   if (errors.length > 0 || sniffed === null) {
-    return { valid: false, errors };
+    return { valid: false, errors, issues };
   }
 
   return {
