@@ -126,12 +126,18 @@ export async function uploadDocument(
 
   const key = buildObjectKey(ownerType, ownerId, validation.mimeType);
 
-  await storage().put({
-    key,
-    bytes,
-    mimeType: validation.mimeType,
-    fileName: validation.fileName,
-  });
+  try {
+    await storage().put({
+      key,
+      bytes,
+      mimeType: validation.mimeType,
+      fileName: validation.fileName,
+    });
+  } catch (error) {
+    // Storage unreachable or misconfigured. Staff get a message they can act on and a
+    // form that still holds what they typed, rather than an error boundary.
+    return { error: await toUserMessage("uploadDocument", error) };
+  }
 
   try {
     await asActor(principal, async () => {

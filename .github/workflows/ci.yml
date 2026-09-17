@@ -137,9 +137,24 @@ jobs:
       DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
       TEST_DATABASE_URL: postgresql://drivenx:drivenx_dev@localhost:5432/drivenx_test?schema=public
       AUTH_SECRET: ci-only-not-a-real-secret
+      # The application reaches storage from the E2E run too — uploading a document is
+      # one of the journeys. Without these the specs fail here and pass locally, where a
+      # developer always has the compose stack running.
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: me-central-1
+      S3_BUCKET: drivenx-documents
+      S3_ACCESS_KEY_ID: drivenx
+      S3_SECRET_ACCESS_KEY: drivenx_dev_secret
+      S3_FORCE_PATH_STYLE: "true"
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Start S3 server
+        run: |
+          docker compose pull s3
+          docker compose up -d s3
+
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -148,6 +163,9 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Ensure storage bucket
+        run: pnpm storage:ensure-bucket
 
       - name: Generate Prisma client
         run: pnpm db:generate
