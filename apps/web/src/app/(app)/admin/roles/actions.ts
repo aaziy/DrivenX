@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { prisma } from "@drivenx/db";
 
@@ -26,12 +27,13 @@ export async function updateRolePermissions(
   formData: FormData,
 ): Promise<RoleFormState> {
   const principal = await requirePermission("role.manage");
+  const t = await getTranslations("roles");
 
   const role = await prisma.role.findUnique({
     where: { id: roleId },
     include: { permissions: true },
   });
-  if (!role) return { error: "That role no longer exists." };
+  if (!role) return { error: t("errors.roleGone") };
 
   const selected = new Set(formData.getAll("permission").map(String));
   const held = new Set(role.permissions.map((entry) => entry.permissionId));
@@ -46,7 +48,7 @@ export async function updateRolePermissions(
   const toRevoke = [...held].filter((id) => !validIds.has(id));
 
   if (toGrant.length === 0 && toRevoke.length === 0) {
-    return { success: "No changes to save." };
+    return { success: t("noChanges") };
   }
 
   try {
@@ -76,10 +78,8 @@ export async function updateRolePermissions(
   revalidatePath(`/admin/roles/${roleId}`);
 
   const parts: string[] = [];
-  if (toGrant.length > 0) parts.push(`${toGrant.length} granted`);
-  if (toRevoke.length > 0) parts.push(`${toRevoke.length} revoked`);
+  if (toGrant.length > 0) parts.push(t("granted", { count: toGrant.length }));
+  if (toRevoke.length > 0) parts.push(t("revoked", { count: toRevoke.length }));
 
-  return {
-    success: `Saved — ${parts.join(", ")}. Takes effect on each affected user's next request.`,
-  };
+  return { success: t("savedSummary", { summary: parts.join(t("listSeparator")) }) };
 }

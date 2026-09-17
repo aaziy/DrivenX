@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { logout } from "./(app)/actions";
 
@@ -13,25 +14,24 @@ import { logout } from "./(app)/actions";
  * followed a link to a page they cannot open) would otherwise have no way out of it
  * at all. "Back to dashboard" fails for exactly the people most likely to land here.
  */
-export default function Forbidden() {
+export default async function Forbidden() {
+  const [t, tc] = await Promise.all([getTranslations("forbidden"), getTranslations("common")]);
+
   return (
     <main className="login-page">
       <div className="login-card">
         <div className="card">
           <div className="card-body">
-            <h1>Not permitted</h1>
-            <p className="muted">
-              Your account does not have access to this page. If you believe it should, ask a
-              Super Admin to review your role.
-            </p>
+            <h1>{t("title")}</h1>
+            <p className="muted">{t("body")}</p>
 
             <div className="row" style={{ marginTop: 18, justifyContent: "space-between" }}>
               <Link href="/" className="btn-link">
-                ← Back to dashboard
+                {tc("backToDashboardLink")}
               </Link>
               <form action={logout}>
                 <button type="submit" className="btn-secondary">
-                  Sign out
+                  {tc("signOut")}
                 </button>
               </form>
             </div>

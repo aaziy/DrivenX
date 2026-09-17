@@ -14,7 +14,7 @@ catalog:
   '@vitest/coverage-v8': ^3.2.4
   eslint: ^9.36.0
   next: ^15.5.4
-  next-auth: ^4.24.11
+  next-intl: ^4.14.5
   prettier: ^3.6.2
   prisma: ^6.16.2
   react: ^19.2.0
@@ -24,8 +24,6 @@ catalog:
   vitest: ^3.2.4
   zod: ^3.25.76
 
-# Explicit allowlist of packages permitted to run install scripts.
-# Anything not listed here is blocked — supply-chain surface stays small and reviewed.
 onlyBuiltDependencies:
   - esbuild
   - '@prisma/client'

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 /**
  * Load the monorepo-root .env.
@@ -28,7 +29,13 @@ const config: NextConfig = {
 
   // Workspace packages ship TypeScript source rather than build output, so Next
   // compiles them itself. Keeps the monorepo free of a build step per package.
-  transpilePackages: ["@drivenx/core", "@drivenx/db", "@drivenx/auth", "@drivenx/storage", "@drivenx/logger"],
+  transpilePackages: [
+    "@drivenx/core",
+    "@drivenx/db",
+    "@drivenx/auth",
+    "@drivenx/storage",
+    "@drivenx/logger",
+  ],
 
   serverExternalPackages: ["@prisma/client", "@node-rs/argon2"],
 
@@ -53,4 +60,8 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+// Points next-intl at the per-request language resolver: the account's saved choice,
+// then the device cookie.
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(config);

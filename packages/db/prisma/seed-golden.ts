@@ -38,6 +38,9 @@ export async function seedGoldenDataset(): Promise<void> {
           // locked and break the next one.
           failedLogins: 0,
           lockedUntil: null,
+          // Reset the language too. E2E specs read English text, and one persona left in
+          // Arabic by an earlier run would fail every spec that signs in as it.
+          locale: "en",
         },
         create: {
           id: user.id,

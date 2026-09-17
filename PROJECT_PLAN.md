@@ -384,11 +384,11 @@ Answer before the dependent phase starts.
 | 4 | **Security deposit.** Refundable liability (our assumption) or recognised as revenue? Partial forfeiture rules on damage? | 1D | See §5. Affects every profit figure. |
 | 5 | **Excess mileage.** Charged monthly on overage, or reconciled once at return? | 1D / 2 |Determines whether it's a recurring charge or a settlement line. |
 | 6 | **Fines.** Default payer — customer or company? Is recovery automatic on the next installment? | 2 | §13 has a `payer` field but no policy. |
-| 7 | **Arabic / RTL.** Required for the UI, for generated PDFs, or not at all? | 0 | Cheap to build in at Phase 0, expensive to add at Phase 3. |
+| 7 | **Arabic / RTL.** **Answered 2026-09-16:** English and Arabic, switchable per person, Arabic mirrored right-to-left. Arabic contracts and invoices still to confirm. | 0 / 1D | Built in before 1A. PDF generation in 1D must support Arabic script. |
 | 8 | **Data migration.** Are there existing spreadsheets or a system to import vehicles, customers and live contracts? | 1 | Import tooling is unscoped work that must be estimated separately. |
 | 9 | **Payment methods.** Cash, bank transfer, cheque, card? Any bank reconciliation or cheque-tracking requirement? | 1D | §10 says "payment method" with no enumeration. Post-dated cheques are common in UAE leasing and would need their own tracking. |
 | 10 | **Concurrent users & fleet size** at launch and at 2-year projection. | 0 | Sets the infrastructure sizing decision we deferred. |
-| 11 | **Hosting decision** — VPS, managed cloud, or AWS? Data residency requirement? | 0 | Deferred by choice; must close before Phase 0 ends. |
+| 11 | **Hosting decision.** Hostinger VPS (KVM 2) is viable; Hostinger Business shared hosting is not (no PostgreSQL, no storage server, no background jobs). **Still open:** must customer data stay in the UAE? Hostinger has no UAE data centre. | 0 | Was due before Phase 0 closed. Blocks staging and client testing. |
 
 ---
 

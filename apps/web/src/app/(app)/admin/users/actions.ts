@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { hashPassword, validatePassword } from "@drivenx/auth/password";
@@ -15,18 +16,26 @@ export interface UserFormState {
   success?: string;
 }
 
-const CreateUserSchema = z.object({
-  fullName: z.string().trim().min(2, "Enter the person's full name."),
-  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
-  password: z.string(),
-  roleId: z.string().min(1, "Choose a role."),
-});
-
 export async function createUser(
   _previous: UserFormState,
   formData: FormData,
 ): Promise<UserFormState> {
   const principal = await requirePermission("user.manage");
+
+  const [t, tc, tp, tu] = await Promise.all([
+    getTranslations("users.errors"),
+    getTranslations("common"),
+    getTranslations("password"),
+    getTranslations("users"),
+  ]);
+
+  // Built per request so validation messages come out in the language on screen.
+  const CreateUserSchema = z.object({
+    fullName: z.string().trim().min(2, t("fullName")),
+    email: z.string().trim().toLowerCase().email(t("email")),
+    password: z.string(),
+    roleId: z.string().min(1, t("role")),
+  });
 
   const parsed = CreateUserSchema.safeParse({
     fullName: formData.get("fullName"),
@@ -36,22 +45,23 @@ export async function createUser(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the details you entered." };
+    return { error: parsed.error.issues[0]?.message ?? tc("checkDetails") };
   }
 
   const { fullName, email, password, roleId } = parsed.data;
 
   const policy = validatePassword(password);
   if (!policy.valid) {
-    return { error: policy.errors.join(" ") };
+    // Codes rather than the English sentences, so the rules read in the chosen language.
+    return { error: policy.issues.map((issue) => tp(issue.code, issue.params)).join(" ") };
   }
 
   if (await prisma.user.findUnique({ where: { email } })) {
-    return { error: "A user with that email already exists." };
+    return { error: t("emailTaken") };
   }
 
   if (!(await prisma.role.findUnique({ where: { id: roleId } }))) {
-    return { error: "That role no longer exists." };
+    return { error: t("roleGone") };
   }
 
   try {
@@ -73,7 +83,7 @@ export async function createUser(
   }
 
   revalidatePath("/admin/users");
-  return { success: `Created ${fullName}.` };
+  return { success: tu("created", { name: fullName }) };
 }
 
 export async function setUserActive(userId: string, isActive: boolean): Promise<void> {
@@ -82,7 +92,8 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
   // Locking yourself out of the only Super Admin account is unrecoverable without
   // database access, so it is refused rather than merely discouraged.
   if (userId === principal.id) {
-    throw new UserFacingError("You cannot deactivate your own account.");
+    const t = await getTranslations("users.errors");
+    throw new UserFacingError(t("selfDeactivate"));
   }
 
   await asActor(principal, async () => {

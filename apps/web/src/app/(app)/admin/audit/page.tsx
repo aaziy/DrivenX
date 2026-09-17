@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
+import { getFormatter, getTranslations } from "next-intl/server";
+
 import { prisma } from "@drivenx/db";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { requirePermission } from "@/lib/auth";
 
-export const metadata = { title: "Audit log · DrivenX" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("audit");
+  return { title: `${t("title")} · DrivenX` };
+}
 
 const PAGE_SIZE = 50;
 
@@ -31,7 +37,15 @@ const ACTION_TONE: Record<string, string> = {
 };
 
 /** Render a field-level diff compactly: `field: old → new`. */
-function ChangeSummary({ before, after }: { before: unknown; after: unknown }) {
+function ChangeSummary({
+  before,
+  after,
+  fieldsLabel,
+}: {
+  before: unknown;
+  after: unknown;
+  fieldsLabel: (count: number) => string;
+}) {
   const beforeRecord = (before ?? {}) as Record<string, unknown>;
   const afterRecord = (after ?? {}) as Record<string, unknown>;
   const keys = [...new Set([...Object.keys(beforeRecord), ...Object.keys(afterRecord)])];
@@ -40,11 +54,12 @@ function ChangeSummary({ before, after }: { before: unknown; after: unknown }) {
 
   // Whole-record snapshots (create/delete) would flood the column; summarise instead.
   if (keys.length > 4) {
-    return <span className="muted mono">{keys.length} fields</span>;
+    return <span className="muted">{fieldsLabel(keys.length)}</span>;
   }
 
+  // Field names and values are code, and stay left-to-right in any language.
   return (
-    <span className="mono">
+    <span className="mono" dir="ltr">
       {keys.map((key) => (
         <span key={key} style={{ display: "block" }}>
           {key}
@@ -70,7 +85,10 @@ export default async function AuditPage({
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 
-  const [entries, total] = await Promise.all([
+  const [t, tc, format, entries, total] = await Promise.all([
+    getTranslations("audit"),
+    getTranslations("common"),
+    getFormatter(),
     prisma.auditLog.findMany({
       orderBy: { createdAt: "desc" },
       take: PAGE_SIZE,
@@ -95,51 +113,65 @@ export default async function AuditPage({
   const columns: Column<AuditRow>[] = [
     {
       key: "when",
-      header: "When",
+      header: t("columns.when"),
       render: (entry) => (
         <time dateTime={entry.createdAt.toISOString()} className="mono">
-          {entry.createdAt.toLocaleString("en-GB", { timeZone: "Asia/Dubai" })}
+          {format.dateTime(entry.createdAt, { dateStyle: "short", timeStyle: "medium" })}
         </time>
       ),
     },
     {
       key: "who",
-      header: "Who",
+      header: t("columns.who"),
       render: (entry) =>
         entry.actor ? (
           <>
             <div>{entry.actor.fullName}</div>
             <div className="muted" style={{ fontSize: 12 }}>
-              {entry.ipAddress ?? ""}
+              <bdi>{entry.ipAddress ?? ""}</bdi>
             </div>
           </>
         ) : (
-          <span className="muted">System</span>
+          <span className="muted">{tc("system")}</span>
         ),
     },
     {
       key: "action",
-      header: "Action",
+      header: t("columns.action"),
       render: (entry) => (
-        <span className={ACTION_TONE[entry.action] ?? "badge"}>{entry.action}</span>
+        <span className={ACTION_TONE[entry.action] ?? "badge"}>
+          {t.has(`actions.${entry.action}`) ? t(`actions.${entry.action}`) : entry.action}
+        </span>
       ),
     },
     {
       key: "entity",
-      header: "Record",
+      header: t("columns.record"),
       render: (entry) => (
         <>
-          <div>{entry.entityType}</div>
+          <div>
+            {t.has(`entities.${entry.entityType}`)
+              ? t(`entities.${entry.entityType}`)
+              : entry.entityType}
+          </div>
           <div className="muted mono" style={{ fontSize: 11 }}>
-            {entry.entityId.length > 34 ? `${entry.entityId.slice(0, 34)}…` : entry.entityId}
+            <bdi>
+              {entry.entityId.length > 34 ? `${entry.entityId.slice(0, 34)}…` : entry.entityId}
+            </bdi>
           </div>
         </>
       ),
     },
     {
       key: "changes",
-      header: "Changes",
-      render: (entry) => <ChangeSummary before={entry.before} after={entry.after} />,
+      header: t("columns.changes"),
+      render: (entry) => (
+        <ChangeSummary
+          before={entry.before}
+          after={entry.after}
+          fieldsLabel={(count) => t("fields", { count })}
+        />
+      ),
     },
   ];
 
@@ -147,43 +179,38 @@ export default async function AuditPage({
     <>
       <header className="page-header">
         <div>
-          <h1>Audit log</h1>
-          <p className="page-subtitle">
-            Every mutation, recorded automatically (SOW §17). Password hashes are never stored
-            here &mdash; a changed secret is recorded as having changed, not as its value.
-          </p>
+          <h1>{t("title")}</h1>
+          <p className="page-subtitle">{t("subtitle")}</p>
         </div>
       </header>
 
       <div className="page-body">
         <div className="card">
           <div className="card-header">
-            <h2>Recent activity</h2>
-            <span className="muted">
-              {total.toLocaleString("en-GB")} entries · page {page} of {totalPages}
-            </span>
+            <h2>{t("recent")}</h2>
+            <span className="muted">{t("summary", { total, page, pages: totalPages })}</span>
           </div>
 
           <DataTable
             rows={entries}
             columns={columns}
             rowKey={(entry) => entry.id}
-            emptyTitle="No activity recorded yet"
-            emptyHint="Actions taken in the system will appear here."
+            emptyTitle={t("emptyTitle")}
+            emptyHint={t("emptyHint")}
           />
 
           {totalPages > 1 ? (
             <div className="card-body row" style={{ justifyContent: "space-between" }}>
               {page > 1 ? (
                 <a className="btn-link" href={`/admin/audit?page=${page - 1}`}>
-                  ← Newer
+                  {t("newer")}
                 </a>
               ) : (
                 <span />
               )}
               {page < totalPages ? (
                 <a className="btn-link" href={`/admin/audit?page=${page + 1}`}>
-                  Older →
+                  {t("older")}
                 </a>
               ) : (
                 <span />

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 /**
  * Route-level error boundary.
@@ -17,27 +18,31 @@ export default function RouteError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("error");
+  const tc = useTranslations("common");
+
   return (
     <div className="page-body">
       <div className="card" style={{ maxWidth: 560 }}>
         <div className="card-body">
-          <h1>Something went wrong</h1>
-          <p className="muted">
-            This page could not be loaded. Nothing you were working on has been saved.
-          </p>
+          <h1>{t("title")}</h1>
+          <p className="muted">{t("body")}</p>
 
           {error.digest ? (
             <p className="muted" style={{ fontSize: 13 }}>
-              Reference: <span className="mono">{error.digest}</span>
+              {t("reference")}{" "}
+              <span className="mono" dir="ltr">
+                {error.digest}
+              </span>
             </p>
           ) : null}
 
           <div className="row" style={{ marginTop: 16 }}>
             <button type="button" className="btn-primary" onClick={reset}>
-              Try again
+              {t("retry")}
             </button>
             <Link href="/" className="btn-link">
-              Back to dashboard
+              {tc("backToDashboard")}
             </Link>
           </div>
         </div>

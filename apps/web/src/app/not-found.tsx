@@ -1,17 +1,18 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const [t, tc] = await Promise.all([getTranslations("notFound"), getTranslations("common")]);
+
   return (
     <main className="login-page">
       <div className="login-card">
         <div className="card">
           <div className="card-body">
-            <h1>Page not found</h1>
-            <p className="muted">
-              That page does not exist, or the record it referred to has been removed.
-            </p>
+            <h1>{t("title")}</h1>
+            <p className="muted">{t("body")}</p>
             <Link href="/" className="btn-link">
-              ← Back to dashboard
+              {tc("backToDashboardLink")}
             </Link>
           </div>
         </div>

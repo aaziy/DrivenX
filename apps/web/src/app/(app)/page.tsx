@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+
 import { prisma } from "@drivenx/db";
 
 import { requirePermission } from "@/lib/auth";
 
-export const metadata = { title: "Dashboard · DrivenX" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("dashboard");
+  return { title: `${t("title")} · DrivenX` };
+}
 
 /**
  * Dashboard placeholder.
@@ -14,7 +20,8 @@ export const metadata = { title: "Dashboard · DrivenX" };
 export default async function DashboardPage() {
   const principal = await requirePermission("dashboard.view");
 
-  const [userCount, roleCount, auditCount] = await Promise.all([
+  const [t, userCount, roleCount, auditCount] = await Promise.all([
+    getTranslations("dashboard"),
     prisma.user.count({ where: { deletedAt: null } }),
     prisma.role.count(),
     prisma.auditLog.count(),
@@ -26,45 +33,36 @@ export default async function DashboardPage() {
     <>
       <header className="page-header">
         <div>
-          <h1>Good day, {firstName}</h1>
-          <p className="page-subtitle">
-            Phase 0 foundations are in place. Fleet, customer and contract data arrive in Phase 1.
-          </p>
+          <h1>{t("greeting", { name: firstName })}</h1>
+          <p className="page-subtitle">{t("subtitle")}</p>
         </div>
       </header>
 
       <div className="page-body stack">
         <div className="stat-grid">
           <div className="stat">
-            <div className="stat-label">Active users</div>
+            <div className="stat-label">{t("activeUsers")}</div>
             <div className="stat-value">{userCount}</div>
           </div>
           <div className="stat">
-            <div className="stat-label">Roles</div>
+            <div className="stat-label">{t("roles")}</div>
             <div className="stat-value">{roleCount}</div>
-            <div className="stat-note">Configurable per SOW §2</div>
+            <div className="stat-note">{t("rolesNote")}</div>
           </div>
           <div className="stat">
-            <div className="stat-label">Audit entries</div>
+            <div className="stat-label">{t("auditEntries")}</div>
             <div className="stat-value">{auditCount}</div>
-            <div className="stat-note">Every mutation recorded</div>
+            <div className="stat-note">{t("auditNote")}</div>
           </div>
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h2>What is not here yet</h2>
+            <h2>{t("notYetTitle")}</h2>
           </div>
           <div className="card-body muted">
-            <p style={{ marginTop: 0 }}>
-              These tiles deliberately show only what exists. The KPIs from SOW §3 — fleet counts,
-              monthly revenue, cost, profit, customer outstanding, supplier payables, expiring
-              documents — are milestone 1E, and each will be an aggregation over the ledger rather
-              than a stored column.
-            </p>
-            <p style={{ marginBottom: 0 }}>
-              Showing placeholder numbers now would make the system look further along than it is.
-            </p>
+            <p style={{ marginTop: 0 }}>{t("notYetBody1")}</p>
+            <p style={{ marginBottom: 0 }}>{t("notYetBody2")}</p>
           </div>
         </div>
       </div>

@@ -1,30 +1,39 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { authenticate } from "@drivenx/auth/session";
+import { prisma } from "@drivenx/db";
 
+import { rememberLocaleOnDevice } from "@/i18n/locale";
 import { requestLogger, toUserMessage } from "@/lib/log";
 import { startSession } from "@/lib/session";
-
-const LoginSchema = z.object({
-  email: z.string().min(1, "Enter your email address.").email("Enter a valid email address."),
-  password: z.string().min(1, "Enter your password."),
-});
 
 export interface LoginState {
   error?: string;
 }
 
 export async function login(_previous: LoginState, formData: FormData): Promise<LoginState> {
+  const [t, tc] = await Promise.all([
+    getTranslations("login.errors"),
+    getTranslations("common"),
+  ]);
+
+  // Built per request so validation messages come out in the language on screen.
+  const LoginSchema = z.object({
+    email: z.string().min(1, t("emailRequired")).email(t("emailInvalid")),
+    password: z.string().min(1, t("passwordRequired")),
+  });
+
   const parsed = LoginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the details you entered." };
+    return { error: parsed.error.issues[0]?.message ?? tc("checkDetails") };
   }
 
   const log = await requestLogger();
@@ -49,18 +58,27 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
         const minutes = result.lockedUntil
           ? Math.max(1, Math.ceil((result.lockedUntil.getTime() - Date.now()) / 60_000))
           : 15;
-        return { error: `Too many failed attempts. Try again in ${minutes} minutes.` };
+        return { error: t("lockedOut", { minutes }) };
       }
       case "inactive":
-        return { error: "This account has been deactivated. Contact your administrator." };
+        return { error: t("inactive") };
       default:
         // One message for both unknown email and wrong password — anything else turns
         // the login form into a staff directory.
-        return { error: "Incorrect email or password." };
+        return { error: t("invalid") };
     }
   }
 
   log.info("login succeeded", { userId: result.principal.id });
   await startSession(result.principal.id);
+
+  // Hand the device over to this person's saved language, so the sign-in page they see
+  // after signing out matches the app they were just using.
+  const account = await prisma.user.findUnique({
+    where: { id: result.principal.id },
+    select: { locale: true },
+  });
+  if (account) await rememberLocaleOnDevice(account.locale);
+
   redirect("/");
 }

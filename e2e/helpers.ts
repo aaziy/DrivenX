@@ -65,6 +65,18 @@ export async function signOut(page: Page): Promise<void> {
   await expect(page.getByLabel("Email")).toBeVisible();
 }
 
+/**
+ * The permission rows occupy real space inside their group.
+ *
+ * Guards a defect that every other kind of check missed: a floated group heading took
+ * the full width, the rows collapsed to zero and were pushed outside the container, and
+ * they stayed clickable throughout — so the tests passed while the page showed nothing.
+ */
+export async function expectPermissionRowsLaidOut(page: Page): Promise<void> {
+  const list = await page.locator(".perm-list").first().boundingBox();
+  expect(list?.width ?? 0).toBeGreaterThan(200);
+}
+
 /** Set one permission on a role and save. Returns true if anything changed. */
 export async function setRolePermission(
   page: Page,
@@ -75,6 +87,11 @@ export async function setRolePermission(
   await page.goto("/admin/roles");
   await page.locator(`tr:has-text("${roleName}") a`).click();
   await expect(page.locator('input[type="checkbox"]').first()).toBeVisible();
+
+  // The rows once laid out at zero width and sat outside their own box, so the whole
+  // editor looked empty. `toBeVisible` does not catch that — each row still reports a
+  // real size — so the width of the list is measured instead.
+  await expectPermissionRowsLaidOut(page);
 
   const checkbox = page.locator(`label:has-text("${permissionKey}") input[type="checkbox"]`);
   if ((await checkbox.isChecked()) === granted) return false;

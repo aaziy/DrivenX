@@ -16,18 +16,18 @@ export interface NavGroup {
 /**
  * Sidebar navigation.
  *
- * The groups arrive already filtered by permission from the server layout — this
- * component never decides what a user may see. Filtering here would put an
- * authorisation decision in the browser, where it can be edited.
+ * The groups arrive already filtered by permission and already translated from the
+ * server layout — this component never decides what a user may see. Filtering here
+ * would put an authorisation decision in the browser, where it can be edited.
  */
-export function Nav({ groups }: { groups: NavGroup[] }) {
+export function Nav({ groups, ariaLabel }: { groups: NavGroup[]; ariaLabel: string }) {
   const pathname = usePathname();
 
   const isCurrent = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <nav aria-label="Main">
+    <nav aria-label={ariaLabel}>
       {groups.map((group) => (
         <div key={group.label}>
           <div className="nav-group-label">{group.label}</div>

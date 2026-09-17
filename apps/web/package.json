@@ -18,6 +18,7 @@
     "@node-rs/argon2": "catalog:",
     "@prisma/client": "catalog:",
     "next": "catalog:",
+    "next-intl": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:"

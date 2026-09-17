@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 /**
@@ -22,6 +23,7 @@ export function SubmitButton({
   variant?: "primary" | "secondary";
 }) {
   const { pending } = useFormStatus();
+  const t = useTranslations("common");
 
   return (
     <button
@@ -30,7 +32,7 @@ export function SubmitButton({
       disabled={pending}
       aria-busy={pending}
     >
-      {pending ? (pendingLabel ?? "Working…") : children}
+      {pending ? (pendingLabel ?? t("working")) : children}
     </button>
   );
 }
@@ -45,6 +47,7 @@ export function Field({
   defaultValue,
   autoComplete,
   placeholder,
+  dir,
 }: {
   label: string;
   name: string;
@@ -55,6 +58,8 @@ export function Field({
   defaultValue?: string;
   autoComplete?: string;
   placeholder?: string;
+  /** Email addresses and passwords are typed left-to-right whatever the page language. */
+  dir?: "ltr" | "rtl" | "auto";
 }) {
   const hintId = hint ? `${name}-hint` : undefined;
   const errorId = error ? `${name}-error` : undefined;
@@ -73,6 +78,7 @@ export function Field({
         defaultValue={defaultValue}
         autoComplete={autoComplete}
         placeholder={placeholder}
+        dir={dir}
         aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
         aria-invalid={error ? true : undefined}
       />

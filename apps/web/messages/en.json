@@ -1,0 +1,316 @@
+{
+  "meta": {
+    "appName": "DrivenX",
+    "description": "Vehicle rental and lease-to-own management"
+  },
+  "common": {
+    "brandSub": "Fleet",
+    "brandSubLogin": "Fleet Management",
+    "working": "Working…",
+    "saving": "Saving…",
+    "backToDashboard": "Back to dashboard",
+    "backToDashboardLink": "← Back to dashboard",
+    "signOut": "Sign out",
+    "you": "You",
+    "none": "None",
+    "system": "System",
+    "emptyTitle": "Nothing here yet",
+    "total": "{count} total",
+    "checkDetails": "Check the details you entered."
+  },
+  "language": {
+    "label": "Language"
+  },
+  "nav": {
+    "mainLabel": "Main",
+    "overview": "Overview",
+    "dashboard": "Dashboard",
+    "administration": "Administration",
+    "users": "Users",
+    "roles": "Roles & permissions",
+    "audit": "Audit log"
+  },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "you@drivenx.ae",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "errors": {
+      "emailRequired": "Enter your email address.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Enter your password.",
+      "invalid": "Incorrect email or password.",
+      "lockedOut": "{minutes, plural, one {Too many failed attempts. Try again in # minute.} other {Too many failed attempts. Try again in # minutes.}}",
+      "inactive": "This account has been deactivated. Contact your administrator."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "greeting": "Good day, {name}",
+    "subtitle": "Phase 0 foundations are in place. Fleet, customer and contract data arrive in Phase 1.",
+    "activeUsers": "Active users",
+    "roles": "Roles",
+    "rolesNote": "Configurable per SOW §2",
+    "auditEntries": "Audit entries",
+    "auditNote": "Every mutation recorded",
+    "notYetTitle": "What is not here yet",
+    "notYetBody1": "These tiles deliberately show only what exists. The KPIs from SOW §3 — fleet counts, monthly revenue, cost, profit, customer outstanding, supplier payables, expiring documents — are milestone 1E, and each will be an aggregation over the ledger rather than a stored column.",
+    "notYetBody2": "Showing placeholder numbers now would make the system look further along than it is."
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Staff accounts and their roles. Deactivating an account takes effect on that person’s next request.",
+    "addTitle": "Add a user",
+    "allTitle": "All users",
+    "emptyTitle": "No users yet",
+    "lastSignInNever": "Never",
+    "created": "Created {name}.",
+    "columns": {
+      "name": "Name",
+      "roles": "Roles",
+      "status": "Status",
+      "lastSignIn": "Last sign-in"
+    },
+    "status": {
+      "active": "Active",
+      "deactivated": "Deactivated"
+    },
+    "actions": {
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate"
+    },
+    "form": {
+      "fullName": "Full name",
+      "email": "Email",
+      "password": "Temporary password",
+      "passwordHint": "At least 12 characters, with upper case, lower case and a digit.",
+      "role": "Role",
+      "chooseRole": "Choose a role…",
+      "submit": "Create user",
+      "submitting": "Creating…"
+    },
+    "errors": {
+      "fullName": "Enter the person’s full name.",
+      "email": "Enter a valid email address.",
+      "role": "Choose a role.",
+      "emailTaken": "A user with that email already exists.",
+      "roleGone": "That role no longer exists.",
+      "selfDeactivate": "You cannot deactivate your own account."
+    }
+  },
+  "password": {
+    "tooShort": "Password must be at least {min} characters.",
+    "tooLong": "Password must be no more than {max} characters.",
+    "missingLowercase": "Password must contain a lowercase letter.",
+    "missingUppercase": "Password must contain an uppercase letter.",
+    "missingDigit": "Password must contain a digit.",
+    "tooCommon": "That password is too common. Choose something less predictable."
+  },
+  "roles": {
+    "title": "Roles & permissions",
+    "subtitle": "Permissions are stored as data, not code. Changes take effect on each affected user’s next request — nobody needs to sign out and back in.",
+    "editTitle": "Edit role",
+    "edit": "Edit permissions",
+    "view": "View permissions",
+    "backToAll": "← All roles",
+    "readOnly": "You do not have permission to change role assignments.",
+    "save": "Save permissions",
+    "noChanges": "No changes to save.",
+    "granted": "{count} granted",
+    "revoked": "{count} revoked",
+    "listSeparator": ", ",
+    "savedSummary": "Saved — {summary}. Takes effect on each affected user’s next request.",
+    "columns": {
+      "role": "Role",
+      "permissions": "Permissions",
+      "users": "Users"
+    },
+    "errors": {
+      "roleGone": "That role no longer exists."
+    },
+    "defaultNames": {
+      "super_admin": "Super Admin",
+      "admin": "Admin / Management",
+      "sales": "Sales Staff",
+      "finance": "Accounts / Finance",
+      "operations": "Operations"
+    },
+    "defaultDescriptions": {
+      "super_admin": "Full access to every part of the system, including user and role management.",
+      "admin": "Customers, vehicles, suppliers, contracts, payments, reports and profitability. Cannot manage users or roles.",
+      "sales": "Leads, deals, customer information, documents and the deal calculator. Sees only their own leads.",
+      "finance": "Payments, receivables, supplier payments, expenses and financial reports.",
+      "operations": "Vehicles, maintenance, insurance, registration, accidents, fines and handover/return."
+    }
+  },
+  "permissionGroups": {
+    "dashboard": "Dashboard",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "fleet": "Fleet",
+    "documents": "Documents",
+    "sales": "Sales",
+    "contracts": "Contracts",
+    "payments": "Payments",
+    "insurance": "Insurance",
+    "operations": "Operations",
+    "expenses": "Expenses",
+    "reports": "Reports",
+    "administration": "Administration"
+  },
+  "permissions": {
+    "dashboard": {
+      "view": "View the dashboard and KPIs"
+    },
+    "customer": {
+      "view": "View customers",
+      "create": "Create customers",
+      "update": "Edit customers",
+      "delete": "Delete customers"
+    },
+    "supplier": {
+      "view": "View suppliers",
+      "create": "Create suppliers",
+      "update": "Edit suppliers",
+      "delete": "Delete suppliers"
+    },
+    "supplier_invoice": {
+      "view": "View supplier payables",
+      "manage": "Record supplier payments"
+    },
+    "vehicle": {
+      "view": "View vehicles",
+      "create": "Add vehicles",
+      "update": "Edit vehicles",
+      "delete": "Delete vehicles",
+      "transition": "Change vehicle status"
+    },
+    "document": {
+      "view": "View and download documents",
+      "upload": "Upload documents",
+      "delete": "Delete documents"
+    },
+    "lead": {
+      "view": "View own leads",
+      "view_all": "View all salespeople’s leads",
+      "create": "Create leads",
+      "update": "Edit leads",
+      "delete": "Delete leads",
+      "convert": "Convert a lead into a contract"
+    },
+    "deal": {
+      "calculate": "Use the deal calculator"
+    },
+    "contract": {
+      "view": "View contracts",
+      "create": "Draft contracts",
+      "update": "Edit contracts",
+      "activate": "Activate a contract and generate its payment schedule",
+      "cancel": "Cancel a contract",
+      "delete": "Delete draft contracts"
+    },
+    "payment": {
+      "view": "View payments and schedules",
+      "record": "Record customer payments",
+      "waive": "Waive an instalment",
+      "delete": "Reverse a recorded payment"
+    },
+    "insurance": {
+      "view": "View insurance policies",
+      "manage": "Create and renew insurance policies"
+    },
+    "handover": {
+      "view": "View handover and return records",
+      "manage": "Record vehicle handover and return"
+    },
+    "maintenance": {
+      "view": "View maintenance records",
+      "manage": "Record maintenance"
+    },
+    "fine": {
+      "view": "View traffic fines",
+      "manage": "Record and recover fines"
+    },
+    "accident": {
+      "view": "View accidents",
+      "manage": "Record accidents and claims"
+    },
+    "expense": {
+      "view": "View expenses",
+      "manage": "Record expenses"
+    },
+    "report": {
+      "view": "View operational reports",
+      "financial": "View profit and financial reports",
+      "export": "Export reports to Excel and PDF"
+    },
+    "user": {
+      "view": "View users",
+      "manage": "Create, edit and deactivate users"
+    },
+    "role": {
+      "view": "View roles and permissions",
+      "manage": "Create roles and change their permissions"
+    },
+    "settings": {
+      "manage": "Manage categories, notification and company settings"
+    },
+    "audit": {
+      "view": "View the audit log"
+    }
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Every mutation, recorded automatically (SOW §17). Password hashes are never stored here — a changed secret is recorded as having changed, not as its value.",
+    "recent": "Recent activity",
+    "summary": "{total, plural, one {# entry} other {# entries}} · page {page} of {pages}",
+    "emptyTitle": "No activity recorded yet",
+    "emptyHint": "Actions taken in the system will appear here.",
+    "newer": "← Newer",
+    "older": "Older →",
+    "fields": "{count, plural, one {# field} other {# fields}}",
+    "columns": {
+      "when": "When",
+      "who": "Who",
+      "action": "Action",
+      "record": "Record",
+      "changes": "Changes"
+    },
+    "actions": {
+      "CREATE": "CREATE",
+      "UPDATE": "UPDATE",
+      "DELETE": "DELETE",
+      "TRANSITION": "TRANSITION",
+      "LOGIN": "LOGIN",
+      "LOGIN_FAILED": "LOGIN_FAILED",
+      "LOGOUT": "LOGOUT",
+      "PERMISSION_CHANGE": "PERMISSION_CHANGE"
+    },
+    "entities": {
+      "User": "User",
+      "Role": "Role",
+      "Permission": "Permission",
+      "RolePermission": "RolePermission",
+      "UserRole": "UserRole"
+    }
+  },
+  "forbidden": {
+    "title": "Not permitted",
+    "body": "Your account does not have access to this page. If you believe it should, ask a Super Admin to review your role."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "That page does not exist, or the record it referred to has been removed."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "This page could not be loaded. Nothing you were working on has been saved.",
+    "reference": "Reference:",
+    "retry": "Try again"
+  },
+  "errors": {
+    "generic": "Something went wrong. Nothing was saved. Quote this reference if you contact support: {reference}"
+  }
+}

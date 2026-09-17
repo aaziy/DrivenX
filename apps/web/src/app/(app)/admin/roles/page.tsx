@@ -1,14 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { prisma } from "@drivenx/db";
 
 import { DataTable, type Column } from "@/components/data-table";
+import { seededRoleDescriptionKey, seededRoleKey } from "@/i18n/labels";
 import { requirePermission } from "@/lib/auth";
 
-export const metadata = { title: "Roles · DrivenX" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("roles");
+  return { title: `${t("title")} · DrivenX` };
+}
 
 type RoleRow = {
   id: string;
+  key: string;
   name: string;
   description: string | null;
   isSystem: boolean;
@@ -19,45 +26,64 @@ export default async function RolesPage() {
   const principal = await requirePermission("role.view");
   const canManage = principal.permissions.has("role.manage");
 
-  const roles = await prisma.role.findMany({
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      isSystem: true,
-      _count: { select: { permissions: true, users: true } },
-    },
-  });
+  const [t, roles] = await Promise.all([
+    getTranslations("roles"),
+    prisma.role.findMany({
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        key: true,
+        name: true,
+        description: true,
+        isSystem: true,
+        _count: { select: { permissions: true, users: true } },
+      },
+    }),
+  ]);
 
   const columns: Column<RoleRow>[] = [
     {
       key: "name",
-      header: "Role",
-      render: (role) => (
-        <>
-          <div style={{ fontWeight: 560 }}>{role.name}</div>
-          {role.description ? (
-            <div className="muted" style={{ fontSize: 12.5, maxWidth: "58ch" }}>
-              {role.description}
+      header: t("columns.role"),
+      render: (role) => {
+        const nameKey = seededRoleKey(role);
+        const descriptionKey = seededRoleDescriptionKey(role);
+        const description = descriptionKey
+          ? t(`defaultDescriptions.${descriptionKey}`)
+          : role.description;
+
+        return (
+          <>
+            <div style={{ fontWeight: 560 }}>
+              {nameKey ? t(`defaultNames.${nameKey}`) : role.name}
             </div>
-          ) : null}
-        </>
-      ),
+            {description ? (
+              <div className="muted" style={{ fontSize: 12.5, maxWidth: "58ch" }}>
+                {description}
+              </div>
+            ) : null}
+          </>
+        );
+      },
     },
     {
       key: "permissions",
-      header: "Permissions",
+      header: t("columns.permissions"),
       numeric: true,
       render: (role) => role._count.permissions,
     },
-    { key: "users", header: "Users", numeric: true, render: (role) => role._count.users },
+    {
+      key: "users",
+      header: t("columns.users"),
+      numeric: true,
+      render: (role) => role._count.users,
+    },
     {
       key: "actions",
       header: "",
       render: (role) => (
         <Link href={`/admin/roles/${role.id}`} className="btn-link">
-          {canManage ? "Edit permissions" : "View permissions"}
+          {canManage ? t("edit") : t("view")}
         </Link>
       ),
     },
@@ -67,11 +93,8 @@ export default async function RolesPage() {
     <>
       <header className="page-header">
         <div>
-          <h1>Roles &amp; permissions</h1>
-          <p className="page-subtitle">
-            Permissions are stored as data, not code. Changes take effect on each affected
-            user&rsquo;s next request &mdash; nobody needs to sign out and back in.
-          </p>
+          <h1>{t("title")}</h1>
+          <p className="page-subtitle">{t("subtitle")}</p>
         </div>
       </header>
 

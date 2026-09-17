@@ -10,7 +10,7 @@ import {
 
 describe("validatePassword", () => {
   it("accepts a compliant password", () => {
-    expect(validatePassword("DrivenX2026Fleet")).toEqual({ valid: true, errors: [] });
+    expect(validatePassword("DrivenX2026Fleet")).toEqual({ valid: true, errors: [], issues: [] });
   });
 
   it("reports every failure at once, not just the first", () => {
@@ -46,6 +46,33 @@ describe("validatePassword", () => {
 
   it("accepts a 12-character password exactly on the boundary", () => {
     expect(validatePassword("Abcdefghij12").valid).toBe(true);
+  });
+});
+
+describe("validatePassword issue codes", () => {
+  it("reports each failure as a code with its parameters, for translated display", () => {
+    expect(validatePassword("short").issues).toEqual([
+      { code: "tooShort", params: { min: 12 } },
+      { code: "missingUppercase" },
+      { code: "missingDigit" },
+    ]);
+  });
+
+  it("keeps the codes and the English messages in step", () => {
+    const result = validatePassword("ALLUPPERCASE");
+    expect(result.issues.map((issue) => issue.code)).toEqual(["missingLowercase", "missingDigit"]);
+    expect(result.errors).toHaveLength(result.issues.length);
+  });
+
+  it("carries the limit on an over-long password", () => {
+    expect(validatePassword(`Aa1${"x".repeat(200)}`).issues).toContainEqual({
+      code: "tooLong",
+      params: { max: 128 },
+    });
+  });
+
+  it("flags a common password", () => {
+    expect(validatePassword("Passw0rd123").issues.map((issue) => issue.code)).toContain("tooCommon");
   });
 });
 

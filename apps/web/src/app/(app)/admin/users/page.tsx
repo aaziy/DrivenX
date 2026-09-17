@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
+import { getFormatter, getTranslations } from "next-intl/server";
+
 import { prisma } from "@drivenx/db";
 
 import { DataTable, type Column } from "@/components/data-table";
+import { seededRoleKey } from "@/i18n/labels";
 import { requirePermission } from "@/lib/auth";
 
 import { CreateUserForm } from "./create-user-form";
 import { ToggleActive } from "./toggle-active";
 
-export const metadata = { title: "Users · DrivenX" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("users");
+  return { title: `${t("title")} · DrivenX` };
+}
+
+type RoleSummary = { key: string; name: string; isSystem: boolean };
 
 type UserRow = {
   id: string;
@@ -14,14 +23,18 @@ type UserRow = {
   email: string;
   isActive: boolean;
   lastLoginAt: Date | null;
-  roles: { role: { name: string } }[];
+  roles: { role: RoleSummary }[];
 };
 
 export default async function UsersPage() {
   const principal = await requirePermission("user.view");
   const canManage = principal.permissions.has("user.manage");
 
-  const [users, roles] = await Promise.all([
+  const [t, tc, tr, format, users, roles] = await Promise.all([
+    getTranslations("users"),
+    getTranslations("common"),
+    getTranslations("roles"),
+    getFormatter(),
     prisma.user.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "asc" },
@@ -31,36 +44,45 @@ export default async function UsersPage() {
         email: true,
         isActive: true,
         lastLoginAt: true,
-        roles: { select: { role: { select: { name: true } } } },
+        roles: { select: { role: { select: { key: true, name: true, isSystem: true } } } },
       },
     }),
-    prisma.role.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.role.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, key: true, name: true, isSystem: true },
+    }),
   ]);
+
+  // A seeded role is shown in the reader's language; one the client renamed is theirs.
+  const roleLabel = (role: RoleSummary) => {
+    const key = seededRoleKey(role);
+    return key ? tr(`defaultNames.${key}`) : role.name;
+  };
 
   const columns: Column<UserRow>[] = [
     {
       key: "name",
-      header: "Name",
+      header: t("columns.name"),
       render: (user) => (
         <>
           <div style={{ fontWeight: 560 }}>{user.fullName}</div>
           <div className="muted" style={{ fontSize: 12.5 }}>
-            {user.email}
+            <bdi>{user.email}</bdi>
           </div>
         </>
       ),
     },
     {
       key: "roles",
-      header: "Roles",
+      header: t("columns.roles"),
       render: (user) =>
         user.roles.length === 0 ? (
-          <span className="muted">None</span>
+          <span className="muted">{tc("none")}</span>
         ) : (
           <span className="row" style={{ flexWrap: "wrap", gap: 5 }}>
             {user.roles.map((assignment) => (
-              <span key={assignment.role.name} className="badge">
-                {assignment.role.name}
+              <span key={assignment.role.key} className="badge">
+                {roleLabel(assignment.role)}
               </span>
             ))}
           </span>
@@ -68,23 +90,23 @@ export default async function UsersPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("columns.status"),
       render: (user) => (
         <span className={user.isActive ? "badge badge-success" : "badge badge-danger"}>
-          {user.isActive ? "Active" : "Deactivated"}
+          {user.isActive ? t("status.active") : t("status.deactivated")}
         </span>
       ),
     },
     {
       key: "lastLogin",
-      header: "Last sign-in",
+      header: t("columns.lastSignIn"),
       render: (user) =>
         user.lastLoginAt ? (
           <time dateTime={user.lastLoginAt.toISOString()}>
-            {user.lastLoginAt.toLocaleString("en-GB", { timeZone: "Asia/Dubai" })}
+            {format.dateTime(user.lastLoginAt, { dateStyle: "short", timeStyle: "short" })}
           </time>
         ) : (
-          <span className="muted">Never</span>
+          <span className="muted">{t("lastSignInNever")}</span>
         ),
     },
   ];
@@ -96,7 +118,7 @@ export default async function UsersPage() {
       render: (user) =>
         user.id === principal.id ? (
           <span className="muted" style={{ fontSize: 12.5 }}>
-            You
+            {tc("you")}
           </span>
         ) : (
           <ToggleActive userId={user.id} isActive={user.isActive} />
@@ -108,11 +130,8 @@ export default async function UsersPage() {
     <>
       <header className="page-header">
         <div>
-          <h1>Users</h1>
-          <p className="page-subtitle">
-            Staff accounts and their roles. Deactivating an account takes effect on that
-            person&rsquo;s next request.
-          </p>
+          <h1>{t("title")}</h1>
+          <p className="page-subtitle">{t("subtitle")}</p>
         </div>
       </header>
 
@@ -120,24 +139,26 @@ export default async function UsersPage() {
         {canManage ? (
           <div className="card">
             <div className="card-header">
-              <h2>Add a user</h2>
+              <h2>{t("addTitle")}</h2>
             </div>
             <div className="card-body">
-              <CreateUserForm roles={roles} />
+              <CreateUserForm
+                roles={roles.map((role) => ({ id: role.id, label: roleLabel(role) }))}
+              />
             </div>
           </div>
         ) : null}
 
         <div className="card">
           <div className="card-header">
-            <h2>All users</h2>
-            <span className="muted">{users.length} total</span>
+            <h2>{t("allTitle")}</h2>
+            <span className="muted">{tc("total", { count: users.length })}</span>
           </div>
           <DataTable
             rows={users}
             columns={columns}
             rowKey={(user) => user.id}
-            emptyTitle="No users yet"
+            emptyTitle={t("emptyTitle")}
           />
         </div>
       </div>

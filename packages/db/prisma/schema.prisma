@@ -29,6 +29,15 @@ datasource db {
 // Identity
 // ---------------------------------------------------------------------------
 
+/// Interface language. Stored on the account so the choice follows the person to any
+/// device; a cookie covers the sign-in page, before anyone is identified.
+enum Locale {
+  en
+  ar
+
+  @@map("locale")
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -43,6 +52,9 @@ model User {
   lockedUntil  DateTime? @map("locked_until")
 
   passwordChangedAt DateTime @default(now()) @map("password_changed_at")
+
+  /// Interface language: English, or Arabic with a right-to-left layout.
+  locale Locale @default(en)
 
   roles     UserRole[]
   auditLogs AuditLog[]

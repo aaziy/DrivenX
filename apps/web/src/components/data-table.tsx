@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 /**
@@ -30,13 +31,15 @@ export function DataTable<Row>({
   rows,
   columns,
   rowKey,
-  emptyTitle = "Nothing here yet",
+  emptyTitle,
   emptyHint,
 }: DataTableProps<Row>) {
+  const t = useTranslations("common");
+
   if (rows.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-state-title">{emptyTitle}</div>
+        <div className="empty-state-title">{emptyTitle ?? t("emptyTitle")}</div>
         {emptyHint ? <div>{emptyHint}</div> : null}
       </div>
     );

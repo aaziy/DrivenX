@@ -73,9 +73,29 @@ const BANNED_PASSWORDS = new Set([
   "1234567890ab",
 ]);
 
+/** A failed password rule as a code, for callers that show it in their own language. */
+export type PasswordIssueCode =
+  | "tooShort"
+  | "tooLong"
+  | "missingLowercase"
+  | "missingUppercase"
+  | "missingDigit"
+  | "tooCommon";
+
+export interface PasswordIssue {
+  code: PasswordIssueCode;
+  params?: Record<string, number>;
+}
+
 export interface PasswordValidationResult {
   valid: boolean;
+  /** English sentences, for logs, scripts and tests. */
   errors: string[];
+  /**
+   * The same failures as codes, in the same order. The web app renders these in English
+   * or Arabic; a fixed English sentence cannot be shown to someone reading Arabic.
+   */
+  issues: PasswordIssue[];
 }
 
 export function validatePassword(
@@ -83,27 +103,39 @@ export function validatePassword(
   policy: PasswordPolicy = DEFAULT_PASSWORD_POLICY,
 ): PasswordValidationResult {
   const errors: string[] = [];
+  const issues: PasswordIssue[] = [];
+
+  const fail = (issue: PasswordIssue, message: string) => {
+    issues.push(issue);
+    errors.push(message);
+  };
 
   if (password.length < policy.minLength) {
-    errors.push(`Password must be at least ${policy.minLength} characters.`);
+    fail(
+      { code: "tooShort", params: { min: policy.minLength } },
+      `Password must be at least ${policy.minLength} characters.`,
+    );
   }
   if (password.length > policy.maxLength) {
-    errors.push(`Password must be no more than ${policy.maxLength} characters.`);
+    fail(
+      { code: "tooLong", params: { max: policy.maxLength } },
+      `Password must be no more than ${policy.maxLength} characters.`,
+    );
   }
   if (policy.requireLowercase && !/[a-z]/.test(password)) {
-    errors.push("Password must contain a lowercase letter.");
+    fail({ code: "missingLowercase" }, "Password must contain a lowercase letter.");
   }
   if (policy.requireUppercase && !/[A-Z]/.test(password)) {
-    errors.push("Password must contain an uppercase letter.");
+    fail({ code: "missingUppercase" }, "Password must contain an uppercase letter.");
   }
   if (policy.requireDigit && !/\d/.test(password)) {
-    errors.push("Password must contain a digit.");
+    fail({ code: "missingDigit" }, "Password must contain a digit.");
   }
   if (BANNED_PASSWORDS.has(password.toLowerCase())) {
-    errors.push("That password is too common. Choose something less predictable.");
+    fail({ code: "tooCommon" }, "That password is too common. Choose something less predictable.");
   }
 
-  return { valid: errors.length === 0, errors };
+  return { valid: issues.length === 0, errors, issues };
 }
 
 // ---------------------------------------------------------------------------
