@@ -59,6 +59,11 @@ model User {
   roles     UserRole[]
   auditLogs AuditLog[]
 
+  createdCustomers  Customer[]
+  createdSuppliers  Supplier[]
+  uploadedDocuments Document[]
+  notifications     Notification[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -175,4 +180,235 @@ model AuditLog {
   @@index([actorId, createdAt])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Parties (SOW §5, §6) — milestone 1A
+// ---------------------------------------------------------------------------
+
+enum PartyStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+
+  @@map("party_status")
+}
+
+model Customer {
+  id     String      @id @default(cuid())
+  /// Human-facing customer number, shown on contracts and searched on (§16).
+  code   String      @unique
+  status PartyStatus @default(ACTIVE)
+
+  fullName    String  @map("full_name")
+  mobile      String
+  email       String?
+  dateOfBirth DateTime? @map("date_of_birth")
+  nationality String?
+  addressLine String? @map("address_line")
+  city        String?
+
+  emergencyName  String? @map("emergency_name")
+  emergencyPhone String? @map("emergency_phone")
+  notes          String?
+
+  createdById String? @map("created_by_id")
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Global search (§16) hits name and mobile constantly. A trigram index for
+  // partial matches arrives with P1A-09, as raw SQL Prisma cannot express.
+  @@index([mobile])
+  @@index([fullName])
+  @@index([status])
+  @@map("customers")
+}
+
+model Supplier {
+  id     String      @id @default(cuid())
+  code   String      @unique
+  status PartyStatus @default(ACTIVE)
+
+  companyName   String  @map("company_name")
+  contactPerson String? @map("contact_person")
+  phone         String?
+  email         String?
+  address       String?
+
+  tradeLicenseNo String? @map("trade_license_no")
+  /// Tax registration number. The supplier's own, not DrivenX's.
+  trn            String?
+
+  bankName        String? @map("bank_name")
+  bankAccountName String? @map("bank_account_name")
+  iban            String?
+  notes           String?
+
+  createdById String? @map("created_by_id")
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([companyName])
+  @@index([status])
+  @@map("suppliers")
+}
+
+// ---------------------------------------------------------------------------
+// Documents (SOW §6, §11, §13, §16) — one engine, not eight
+// ---------------------------------------------------------------------------
+
+/// What a document can belong to. Vehicles, contracts and policies arrive in
+/// 1B and 1D; the enum carries them now so adding those models needs no
+/// migration of this one.
+enum DocumentOwnerType {
+  CUSTOMER
+  SUPPLIER
+  VEHICLE
+  CONTRACT
+  INSURANCE_POLICY
+
+  @@map("document_owner_type")
+}
+
+enum DocumentStatus {
+  VALID
+  EXPIRING
+  EXPIRED
+  REPLACED
+
+  @@map("document_status")
+}
+
+/// Configurable per §17: the client adds a document type without a release.
+model DocumentCategory {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+
+  /// Which owners this category may be attached to, so the upload form offers
+  /// passport for a customer and trade licence for a supplier.
+  appliesTo DocumentOwnerType[] @map("applies_to")
+
+  requiresExpiry Boolean @default(true) @map("requires_expiry")
+  /// Days before expiry to warn, per §6. Overridable per document.
+  defaultReminderOffsets Int[] @default([60, 30, 15, 7]) @map("default_reminder_offsets")
+
+  /// Seeded categories are protected from deletion, not from editing.
+  isSystem Boolean @default(false) @map("is_system")
+
+  documents Document[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("document_categories")
+}
+
+/// Polymorphic on purpose (PROJECT_PLAN.md §3.3): Emirates ID, licence,
+/// passport, visa, trade licence, mulkiya, policy and signed contract are all
+/// the same shape, and one expiry job covers every one of them.
+///
+/// The cost is no foreign key on the owner — the database cannot stop a row
+/// pointing at a deleted customer. Deletions go through the application, which
+/// removes documents with their owner, and (ownerType, ownerId) is indexed so
+/// an orphan check is cheap to run.
+model Document {
+  id         String            @id @default(cuid())
+  ownerType  DocumentOwnerType @map("owner_type")
+  ownerId    String            @map("owner_id")
+  categoryId String            @map("category_id")
+  category   DocumentCategory  @relation(fields: [categoryId], references: [id])
+
+  documentNumber String?   @map("document_number")
+  issueDate      DateTime? @map("issue_date")
+  expiryDate     DateTime? @map("expiry_date")
+
+  /// Key in object storage. The original filename is kept separately: it is the
+  /// user's text and must never become part of a storage path.
+  fileKey   String @map("file_key")
+  fileName  String @map("file_name")
+  mimeType  String @map("mime_type")
+  sizeBytes Int    @map("size_bytes")
+
+  status          DocumentStatus @default(VALID)
+  reminderOffsets Int[]          @map("reminder_offsets")
+  notes           String?
+
+  /// Set when a newer document replaces this one, so history is kept rather
+  /// than overwritten.
+  replacedById String?   @map("replaced_by_id")
+  replacedAt   DateTime? @map("replaced_at")
+
+  uploadedById String? @map("uploaded_by_id")
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([ownerType, ownerId])
+  // Drives the nightly expiry scan, which reads by date across every owner type.
+  @@index([expiryDate, status])
+  @@index([documentNumber])
+  @@map("documents")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications (SOW §16)
+// ---------------------------------------------------------------------------
+
+enum NotificationType {
+  DOCUMENT_EXPIRY
+  INSURANCE_EXPIRY
+  PAYMENT_DUE
+  PAYMENT_OVERDUE
+  CONTRACT_EXPIRY
+  MAINTENANCE_DUE
+  SUPPLIER_PAYMENT_DUE
+
+  @@map("notification_type")
+}
+
+enum NotificationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+
+  @@map("notification_severity")
+}
+
+model Notification {
+  id       String               @id @default(cuid())
+  type     NotificationType
+  severity NotificationSeverity @default(INFO)
+
+  title String
+  body  String
+
+  entityType String    @map("entity_type")
+  entityId   String    @map("entity_id")
+  dueOn      DateTime? @map("due_on")
+
+  /// Null means everyone who holds the relevant permission sees it.
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  readAt DateTime? @map("read_at")
+
+  /// The nightly scan runs every day and would otherwise raise the same warning
+  /// every day. One key per document per reminder offset makes a repeat run a
+  /// no-op, which is what keeps the notification list worth reading.
+  dedupeKey String @unique @map("dedupe_key")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, readAt])
+  @@index([type, dueOn])
+  @@map("notifications")
 }
