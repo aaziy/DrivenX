@@ -70,12 +70,13 @@ These run on every commit from 1D onward. Any failure is a build-breaker, no exc
 | INV-1 | For any contract: `Σ installments.amountFils == Σ contractCharges expanded` — no rounding drift |
 | INV-2 | For any payment: `Σ allocations.amountFils == payment.amountFils` |
 | INV-3 | For any installment: `paidFils == Σ its allocations` and `paidFils <= amountFils` |
-| INV-4 | For any contract: `Σ ledger REVENUE == Σ installments.amountFils` (excluding deposits) |
+| INV-4 | For any contract: `Σ ledger REVENUE == Σ instalments.netFils` (excluding deposits). VAT is collected for the FTA and is never revenue |
 | INV-5 | Security deposits never appear in any `revenue.*` ledger category |
 | INV-6 | Dashboard monthly profit == `Σ ledger revenue − Σ ledger cost` for that `periodMonth` |
 | INV-7 | Ledger is append-only — no `UPDATE`/`DELETE` reaches `ledger_entries`; corrections carry `reversesId` |
 | INV-8 | Vehicle profitability == `Σ ledger entries WHERE vehicleId` — no orphaned costs |
 | INV-9 | Every `ACTIVE` contract has exactly one `RENTED` or `LEASE_TO_OWN` vehicle, and vice versa |
+| INV-10 | For any instalment: `grossFils == netFils + vatFils`, and `vatFils` is the rate stored on that instalment applied to `netFils` — so a future rate change cannot rewrite an issued invoice |
 
 INV-1 is the one that quietly destroys projects. Split AED 3,400 across 36 months naively and you
 lose fils to rounding; the contract total no longer matches the sum of its installments; three months

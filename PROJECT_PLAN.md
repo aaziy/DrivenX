@@ -56,7 +56,8 @@ a stored field. Adding brokerage later = adding two ledger categories, not a mig
 | File storage | S3-compatible behind an interface | RustFS locally and in CI, pinned (replaced MinIO when its images left Docker Hub); swap the endpoint for prod, no code change |
 | Background jobs | Postgres-backed queue + cron worker | No Redis dependency until we actually need one |
 | Money | `BigInt` fils (1 AED = 100 fils) | Never floats. See §3.1 |
-| Deployment | **Deferred** — Docker Compose is the dev target | Decide before Phase 0 closes |
+| VAT | 5%, added to a net price; stored net, invoiced gross (decided 2026-09-17) | VAT collected belongs to the FTA, so it never reaches a revenue category. Booking it as income would overstate every profit report by roughly 5% |
+| Deployment | Hostinger VPS (KVM 2), Docker Compose (decided 2026-09-17) | No UAE data-residency requirement, so a plain VPS running our own stack is the cheapest thing DrivenX can fully own |
 
 ---
 
@@ -378,17 +379,19 @@ Answer before the dependent phase starts.
 
 | # | Question | Blocks | Why it matters |
 |---|---|---|---|
-| 1 | **VAT.** Is 5% UAE VAT charged on rentals? Do invoices need TRN, tax-invoice numbering and a VAT return report? | 1D | §5 mentions TRN only for suppliers. VAT is invasive to retrofit — it touches every invoice, installment and report. Highest-priority question. |
+| 1 | **VAT.** **Answered 2026-09-17: 5% applies, added on top of the base price, and the invoiced total is VAT-inclusive.** Contract amounts are therefore stored net, VAT is derived from them, and the customer is billed the gross figure. VAT collected is a liability owed to the FTA, never revenue. | 1D | Settled. The SOW's worked examples stay valid because its figures are net: 3,400 net + 170 VAT = 3,570 charged, margin still 1,100. |
 | 2 | **Insurance cost vs charge.** §11 stores what the customer is charged; §14 requires "insurance cost" as a cost line. Do we record what DrivenX pays the provider separately? | 1D | Without it, insurance shows as 100% margin and every profit number is wrong. |
 | 3 | **Lease-to-own terms.** Does ownership transfer at term end? Is there a buyout / balloon amount? What happens on early termination or default? | 1D | LTO is a named contract type with zero defined mechanics in the SOW. |
 | 4 | **Security deposit.** Refundable liability (our assumption) or recognised as revenue? Partial forfeiture rules on damage? | 1D | See §5. Affects every profit figure. |
 | 5 | **Excess mileage.** Charged monthly on overage, or reconciled once at return? | 1D / 2 |Determines whether it's a recurring charge or a settlement line. |
 | 6 | **Fines.** Default payer — customer or company? Is recovery automatic on the next installment? | 2 | §13 has a `payer` field but no policy. |
-| 7 | **Arabic / RTL.** **Answered 2026-09-16:** English and Arabic, switchable per person, Arabic mirrored right-to-left. Arabic contracts and invoices still to confirm. | 0 / 1D | Built in before 1A. PDF generation in 1D must support Arabic script. |
+| 7 | **Arabic / RTL.** **Answered 2026-09-16:** English and Arabic, switchable per person, Arabic mirrored right-to-left. Built and shipped. Arabic contracts and invoices still to confirm. | 0 / 1D | **Risk:** the Arabic text is an unreviewed draft — the client accepted it for now (2026-09-17), but financial and legal wording needs a fluent reviewer before real customers see it. PDF generation in 1D must support Arabic script. |
 | 8 | **Data migration.** Are there existing spreadsheets or a system to import vehicles, customers and live contracts? | 1 | Import tooling is unscoped work that must be estimated separately. |
 | 9 | **Payment methods.** Cash, bank transfer, cheque, card? Any bank reconciliation or cheque-tracking requirement? | 1D | §10 says "payment method" with no enumeration. Post-dated cheques are common in UAE leasing and would need their own tracking. |
 | 10 | **Concurrent users & fleet size** at launch and at 2-year projection. | 0 | Sets the infrastructure sizing decision we deferred. |
-| 11 | **Hosting decision.** Hostinger VPS (KVM 2) is viable; Hostinger Business shared hosting is not (no PostgreSQL, no storage server, no background jobs). **Still open:** must customer data stay in the UAE? Hostinger has no UAE data centre. | 0 | Was due before Phase 0 closed. Blocks staging and client testing. |
+| 11 | **Hosting decision.** **Answered 2026-09-17: data need not stay in the UAE.** Target is a Hostinger VPS (KVM 2) running the same Docker stack as development; Hostinger Business shared hosting was ruled out (no PostgreSQL, no storage server, no background jobs). **Remaining:** account created in DrivenX's name (§20), and who maintains the server after handover. | 0 | Staging and client testing wait on the account existing. |
+| 12 | **Input VAT on supplier invoices.** Is the 5% DrivenX pays its suppliers recoverable? If so, vehicle cost and profit must use the net figure rather than the gross. | 1D | Raised 2026-09-17 by the VAT answer. Assuming either way puts profit out by about 5% of cost. |
+| 13 | **Tax invoice details.** DrivenX's TRN, and the invoice numbering the FTA expects on a tax invoice. | 1D | Affects the invoice layout, not the calculations. |
 
 ---
 
