@@ -77,6 +77,28 @@ export async function expectPermissionRowsLaidOut(page: Page): Promise<void> {
   expect(list?.width ?? 0).toBeGreaterThan(200);
 }
 
+/**
+ * Every control in a form is the same height.
+ *
+ * Guards a defect nothing else catches: the stylesheet lists the input types it styles,
+ * so a field added with a type that is not on the list — `tel`, `date`, `number` —
+ * renders as a bare browser default next to styled siblings. Every test still passes;
+ * the form simply looks broken. Heights diverge sharply when it happens.
+ */
+export async function expectFormControlsConsistent(page: Page, formSelector: string) {
+  const boxes = await page.locator(`${formSelector} input, ${formSelector} select`).all();
+  const heights: number[] = [];
+
+  for (const control of boxes) {
+    if (!(await control.isVisible())) continue;
+    const box = await control.boundingBox();
+    if (box) heights.push(box.height);
+  }
+
+  expect(heights.length).toBeGreaterThan(3);
+  expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(6);
+}
+
 /** Set one permission on a role and save. Returns true if anything changed. */
 export async function setRolePermission(
   page: Page,
