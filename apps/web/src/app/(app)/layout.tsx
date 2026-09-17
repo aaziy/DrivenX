@@ -28,6 +28,13 @@ const NAV_DEFINITION: Array<{
     items: [{ href: "/", labelKey: "dashboard", permission: "dashboard.view" }],
   },
   {
+    labelKey: "relationships",
+    items: [
+      { href: "/customers", labelKey: "customers", permission: "customer.view" },
+      { href: "/suppliers", labelKey: "suppliers", permission: "supplier.view" },
+    ],
+  },
+  {
     labelKey: "administration",
     items: [
       { href: "/admin/users", labelKey: "users", permission: "user.view" },

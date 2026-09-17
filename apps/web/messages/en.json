@@ -25,6 +25,9 @@
     "mainLabel": "Main",
     "overview": "Overview",
     "dashboard": "Dashboard",
+    "relationships": "Customers & suppliers",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
     "administration": "Administration",
     "users": "Users",
     "roles": "Roles & permissions",
@@ -58,6 +61,146 @@
     "notYetTitle": "What is not here yet",
     "notYetBody1": "These tiles deliberately show only what exists. The KPIs from SOW §3 — fleet counts, monthly revenue, cost, profit, customer outstanding, supplier payables, expiring documents — are milestone 1E, and each will be an aggregation over the ledger rather than a stored column.",
     "notYetBody2": "Showing placeholder numbers now would make the system look further along than it is."
+  },
+  "customers": {
+    "title": "Customers",
+    "subtitle": "Everyone who rents or leases a vehicle. Identity documents are attached to each customer and watched for expiry.",
+    "addTitle": "Add a customer",
+    "allTitle": "All customers",
+    "emptyTitle": "No customers yet",
+    "emptyFiltered": "No customers match that search",
+    "created": "Added {name}.",
+    "updated": "Changes saved.",
+    "pageOf": "Page {page} of {pageCount}",
+    "previous": "Previous",
+    "next": "Next",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "mobile": "Mobile",
+      "status": "Status",
+      "added": "Added"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "blacklisted": "Blacklisted"
+    },
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Name, code, mobile or email",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "apply": "Search"
+    },
+    "form": {
+      "fullName": "Full name",
+      "mobile": "Mobile",
+      "mobileHint": "UAE mobile, for example 050 123 4567.",
+      "email": "Email",
+      "dateOfBirth": "Date of birth",
+      "nationality": "Nationality",
+      "city": "City",
+      "addressLine": "Address",
+      "emergencyName": "Emergency contact",
+      "emergencyPhone": "Emergency phone",
+      "notes": "Notes",
+      "submit": "Add customer",
+      "submitting": "Adding…",
+      "save": "Save changes",
+      "saving": "Saving…"
+    },
+    "detail": {
+      "back": "← Back to customers",
+      "editTitle": "Details",
+      "readOnly": "You do not have permission to edit this customer.",
+      "statusTitle": "Status",
+      "statusHint": "A blacklisted customer stays on file and keeps their history, but should not be given a new contract.",
+      "changeStatus": "Change status",
+      "saving": "Saving…",
+      "dangerTitle": "Remove this customer",
+      "dangerHint": "The customer is hidden from lists and search. Contracts, payments and history are kept.",
+      "delete": "Remove customer",
+      "deleting": "Removing…"
+    },
+    "errors": {
+      "fullName": "Enter the customer’s full name.",
+      "mobile": "Enter a UAE mobile number, for example 050 123 4567.",
+      "email": "Enter a valid email address.",
+      "notFound": "That customer no longer exists."
+    }
+  },
+  "suppliers": {
+    "title": "Suppliers",
+    "subtitle": "Companies DrivenX leases vehicles from. Their bank details are used for supplier payments.",
+    "addTitle": "Add a supplier",
+    "allTitle": "All suppliers",
+    "emptyTitle": "No suppliers yet",
+    "emptyFiltered": "No suppliers match that search",
+    "created": "Added {name}.",
+    "updated": "Changes saved.",
+    "pageOf": "Page {page} of {pageCount}",
+    "previous": "Previous",
+    "next": "Next",
+    "columns": {
+      "code": "Code",
+      "company": "Company",
+      "contact": "Contact",
+      "status": "Status",
+      "added": "Added"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "blacklisted": "Blacklisted"
+    },
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Company, code, contact, TRN or phone",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "apply": "Search"
+    },
+    "form": {
+      "companyName": "Company name",
+      "contactPerson": "Contact person",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "tradeLicenseNo": "Trade licence number",
+      "trn": "TRN",
+      "trnHint": "15 digits, from the supplier’s VAT certificate.",
+      "bankName": "Bank",
+      "bankAccountName": "Account name",
+      "iban": "IBAN",
+      "ibanHint": "Checked before it is saved — a mistyped IBAN fails at payment time.",
+      "notes": "Notes",
+      "submit": "Add supplier",
+      "submitting": "Adding…",
+      "save": "Save changes",
+      "saving": "Saving…"
+    },
+    "detail": {
+      "back": "← Back to suppliers",
+      "editTitle": "Details",
+      "readOnly": "You do not have permission to edit this supplier.",
+      "statusTitle": "Status",
+      "statusHint": "An inactive supplier stays on file with their history, but should not be used for a new vehicle.",
+      "changeStatus": "Change status",
+      "saving": "Saving…",
+      "dangerTitle": "Remove this supplier",
+      "dangerHint": "The supplier is hidden from lists and search. Vehicles, contracts and payment history are kept.",
+      "delete": "Remove supplier",
+      "deleting": "Removing…"
+    },
+    "errors": {
+      "companyName": "Enter the company name.",
+      "phone": "Enter a valid phone number.",
+      "email": "Enter a valid email address.",
+      "trn": "A TRN is 15 digits.",
+      "iban": "That IBAN is not valid. Check it against the supplier’s bank letter.",
+      "notFound": "That supplier no longer exists."
+    }
   },
   "users": {
     "title": "Users",
