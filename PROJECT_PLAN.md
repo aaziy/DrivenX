@@ -113,8 +113,9 @@ So the contract owns a list of charge definitions:
 
 ```
 contract_charges
-  contract_id, charge_type      -- monthly_rental | annual_insurance | security_deposit
-                                -- admin_fee | excess_mileage | buyout | other
+  contract_id, charge_type      -- monthly_rental | annual_insurance | down_payment
+                                -- admin_fee | buyout | other
+                                -- excess mileage is settled at return, not scheduled here
   amount_fils, recurrence       -- once | monthly | annual
   starts_on, occurrences
 ```
@@ -380,13 +381,13 @@ Answer before the dependent phase starts.
 | # | Question | Blocks | Why it matters |
 |---|---|---|---|
 | 1 | **VAT.** **Answered 2026-09-17: 5% applies, added on top of the base price, and the invoiced total is VAT-inclusive.** Contract amounts are therefore stored net, VAT is derived from them, and the customer is billed the gross figure. VAT collected is a liability owed to the FTA, never revenue. | 1D | Settled. The SOW's worked examples stay valid because its figures are net: 3,400 net + 170 VAT = 3,570 charged, margin still 1,100. |
-| 2 | **Insurance cost vs charge.** §11 stores what the customer is charged; §14 requires "insurance cost" as a cost line. Do we record what DrivenX pays the provider separately? | 1D | Without it, insurance shows as 100% margin and every profit number is wrong. |
-| 3 | **Lease-to-own terms.** Does ownership transfer at term end? Is there a buyout / balloon amount? What happens on early termination or default? | 1D | LTO is a named contract type with zero defined mechanics in the SOW. |
-| 4 | **Security deposit.** Refundable liability (our assumption) or recognised as revenue? Partial forfeiture rules on damage? | 1D | See §5. Affects every profit figure. |
-| 5 | **Excess mileage.** Charged monthly on overage, or reconciled once at return? | 1D / 2 |Determines whether it's a recurring charge or a settlement line. |
+| 2 | **Insurance cost vs charge.** **Partly answered 2026-09-17:** the premium depends on the car, so insurance is priced per vehicle rather than at one flat rate. **Still open:** what DrivenX pays the insurer for a given car. | 1D | The policy record carries both a charge and a cost. While the cost is blank, insurance reports as 100% margin and profit is overstated. |
+| 3 | **Lease-to-own terms.** **Answered 2026-09-17:** ownership transfers at the end of the term against a final payment of AED 1,000. **Still open:** early termination or default, and whether VAT applies to that final payment. | 1D | A one-off `BUYOUT` charge at the end of the schedule. Early termination is a real gap: a customer who stops paying at month 20 of 36 currently has no defined outcome. |
+| 4 | **Security deposit.** **Answered 2026-09-17: there are none.** A down payment is sometimes taken at the start instead. It is not refunded, so it is revenue on its charge date rather than a liability — the opposite of what this plan assumed. | 1D | Corrected in §3.4 and §5. `SECURITY_DEPOSIT` becomes `DOWN_PAYMENT`, and INV-5 changes with it. |
+| 5 | **Excess mileage.** **Answered 2026-09-17: settled when the car comes back.** | 2 | Not a recurring contract charge. It is a line in the final settlement at return, beside damages and any outstanding balance. |
 | 6 | **Fines.** Default payer — customer or company? Is recovery automatic on the next installment? | 2 | §13 has a `payer` field but no policy. |
 | 7 | **Arabic / RTL.** **Answered 2026-09-16:** English and Arabic, switchable per person, Arabic mirrored right-to-left. Built and shipped. Arabic contracts and invoices still to confirm. | 0 / 1D | **Risk:** the Arabic text is an unreviewed draft — the client accepted it for now (2026-09-17), but financial and legal wording needs a fluent reviewer before real customers see it. PDF generation in 1D must support Arabic script. |
-| 8 | **Data migration.** Are there existing spreadsheets or a system to import vehicles, customers and live contracts? | 1 | Import tooling is unscoped work that must be estimated separately. |
+| 8 | **Data migration.** **Answered 2026-09-17: nothing to import.** | 1 | No import tooling, and no separate estimate for it. Customers, suppliers and vehicles are entered as they arrive. |
 | 9 | **Payment methods.** Cash, bank transfer, cheque, card? Any bank reconciliation or cheque-tracking requirement? | 1D | §10 says "payment method" with no enumeration. Post-dated cheques are common in UAE leasing and would need their own tracking. |
 | 10 | **Concurrent users & fleet size** at launch and at 2-year projection. | 0 | Sets the infrastructure sizing decision we deferred. |
 | 11 | **Hosting decision.** **Answered 2026-09-17: data need not stay in the UAE.** Target is a Hostinger VPS (KVM 2) running the same Docker stack as development; Hostinger Business shared hosting was ruled out (no PostgreSQL, no storage server, no background jobs). **Remaining:** account created in DrivenX's name (§20), and who maintains the server after handover. | 0 | Staging and client testing wait on the account existing. |

@@ -71,7 +71,7 @@ These run on every commit from 1D onward. Any failure is a build-breaker, no exc
 | INV-2 | For any payment: `Σ allocations.amountFils == payment.amountFils` |
 | INV-3 | For any installment: `paidFils == Σ its allocations` and `paidFils <= amountFils` |
 | INV-4 | For any contract: `Σ ledger REVENUE == Σ instalments.netFils` (excluding deposits). VAT is collected for the FTA and is never revenue |
-| INV-5 | Security deposits never appear in any `revenue.*` ledger category |
+| INV-5 | A contract's consideration is its down payment plus its scheduled charges plus any buyout, all net of VAT. Nothing on a contract is a refundable liability — the client takes no deposits (answered 2026-09-17) |
 | INV-6 | Dashboard monthly profit == `Σ ledger revenue − Σ ledger cost` for that `periodMonth` |
 | INV-7 | Ledger is append-only — no `UPDATE`/`DELETE` reaches `ledger_entries`; corrections carry `reversesId` |
 | INV-8 | Vehicle profitability == `Σ ledger entries WHERE vehicleId` — no orphaned costs |
@@ -273,7 +273,7 @@ The highest-risk milestone. Everything financial converges here.
 
 | ID | Task |
 |---|---|
-| P1D-01 | `Contract` model: number, customer, vehicle, supplier, type, dates, duration, rental, deposit, mileage allowance, excess rate, payment day, terms, status |
+| P1D-01 | Contract CRUD: number, customer, vehicle, supplier, type, dates, duration, monthly rental, down payment, mileage allowance, excess mileage rate, payment day, terms |
 | P1D-02 | **Contract status machine**: Draft → Pending → Active → Completed / Overdue / Cancelled |
 | P1D-03 | **`ContractCharge` model** — composable charges (§3.4 of the plan), *not* fixed columns |
 | P1D-04 | **Charge expansion → `Installment` generation** across the full duration, using largest-remainder allocation |
@@ -288,7 +288,7 @@ The highest-risk milestone. Everything financial converges here.
 | P1D-13 | `SupplierInvoice` — payable schedule mirroring the customer schedule, `cost.supplier` |
 | P1D-14 | **`LedgerEntry` model + posting service.** Only domain events write here. Append-only enforced by DB trigger |
 | P1D-15 | Wire every event to the ledger: contract activated, installment posted, payment received, supplier invoice raised, insurance charged |
-| P1D-16 | Deposit handled as a **liability** — never posts to `revenue.*` |
+| P1D-16 | Down payment posts to revenue on its charge date. There is no refundable deposit to track |
 | P1D-17 | Contract detail: schedule, payment history, documents, ledger view |
 | P1D-18 | Contract PDF generation |
 
@@ -371,7 +371,7 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |
 | P2-10 | Insurance claim tracking with recovery posting |
 | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |
-| P2-12 | **Final settlement on return**: excess mileage, damages, outstanding balance, deposit refund or forfeiture |
+| P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance |
 | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |
 | P2-14 | Vehicle lifetime P&L view |
 
@@ -592,7 +592,7 @@ model Vehicle {
 // ---------- Contracts (composable charges — §3.4) ----------
 enum ContractType   { LONG_TERM_RENTAL LEASE_TO_OWN B2B_RENTAL OTHER }
 enum ContractStatus { DRAFT PENDING ACTIVE OVERDUE COMPLETED CANCELLED }
-enum ChargeType     { MONTHLY_RENTAL ANNUAL_INSURANCE SECURITY_DEPOSIT ADMIN_FEE EXCESS_MILEAGE BUYOUT OTHER }
+enum ChargeType     { MONTHLY_RENTAL ANNUAL_INSURANCE DOWN_PAYMENT ADMIN_FEE BUYOUT OTHER }
 enum Recurrence     { ONCE MONTHLY ANNUAL }
 
 model Contract {
