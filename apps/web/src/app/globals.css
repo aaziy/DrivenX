@@ -409,10 +409,15 @@ table.data tbody tr:hover {
   color: var(--text-faint);
 }
 
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="search"],
+/* Every text-like input, by exclusion rather than by list.
+ *
+ * This was a list of types, and a field added as tel, date or number rendered as a bare
+ * browser default beside its styled siblings — passing every test and looking broken.
+ * Naming what must keep native rendering instead means the next field type added is
+ * styled without anyone remembering to come here. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(
+    [type="file"]
+  ),
 select,
 textarea {
   font: inherit;
