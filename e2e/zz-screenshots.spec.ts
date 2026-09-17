@@ -40,6 +40,10 @@ test.describe("screenshots", () => {
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/suppliers-en.png`, fullPage: true });
 
+    await page.goto("/notifications");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/notifications-en.png`, fullPage: true });
+
     try {
       // The signed-in user's language lives on their row, not in a cookie, so this
       // persists — and every other spec reads English labels.
@@ -53,6 +57,10 @@ test.describe("screenshots", () => {
       await page.goto("/suppliers");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/suppliers-ar.png`, fullPage: true });
+
+      await page.goto("/notifications");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/notifications-ar.png`, fullPage: true });
     } finally {
       // Restore English whatever happened above, or the persona is left in Arabic and
       // the next run's specs fail looking for labels that are no longer there.
