@@ -44,13 +44,17 @@ test.describe("customers", () => {
     await expect(row).toContainText("+971501234567");
     await expect(row).toContainText("CUS-");
 
-    // Search finds them by name.
+    // Search finds them by name. Waiting for the navigation the search starts, not just
+    // for the row: clicking into a page that is still loading loses the click, which is
+    // a failure that passes twice and then fails for no reason anyone can see.
     await page.getByLabel("Search").fill(name);
     await page.getByRole("button", { name: "Search" }).click();
+    await page.waitForURL(/[?&]q=/);
     await expect(page.locator(`tr:has-text("${name}")`)).toBeVisible();
 
     // And the code is a link through to the record.
     await page.locator(`tr:has-text("${name}") a`).first().click();
+    await page.waitForURL(/\/customers\/.+/);
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
     await page.getByLabel("City").fill("Dubai");
@@ -86,6 +90,7 @@ test.describe("customers", () => {
     await expect(page.locator(".alert-success")).toBeVisible();
 
     await page.locator(`tr:has-text("${name}") a`).first().click();
+    await page.waitForURL(/\/customers\/.+/);
 
     await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Remove customer" })).toHaveCount(0);
