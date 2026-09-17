@@ -62,6 +62,63 @@
     "notYetBody1": "These tiles deliberately show only what exists. The KPIs from SOW §3 — fleet counts, monthly revenue, cost, profit, customer outstanding, supplier payables, expiring documents — are milestone 1E, and each will be an aggregation over the ledger rather than a stored column.",
     "notYetBody2": "Showing placeholder numbers now would make the system look further along than it is."
   },
+  "upload": {
+    "empty": "That file is empty.",
+    "tooLarge": "That file is larger than the {limitMb} MB limit.",
+    "unsupportedType": "Unsupported file type. Upload a PDF or an image (JPEG, PNG, WebP or HEIC)."
+  },
+  "documents": {
+    "cardTitle": "Documents",
+    "addTitle": "Attach a document",
+    "empty": "No documents attached yet",
+    "columns": {
+      "document": "Document",
+      "number": "Number",
+      "expiry": "Expires",
+      "status": "Status",
+      "uploaded": "Uploaded"
+    },
+    "status": {
+      "valid": "Valid",
+      "expiring": "Expiring",
+      "expired": "Expired",
+      "no_expiry": "No expiry",
+      "replaced": "Replaced"
+    },
+    "expiry": {
+      "inDays": "in {days, plural, one {# day} other {# days}}",
+      "today": "today",
+      "agoDays": "{days, plural, one {# day} other {# days}} ago",
+      "none": "—"
+    },
+    "form": {
+      "category": "Document type",
+      "chooseCategory": "Choose a document type…",
+      "file": "File",
+      "fileHint": "PDF or photo, up to {limitMb} MB.",
+      "documentNumber": "Document number",
+      "issueDate": "Issue date",
+      "expiryDate": "Expiry date",
+      "notes": "Notes",
+      "submit": "Attach document",
+      "submitting": "Uploading…"
+    },
+    "actions": {
+      "download": "Download",
+      "delete": "Remove",
+      "deleting": "Removing…"
+    },
+    "uploaded": "Attached {name}.",
+    "deleted": "Document removed.",
+    "errors": {
+      "category": "Choose a document type.",
+      "categoryGone": "That document type no longer exists.",
+      "file": "Choose a file to upload.",
+      "expiryRequired": "This document type needs an expiry date.",
+      "notFound": "That document no longer exists.",
+      "ownerNotFound": "That record no longer exists."
+    }
+  },
   "customers": {
     "title": "Customers",
     "subtitle": "Everyone who rents or leases a vehicle. Identity documents are attached to each customer and watched for expiry.",

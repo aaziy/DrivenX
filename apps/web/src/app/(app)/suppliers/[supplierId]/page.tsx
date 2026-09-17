@@ -8,6 +8,7 @@ import { prisma } from "@drivenx/db";
 import { SubmitButton } from "@/components/form";
 import { requirePermission } from "@/lib/auth";
 
+import { DocumentsCard } from "../../documents/documents-card";
 import { deleteSupplier, setSupplierStatus, updateSupplier } from "../actions";
 import { SupplierForm } from "../supplier-form";
 
@@ -94,6 +95,15 @@ export default async function SupplierDetailPage({
             )}
           </div>
         </div>
+
+        {principal.permissions.has("document.view") ? (
+          <DocumentsCard
+            ownerType="SUPPLIER"
+            ownerId={supplier.id}
+            canUpload={principal.permissions.has("document.upload")}
+            canDelete={principal.permissions.has("document.delete")}
+          />
+        ) : null}
 
         {canUpdate ? (
           <div className="card">

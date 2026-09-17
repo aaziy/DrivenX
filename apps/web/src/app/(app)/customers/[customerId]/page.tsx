@@ -8,6 +8,7 @@ import { prisma } from "@drivenx/db";
 import { SubmitButton } from "@/components/form";
 import { requirePermission } from "@/lib/auth";
 
+import { DocumentsCard } from "../../documents/documents-card";
 import { deleteCustomer, setCustomerStatus, updateCustomer } from "../actions";
 import { CustomerForm } from "../customer-form";
 
@@ -100,6 +101,15 @@ export default async function CustomerDetailPage({
             )}
           </div>
         </div>
+
+        {principal.permissions.has("document.view") ? (
+          <DocumentsCard
+            ownerType="CUSTOMER"
+            ownerId={customer.id}
+            canUpload={principal.permissions.has("document.upload")}
+            canDelete={principal.permissions.has("document.delete")}
+          />
+        ) : null}
 
         {canUpdate ? (
           <div className="card">
