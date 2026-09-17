@@ -12,6 +12,7 @@
 
 import { PERMISSIONS, DEFAULT_ROLES, resolveRolePermissions } from "@drivenx/auth/permissions";
 import { hashPassword } from "@drivenx/auth/password";
+import { DOCUMENT_CATEGORIES } from "@drivenx/core";
 
 import { prisma, withoutAudit } from "../src/index";
 
@@ -88,6 +89,36 @@ async function seedRoles(permissionIds: Map<string, string>): Promise<void> {
   }
 }
 
+/**
+ * Document categories (§6), created if missing and never overwritten.
+ *
+ * §17 makes these the client's to edit, so a re-run must not undo a label they
+ * reworded or a reminder schedule they tuned — the same rule the roles follow.
+ * Exported so the integration test can exercise it without running the whole seed.
+ */
+export async function seedDocumentCategories(): Promise<void> {
+  let created = 0;
+
+  for (const category of DOCUMENT_CATEGORIES) {
+    const existing = await prisma.documentCategory.findUnique({ where: { key: category.key } });
+    if (existing) continue;
+
+    await prisma.documentCategory.create({
+      data: {
+        key: category.key,
+        label: category.label,
+        appliesTo: [...category.appliesTo],
+        requiresExpiry: category.requiresExpiry,
+        defaultReminderOffsets: [...category.defaultReminderOffsets],
+        isSystem: true,
+      },
+    });
+    created += 1;
+  }
+
+  console.log(`  document categories: ${DOCUMENT_CATEGORIES.length} defined, ${created} created`);
+}
+
 async function seedSuperAdmin(): Promise<void> {
   const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@drivenx.ae").toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe2026Now";
@@ -124,15 +155,21 @@ async function main(): Promise<void> {
   await withoutAudit(async () => {
     const permissionIds = await seedPermissions();
     await seedRoles(permissionIds);
+    await seedDocumentCategories();
     await seedSuperAdmin();
   });
 
   console.log("Seed complete.");
 }
 
-main()
-  .catch((error: unknown) => {
-    console.error("Seed failed:", error);
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+// Only when invoked directly. Without this guard, importing any function from this
+// file — as the integration test does — would run the entire seed as a side effect and
+// disconnect the client underneath the caller.
+if (process.argv[1]?.endsWith("prisma/seed.ts")) {
+  main()
+    .catch((error: unknown) => {
+      console.error("Seed failed:", error);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}
