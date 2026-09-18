@@ -472,6 +472,37 @@ table.data tbody tr:hover {
   accent-color: var(--brand);
 }
 
+/* The deal calculator's figures: label on one side, amount on the other, totals ruled
+ * off. Logical alignment, so the amounts sit on the correct side in Arabic too. */
+.deal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.deal-table td {
+  padding: 5px 0;
+}
+
+.deal-table td:last-child {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.deal-table tr.deal-total td {
+  border-block-start: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.deal-table tr.deal-profit td {
+  font-size: 15px;
+}
+
+.deal-table td.negative {
+  color: var(--danger);
+}
+
 .field-hint {
   font-size: 12px;
   color: var(--text-faint);

@@ -26,6 +26,8 @@
     "overview": "Overview",
     "dashboard": "Dashboard",
     "notifications": "Notifications",
+    "sales": "Sales",
+    "dealCalculator": "Deal calculator",
     "relationships": "Customers & suppliers",
     "customers": "Customers",
     "suppliers": "Suppliers",
@@ -65,6 +67,74 @@
     "notYetTitle": "What is not here yet",
     "notYetBody1": "These tiles deliberately show only what exists. The KPIs from SOW §3 — fleet counts, monthly revenue, cost, profit, customer outstanding, supplier payables, expiring documents — are milestone 1E, and each will be an aggregation over the ledger rather than a stored column.",
     "notYetBody2": "Showing placeholder numbers now would make the system look further along than it is."
+  },
+  "deals": {
+    "title": "Deal calculator",
+    "subtitle": "Price a rental or lease-to-own before it becomes a contract. Amounts exclude VAT.",
+    "inputsTitle": "The deal",
+    "dealTypes": {
+      "RENTAL": "Rental",
+      "LEASE_TO_OWN": "Lease-to-own"
+    },
+    "ownership": {
+      "COMPANY_OWNED": "Company owned",
+      "B2B_SUPPLIER": "Leased from a supplier"
+    },
+    "form": {
+      "vehicle": "Vehicle",
+      "noVehicle": "Not a specific car",
+      "dealType": "Deal type",
+      "ownership": "Ownership",
+      "leasedOnlyLto": "A car leased from a supplier is priced as lease-to-own.",
+      "duration": "Term (months)",
+      "rental": "Monthly rental to the customer (AED)",
+      "vehicleMonthlyCost": "Vehicle cost per month (AED)",
+      "vehicleMonthlyCostHint": "The supplier’s monthly charge for a leased car, or a company car’s monthly cost.",
+      "vehicleOneOffCost": "One-off vehicle cost (AED)",
+      "vehicleOneOffCostHint": "For a company car handed over at the end of a lease-to-own: what it cost.",
+      "downPayment": "Down payment (AED)",
+      "buyout": "Buyout at the end (AED)",
+      "insuranceCharge": "Insurance charged per year (AED)",
+      "insuranceCost": "Insurance paid per year (AED)",
+      "insuranceCostHint": "What DrivenX pays the insurer. Left blank, profit reads high.",
+      "maintenance": "Maintenance per month (AED)",
+      "otherCosts": "Other one-off costs (AED)"
+    },
+    "results": {
+      "title": "Result",
+      "prompt": "Enter the monthly rental to see the deal.",
+      "monthly": "Each month",
+      "firstYear": "First year ({months, plural, one {# month} other {# months}})",
+      "contract": "Whole term ({months, plural, one {# month} other {# months}})",
+      "rentalRevenue": "Rental",
+      "vehicleCost": "Vehicle cost",
+      "grossProfit": "Gross profit",
+      "customerPays": "Customer pays, VAT included",
+      "insuranceRevenue": "Insurance charged",
+      "revenueInclInsurance": "Revenue including insurance",
+      "downPayment": "Down payment",
+      "buyout": "Buyout",
+      "totalRevenue": "Total revenue",
+      "insuranceCost": "Insurance paid",
+      "maintenanceCost": "Maintenance",
+      "otherCosts": "Other costs",
+      "totalCost": "Total cost",
+      "grossProfitFromRental": "Gross profit from rental",
+      "totalProfit": "Total profit",
+      "margin": "Margin",
+      "noMargin": "—",
+      "loss": "This deal loses money.",
+      "vatNote": "All figures exclude VAT except the price the customer pays. VAT is collected for the FTA and is not revenue."
+    },
+    "issues": {
+      "money": "Enter amounts in AED, for example 3,500 or 1,450.50.",
+      "durationNotWholeNumber": "Enter the term as a whole number of months.",
+      "durationTooShort": "The term must be at least one month.",
+      "durationTooLong": "The term can be at most {max} months.",
+      "negativeAmount": "Amounts cannot be negative.",
+      "rentalOnLeasedCar": "A car leased from a supplier can only be priced as lease-to-own.",
+      "buyoutOnRental": "A rental has no buyout."
+    }
   },
   "vehicles": {
     "title": "Vehicles",

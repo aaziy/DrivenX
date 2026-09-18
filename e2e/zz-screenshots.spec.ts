@@ -53,6 +53,13 @@ test.describe("screenshots", () => {
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/document-types-en.png`, fullPage: true });
 
+    await page.goto("/deals");
+    await page.waitForSelector("h1");
+    await page.getByLabel("Monthly rental to the customer (AED)").fill("3500");
+    await page.getByLabel("Vehicle cost per month (AED)").fill("2400");
+    await page.getByLabel("Insurance charged per year (AED)").fill("2500");
+    await page.screenshot({ path: `${SHOT_DIR}/deals-en.png`, fullPage: true });
+
     await page.goto("/vehicles");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/vehicles-en.png`, fullPage: true });
@@ -94,6 +101,12 @@ test.describe("screenshots", () => {
       await page.goto("/admin/document-categories");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/document-types-ar.png`, fullPage: true });
+
+      await page.goto("/deals");
+      await page.waitForSelector("h1");
+      await page.locator("#rental").fill("3500");
+      await page.locator("#vehicleMonthlyCost").fill("2400");
+      await page.screenshot({ path: `${SHOT_DIR}/deals-ar.png`, fullPage: true });
 
       await page.goto("/vehicles");
       await page.waitForSelector("h1");

@@ -29,6 +29,10 @@ const NAV_DEFINITION: Array<{
     items: [{ href: "/", labelKey: "dashboard", permission: "dashboard.view" }],
   },
   {
+    labelKey: "sales",
+    items: [{ href: "/deals", labelKey: "dealCalculator", permission: "deal.calculate" }],
+  },
+  {
     labelKey: "relationships",
     items: [
       { href: "/customers", labelKey: "customers", permission: "customer.view" },
