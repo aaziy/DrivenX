@@ -36,6 +36,10 @@ const NAV_DEFINITION: Array<{
     ],
   },
   {
+    labelKey: "fleet",
+    items: [{ href: "/vehicles", labelKey: "vehicles", permission: "vehicle.view" }],
+  },
+  {
     labelKey: "administration",
     items: [
       { href: "/admin/users", labelKey: "users", permission: "user.view" },

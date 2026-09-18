@@ -35,7 +35,10 @@ async function ownerExists(ownerType: DocumentOwnerType, ownerId: string): Promi
   if (ownerType === "SUPPLIER") {
     return (await prisma.supplier.count({ where: { id: ownerId, deletedAt: null } })) > 0;
   }
-  // Vehicles, contracts and policies arrive in later milestones.
+  if (ownerType === "VEHICLE") {
+    return (await prisma.vehicle.count({ where: { id: ownerId, deletedAt: null } })) > 0;
+  }
+  // Contracts and policies arrive in later milestones.
   return false;
 }
 

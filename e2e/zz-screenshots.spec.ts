@@ -53,6 +53,22 @@ test.describe("screenshots", () => {
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/document-types-en.png`, fullPage: true });
 
+    await page.goto("/vehicles");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/vehicles-en.png`, fullPage: true });
+
+    await page.goto("/vehicles/new");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/vehicle-new-en.png`, fullPage: true });
+
+    await page.goto("/vehicles");
+    const firstVehicle = page.locator("tbody tr a").first();
+    if (await firstVehicle.count()) {
+      await firstVehicle.click();
+      await page.waitForURL(/\/vehicles\/(?!new)[^/]+$/);
+      await page.screenshot({ path: `${SHOT_DIR}/vehicle-detail-en.png`, fullPage: true });
+    }
+
     try {
       // The signed-in user's language lives on their row, not in a cookie, so this
       // persists — and every other spec reads English labels.
@@ -78,6 +94,17 @@ test.describe("screenshots", () => {
       await page.goto("/admin/document-categories");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/document-types-ar.png`, fullPage: true });
+
+      await page.goto("/vehicles");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/vehicles-ar.png`, fullPage: true });
+
+      const firstVehicle = page.locator("tbody tr a").first();
+      if (await firstVehicle.count()) {
+        await firstVehicle.click();
+        await page.waitForURL(/\/vehicles\/(?!new)[^/]+$/);
+        await page.screenshot({ path: `${SHOT_DIR}/vehicle-detail-ar.png`, fullPage: true });
+      }
     } finally {
       // Restore English whatever happened above, or the persona is left in Arabic and
       // the next run's specs fail looking for labels that are no longer there.

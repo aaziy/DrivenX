@@ -86,7 +86,12 @@ export async function expectPermissionRowsLaidOut(page: Page): Promise<void> {
  * the form simply looks broken. Heights diverge sharply when it happens.
  */
 export async function expectFormControlsConsistent(page: Page, formSelector: string) {
-  const boxes = await page.locator(`${formSelector} input, ${formSelector} select`).all();
+  // Text-like controls only. Checkboxes and radios deliberately keep their native size,
+  // so measuring them against 36px fields reports a mismatch that is not a defect.
+  const textLike = 'input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])';
+  const boxes = await page
+    .locator(`${formSelector} ${textLike}, ${formSelector} select`)
+    .all();
   const heights: number[] = [];
 
   for (const control of boxes) {
