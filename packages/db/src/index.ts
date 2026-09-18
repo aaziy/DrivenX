@@ -51,6 +51,17 @@ export {
   type NewVehicle,
 } from "./fleet";
 export {
+  activateContract,
+  ContractRuleError,
+  createContract,
+  issueDueInstallments,
+  nextInvoiceNumber,
+  type ContractRuleCode,
+  type NewContract,
+} from "./contracts";
+export { fromDbDate, toDbDate } from "./dates";
+export { postToLedger, type LedgerPosting } from "./ledger";
+export {
   globalSearch,
   type SearchHit,
   type SearchKind,
