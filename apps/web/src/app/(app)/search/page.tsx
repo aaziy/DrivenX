@@ -75,7 +75,7 @@ export default async function SearchPage({
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table>
+              <table className="data">
                 <tbody>
                   {hits.map((hit) => {
                     const href = hrefFor(hit);

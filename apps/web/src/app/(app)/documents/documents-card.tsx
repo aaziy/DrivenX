@@ -93,7 +93,7 @@ export async function DocumentsCard({
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table>
+          <table className="data">
             <thead>
               <tr>
                 <th>{t("columns.document")}</th>

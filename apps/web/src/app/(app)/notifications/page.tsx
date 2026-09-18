@@ -76,7 +76,7 @@ export default async function NotificationsPage() {
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table>
+              <table className="data">
                 <tbody>
                   {notifications.map((notification) => {
                     const entity = entities.get(notification.entityId);

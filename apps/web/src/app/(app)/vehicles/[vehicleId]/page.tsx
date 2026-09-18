@@ -161,7 +161,7 @@ export default async function VehicleDetailPage({
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table>
+              <table className="data">
                 <tbody>
                   {vehicle.mileageReadings.map((reading) => (
                     <tr key={reading.id}>
@@ -239,7 +239,7 @@ export default async function VehicleDetailPage({
             <h2>{t("detail.timelineTitle")}</h2>
           </div>
           <div style={{ overflowX: "auto" }}>
-            <table>
+            <table className="data">
               <tbody>
                 {vehicle.statusChanges.map((change) => (
                   <tr key={change.id}>

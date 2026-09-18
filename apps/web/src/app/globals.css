@@ -398,7 +398,8 @@ table.data tbody tr:hover {
   background: var(--surface-2);
 }
 
-.numeric {
+.numeric,
+table.data th.numeric {
   text-align: end;
   font-variant-numeric: tabular-nums;
 }

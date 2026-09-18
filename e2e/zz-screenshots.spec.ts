@@ -53,6 +53,16 @@ test.describe("screenshots", () => {
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/document-types-en.png`, fullPage: true });
 
+    await page.goto("/contracts");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/contracts-en.png`, fullPage: true });
+    const firstContract = page.locator("tbody tr a").first();
+    if (await firstContract.count()) {
+      await firstContract.click();
+      await page.waitForURL(/\/contracts\/(?!new)[^/]+$/);
+      await page.screenshot({ path: `${SHOT_DIR}/contract-detail-en.png`, fullPage: true });
+    }
+
     await page.goto("/deals");
     await page.waitForSelector("h1");
     await page.getByLabel("Monthly rental to the customer (AED)").fill("3500");
@@ -101,6 +111,15 @@ test.describe("screenshots", () => {
       await page.goto("/admin/document-categories");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/document-types-ar.png`, fullPage: true });
+
+      await page.goto("/contracts");
+      await page.waitForSelector("h1");
+      const firstContract = page.locator("tbody tr a").first();
+      if (await firstContract.count()) {
+        await firstContract.click();
+        await page.waitForURL(/\/contracts\/(?!new)[^/]+$/);
+        await page.screenshot({ path: `${SHOT_DIR}/contract-detail-ar.png`, fullPage: true });
+      }
 
       await page.goto("/deals");
       await page.waitForSelector("h1");
