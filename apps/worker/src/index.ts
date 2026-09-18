@@ -12,10 +12,12 @@
 import { prisma } from "@drivenx/db";
 import { logger } from "@drivenx/logger";
 
+import { runContractsDailyLogged } from "./contracts-daily";
 import { runExpiryScanLogged } from "./expiry-scan";
 
 const JOBS = {
   "expiry-scan": runExpiryScanLogged,
+  "contracts-daily": runContractsDailyLogged,
 } as const;
 
 type JobName = keyof typeof JOBS;

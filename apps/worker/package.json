@@ -6,7 +6,8 @@
   "description": "Scheduled jobs for DrivenX — expiry scans, and later instalment generation",
   "scripts": {
     "expiry-scan": "tsx src/index.ts expiry-scan",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "contracts-daily": "tsx src/index.ts contracts-daily"
   },
   "dependencies": {
     "@drivenx/core": "workspace:*",
