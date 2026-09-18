@@ -27,6 +27,8 @@ export interface LedgerPosting {
   supplierId?: string | null;
   sourceType: string;
   sourceId: string;
+  /** Set only on a correcting entry, which carries the opposite amount (INV-7). */
+  reversesId?: string | null;
   memo?: string | null;
 }
 
@@ -49,6 +51,7 @@ export async function postToLedger(
         supplierId: posting.supplierId ?? null,
         sourceType: posting.sourceType,
         sourceId: posting.sourceId,
+        reversesId: posting.reversesId ?? null,
         memo: posting.memo ?? null,
       },
     ],

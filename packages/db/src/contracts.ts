@@ -14,6 +14,7 @@
  */
 
 import {
+  allocatePayment,
   assertContractTransition,
   assertTransition,
   chargesFor,
@@ -25,7 +26,7 @@ import {
   type IsoDate,
 } from "@drivenx/core";
 
-import type { ContractType } from "../generated/client";
+import type { ContractStatus, ContractType, PaymentMethod } from "../generated/client";
 import type { Tx } from "./tx";
 import { fromDbDate, toDbDate } from "./dates";
 import { prisma } from "./index";
@@ -39,7 +40,14 @@ export type ContractRuleCode =
   | "buyoutOnlyOnLeaseToOwn"
   | "invalidTerms"
   | "contractNotFound"
-  | "vehicleOnLiveContract";
+  | "vehicleOnLiveContract"
+  | "contractNotLive"
+  | "invalidPayment"
+  | "paymentInFuture"
+  | "installmentNotFound"
+  | "waiveNeedsReason"
+  | "alreadyWaived"
+  | "waivePaidInstallment";
 
 export class ContractRuleError extends Error {
   constructor(readonly code: ContractRuleCode) {
@@ -383,4 +391,213 @@ export async function issueDueInstallments(today: IsoDate): Promise<{ contracts:
     );
   }
   return { contracts: contracts.length, issued };
+}
+
+// ---------------------------------------------------------------------------
+// Payments, waivers and overdue (slice 2b)
+// ---------------------------------------------------------------------------
+
+/**
+ * Bring a live contract's status in line with its instalments: Overdue while anything
+ * issued is past due and unpaid, Active once nothing is.
+ */
+async function refreshContractStatus(
+  tx: Tx,
+  contractId: string,
+  actorId: string | null,
+): Promise<void> {
+  const contract = await tx.contract.findUniqueOrThrow({ where: { id: contractId }, select: { status: true } });
+  if (contract.status !== "ACTIVE" && contract.status !== "OVERDUE") return;
+
+  const late = await tx.installment.count({ where: { contractId, status: "OVERDUE" } });
+  const target: ContractStatus = late > 0 ? "OVERDUE" : "ACTIVE";
+  if (target === contract.status) return;
+
+  assertContractTransition(contract.status, target);
+  await tx.contract.update({ where: { id: contractId }, data: { status: target } });
+  await tx.contractStatusChange.create({
+    data: { contractId, fromStatus: contract.status, toStatus: target, changedById: actorId },
+  });
+}
+
+export interface NewPayment {
+  /** Gross — what the customer handed over. */
+  amountFils: bigint;
+  receivedOn: IsoDate;
+  method: PaymentMethod;
+  reference?: string | null;
+  notes?: string | null;
+}
+
+/**
+ * Record a payment against a contract.
+ *
+ * Spread oldest-first across what is owed — including instalments not yet due, so a
+ * customer who pays ahead has paid ahead. Anything beyond the whole outstanding balance is
+ * kept as credit on the payment, never dropped (INV-2). A payment dated in the future is
+ * refused; one dated in the past is accepted, because a cheque received last week is
+ * recorded today.
+ */
+export async function recordPayment(
+  contractId: string,
+  payment: NewPayment,
+  options: { actorId: string | null; today: IsoDate },
+): Promise<{ paymentId: string; allocated: number; creditFils: bigint }> {
+  if (payment.amountFils <= 0n) throw new ContractRuleError("invalidPayment");
+  if (payment.receivedOn > options.today) throw new ContractRuleError("paymentInFuture");
+
+  return prisma.$transaction(
+    async (tx) => {
+      await lockContract(tx, contractId);
+
+      const contract = await tx.contract.findFirst({
+        where: { id: contractId, deletedAt: null },
+        select: { id: true, status: true, customerId: true },
+      });
+      if (!contract) throw new ContractRuleError("contractNotFound");
+      if (!["ACTIVE", "OVERDUE", "COMPLETED"].includes(contract.status)) {
+        throw new ContractRuleError("contractNotLive");
+      }
+
+      const open = await tx.installment.findMany({
+        where: { contractId, waivedAt: null },
+        select: { id: true, dueDate: true, sequence: true, grossFils: true, paidFils: true },
+      });
+      const { allocations, creditFils } = allocatePayment(
+        payment.amountFils,
+        open.map((item) => ({ ...item, dueDate: fromDbDate(item.dueDate), waived: false })),
+      );
+
+      const created = await tx.payment.create({
+        data: {
+          contractId,
+          customerId: contract.customerId,
+          receivedOn: toDbDate(payment.receivedOn),
+          amountFils: payment.amountFils,
+          method: payment.method,
+          reference: payment.reference ?? null,
+          notes: payment.notes ?? null,
+          creditFils,
+          recordedById: options.actorId,
+        },
+      });
+
+      if (allocations.length > 0) {
+        await tx.paymentAllocation.createMany({
+          data: allocations.map((allocation) => ({ paymentId: created.id, ...allocation })),
+        });
+      }
+
+      // The contract row is locked, so these reads and writes cannot interleave with
+      // another payment on the same contract.
+      for (const allocation of allocations) {
+        const item = open.find((candidate) => candidate.id === allocation.installmentId)!;
+        const paidFils = item.paidFils + allocation.amountFils;
+        await tx.installment.update({
+          where: { id: item.id },
+          data: {
+            paidFils,
+            status: installmentStatus(
+              { dueDate: fromDbDate(item.dueDate), grossFils: item.grossFils, paidFils, waived: false },
+              options.today,
+            ),
+          },
+        });
+      }
+
+      await refreshContractStatus(tx, contractId, options.actorId);
+      return { paymentId: created.id, allocated: allocations.length, creditFils };
+    },
+    { timeout: 30_000 },
+  );
+}
+
+/**
+ * Forgive an unpaid instalment. A reason is required, and an instalment that has been
+ * part-paid cannot be waived — that money has been applied, and forgiving the rest is a
+ * different decision from forgiving the whole.
+ *
+ * If the instalment had already been issued its revenue is on the ledger, so a reversing
+ * entry takes it back out, dated the day of the waiver. The original entry is never
+ * touched (INV-7). One not yet issued simply never will be.
+ */
+export async function waiveInstallment(
+  installmentId: string,
+  options: { reason: string; actorId: string | null; today: IsoDate },
+): Promise<void> {
+  const reason = options.reason.trim();
+  if (!reason) throw new ContractRuleError("waiveNeedsReason");
+
+  const found = await prisma.installment.findUnique({ where: { id: installmentId }, select: { contractId: true } });
+  if (!found) throw new ContractRuleError("installmentNotFound");
+
+  await prisma.$transaction(async (tx) => {
+    await lockContract(tx, found.contractId);
+
+    const item = await tx.installment.findUniqueOrThrow({
+      where: { id: installmentId },
+      include: { contract: { select: { id: true, number: true, customerId: true, vehicleId: true, supplierId: true } } },
+    });
+    if (item.waivedAt) throw new ContractRuleError("alreadyWaived");
+    if (item.paidFils > 0n) throw new ContractRuleError("waivePaidInstallment");
+
+    await tx.installment.update({
+      where: { id: installmentId },
+      data: { waivedAt: new Date(), waiveReason: reason, waivedById: options.actorId, status: "WAIVED" },
+    });
+
+    if (item.invoiceNumber !== null) {
+      const original = await tx.ledgerEntry.findFirst({
+        where: { sourceType: "Installment", sourceId: installmentId, direction: "REVENUE" },
+      });
+      if (original) {
+        await postToLedger(tx, {
+          occurredOn: options.today,
+          direction: "REVENUE",
+          category: original.category,
+          amountFils: -original.amountFils,
+          vehicleId: item.contract.vehicleId,
+          contractId: item.contract.id,
+          customerId: item.contract.customerId,
+          supplierId: item.contract.supplierId,
+          sourceType: "InstallmentWaiver",
+          sourceId: installmentId,
+          reversesId: original.id,
+          memo: reason,
+        });
+      }
+    }
+
+    await refreshContractStatus(tx, item.contractId, options.actorId);
+  });
+}
+
+/**
+ * The nightly overdue pass (P1D-09): issued instalments past their due date and not paid
+ * become Overdue, and so does any live contract carrying one. Run after issuing, so what
+ * fell due yesterday is already issued.
+ */
+export async function refreshOverdue(today: IsoDate): Promise<{ installments: number; contracts: number }> {
+  const { count } = await prisma.installment.updateMany({
+    where: {
+      invoiceNumber: { not: null },
+      waivedAt: null,
+      dueDate: { lt: toDbDate(today) },
+      status: { in: ["DUE", "PARTIALLY_PAID", "UPCOMING"] },
+    },
+    data: { status: "OVERDUE" },
+  });
+
+  const affected = await prisma.contract.findMany({
+    where: { status: "ACTIVE", deletedAt: null, installments: { some: { status: "OVERDUE" } } },
+    select: { id: true },
+  });
+  for (const contract of affected) {
+    await prisma.$transaction(async (tx) => {
+      await lockContract(tx, contract.id);
+      await refreshContractStatus(tx, contract.id, null);
+    });
+  }
+
+  return { installments: count, contracts: affected.length };
 }

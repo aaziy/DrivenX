@@ -48,6 +48,7 @@ export {
   MileageRejectedError,
   recordMileage,
   VehicleNotFoundError,
+  VehicleStatusManagedByContractError,
   type NewVehicle,
 } from "./fleet";
 export {
@@ -56,9 +57,14 @@ export {
   createContract,
   issueDueInstallments,
   nextInvoiceNumber,
+  recordPayment,
+  refreshOverdue,
+  waiveInstallment,
   type ContractRuleCode,
   type NewContract,
+  type NewPayment,
 } from "./contracts";
+export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";
 export {

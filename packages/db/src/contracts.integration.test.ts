@@ -16,6 +16,9 @@ import {
   ContractRuleError,
   createContract,
   issueDueInstallments,
+  recordPayment,
+  refreshOverdue,
+  waiveInstallment,
   type NewContract,
 } from "./contracts";
 import { createVehicle } from "./fleet";
@@ -284,5 +287,116 @@ describe("the ledger", () => {
       prisma.ledgerEntry.update({ where: { id: entry.id }, data: { amountFils: 1n } }),
     ).rejects.toThrow(/append-only/);
     await expect(prisma.ledgerEntry.delete({ where: { id: entry.id } })).rejects.toThrow(/append-only/);
+  });
+});
+
+describe("payments", () => {
+  /** A three-month rental, activated on its first day: 3 × 3,570 gross is owed. */
+  async function live() {
+    const vehicle = await car();
+    const draft = await createContract(contract(vehicle.id, { durationMonths: 3 }), null);
+    await activateContract(draft.id, { actorId: null, today: "2026-01-01" });
+    const installments = await prisma.installment.findMany({
+      where: { contractId: draft.id },
+      orderBy: { dueDate: "asc" },
+    });
+    return { id: draft.id, installments };
+  }
+
+  const pay = (contractId: string, amount: string, receivedOn = "2026-01-01", today = "2026-01-01") =>
+    recordPayment(contractId, { amountFils: aed(amount), receivedOn, method: "BANK_TRANSFER" }, { actorId: null, today });
+
+  it("part-pays the instalment that is due", async () => {
+    const { id, installments } = await live();
+    await pay(id, "2000");
+
+    const first = await prisma.installment.findUniqueOrThrow({ where: { id: installments[0]!.id } });
+    expect(first.paidFils).toBe(aed("2000"));
+    expect(first.status).toBe("PARTIALLY_PAID");
+  });
+
+  it("pays ahead, and keeps anything beyond the whole balance as credit", async () => {
+    const { id } = await live();
+    const result = await pay(id, "12000");
+
+    // 3 × 3,570 = 10,710 owed; 1,290 over.
+    expect(result.creditFils).toBe(aed("1290"));
+    const statuses = (await prisma.installment.findMany({ where: { contractId: id } })).map((i) => i.status);
+    expect(statuses).toEqual(["PAID", "PAID", "PAID"]);
+  });
+
+  it("refuses a payment dated in the future, and accepts one dated in the past", async () => {
+    const { id } = await live();
+    await expect(pay(id, "100", "2026-01-02", "2026-01-01")).rejects.toMatchObject({ code: "paymentInFuture" });
+    // A cheque received last week is recorded today.
+    await expect(pay(id, "100", "2025-12-28", "2026-01-01")).resolves.toBeDefined();
+  });
+
+  it("refuses a payment against a contract that is not live", async () => {
+    const vehicle = await car();
+    const draft = await createContract(contract(vehicle.id), null);
+    await expect(pay(draft.id, "100")).rejects.toMatchObject({ code: "contractNotLive" });
+  });
+});
+
+describe("overdue", () => {
+  it("marks an unpaid instalment and its contract overdue, and clears both when paid", async () => {
+    const vehicle = await car();
+    const draft = await createContract(contract(vehicle.id, { durationMonths: 3 }), null);
+    await activateContract(draft.id, { actorId: null, today: "2026-01-01" });
+
+    await refreshOverdue("2026-01-02");
+    expect((await prisma.contract.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe("OVERDUE");
+
+    await recordPayment(
+      draft.id,
+      { amountFils: aed("3570"), receivedOn: "2026-01-02", method: "CASH" },
+      { actorId: null, today: "2026-01-02" },
+    );
+
+    expect((await prisma.contract.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe("ACTIVE");
+    const first = await prisma.installment.findFirstOrThrow({ where: { contractId: draft.id }, orderBy: { dueDate: "asc" } });
+    expect(first.status).toBe("PAID");
+  });
+});
+
+describe("waivers", () => {
+  async function issuedFirst() {
+    const vehicle = await car();
+    const draft = await createContract(contract(vehicle.id, { durationMonths: 3 }), null);
+    await activateContract(draft.id, { actorId: null, today: "2026-01-01" });
+    const first = await prisma.installment.findFirstOrThrow({ where: { contractId: draft.id }, orderBy: { dueDate: "asc" } });
+    return { contractId: draft.id, first };
+  }
+
+  it("needs a reason", async () => {
+    const { first } = await issuedFirst();
+    await expect(waiveInstallment(first.id, { reason: "   ", actorId: null, today: "2026-01-01" })).rejects.toMatchObject({
+      code: "waiveNeedsReason",
+    });
+  });
+
+  it("takes back revenue already booked, with a reversing entry — the original stays", async () => {
+    const { contractId, first } = await issuedFirst();
+    expect(await revenue(contractId)).toBe(aed("3400"));
+
+    await waiveInstallment(first.id, { reason: "Goodwill after breakdown", actorId: null, today: "2026-01-05" });
+
+    expect(await revenue(contractId)).toBe(0n);
+    const entries = await prisma.ledgerEntry.findMany({ where: { contractId }, orderBy: { createdAt: "asc" } });
+    expect(entries).toHaveLength(2);
+    expect(entries[1]).toMatchObject({ amountFils: -aed("3400"), reversesId: entries[0]!.id });
+  });
+
+  it("refuses to waive an instalment that has been part-paid", async () => {
+    const { contractId, first } = await issuedFirst();
+    await recordPayment(
+      contractId,
+      { amountFils: aed("500"), receivedOn: "2026-01-01", method: "CASH" },
+      { actorId: null, today: "2026-01-01" },
+    );
+    await expect(
+      waiveInstallment(first.id, { reason: "Goodwill", actorId: null, today: "2026-01-01" }),
+    ).rejects.toMatchObject({ code: "waivePaidInstallment" });
   });
 });

@@ -12,6 +12,7 @@
 
 import {
   assertTransition,
+  CONTRACT_MANAGED_STATUSES,
   validateMileageReading,
   type MileageIssueCode,
   type VehicleStatus,
@@ -37,6 +38,14 @@ export class ConcurrentVehicleChangeError extends Error {
   constructor(readonly vehicleId: string) {
     super(`Vehicle ${vehicleId} changed while this change was being made`);
     this.name = "ConcurrentVehicleChangeError";
+  }
+}
+
+/** Rented and Lease-to-own come from activating a contract, never from the status control. */
+export class VehicleStatusManagedByContractError extends Error {
+  constructor(readonly to: VehicleStatus) {
+    super(`A vehicle is put into ${to} by activating a contract, not directly`);
+    this.name = "VehicleStatusManagedByContractError";
   }
 }
 
@@ -112,7 +121,7 @@ export async function createVehicle(input: NewVehicle, actorId: string | null) {
 export async function changeVehicleStatus(
   vehicleId: string,
   to: VehicleStatus,
-  options: { reason?: string | null; actorId: string | null },
+  options: { reason?: string | null; actorId: string | null; viaContract?: boolean },
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const vehicle = await tx.vehicle.findFirst({
@@ -122,8 +131,13 @@ export async function changeVehicleStatus(
     if (!vehicle) throw new VehicleNotFoundError(vehicleId);
 
     // Throws IllegalVehicleTransitionError, which names both ends for the message and
-    // says whether the car's ownership is the reason.
+    // says whether the car's ownership is the reason. Checked first, so a move that is
+    // illegal for any reason is reported as that, not as contract-managed.
     assertTransition(vehicle.status, to, vehicle.ownershipType);
+
+    if (CONTRACT_MANAGED_STATUSES.includes(to) && !options.viaContract) {
+      throw new VehicleStatusManagedByContractError(to);
+    }
 
     const updated = await tx.vehicle.updateMany({
       where: { id: vehicleId, status: vehicle.status, deletedAt: null },

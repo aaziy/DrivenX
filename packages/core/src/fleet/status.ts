@@ -47,6 +47,13 @@ const TRANSITIONS: Record<VehicleStatus, readonly VehicleStatus[]> = {
 /** Statuses in which the car is committed to a customer and cannot be offered to another. */
 export const ON_CONTRACT_STATUSES: readonly VehicleStatus[] = ["RESERVED", "RENTED", "LEASE_TO_OWN"];
 
+/**
+ * Statuses only a contract may put a car into. A car is Rented or Lease-to-own because a
+ * live contract says so (INV-9); set by hand, the fleet would show a car out on a contract
+ * that exists nowhere, earning revenue nothing records.
+ */
+export const CONTRACT_MANAGED_STATUSES: readonly VehicleStatus[] = ["RENTED", "LEASE_TO_OWN"];
+
 /** Mirrors the `OwnershipType` enum in the Prisma schema. */
 export type VehicleOwnership = "COMPANY_OWNED" | "B2B_SUPPLIER";
 

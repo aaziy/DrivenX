@@ -227,6 +227,7 @@
       "readOnly": "You do not have permission to edit this vehicle.",
       "statusTitle": "Status",
       "statusHint": "Only the moves allowed from the current status are offered.",
+      "contractManagedHint": "Rented and Lease-to-own are set by activating a contract.",
       "leasedHint": "A car leased from a supplier goes to customers only on lease-to-own, and is sold only at the end of it.",
       "changeTo": "Change to",
       "chooseStatus": "Choose…",
@@ -268,6 +269,7 @@
       "illegalTransition": "A vehicle cannot move from {from} to {to}.",
       "leasedOnlyLto": "A car leased from a supplier can only go to a customer on lease-to-own, and can only be sold at the end of it.",
       "ownershipConflict": "This car is on a rental or has been sold, so it cannot be marked as leased from a supplier.",
+      "contractManaged": "Rented and Lease-to-own are set by activating a contract, not here.",
       "concurrent": "Someone else changed this vehicle just now. Reload the page and try again.",
       "onContract": "This vehicle is committed to a customer and cannot be removed.",
       "mileage": {

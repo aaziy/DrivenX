@@ -17,6 +17,7 @@ import {
   MileageRejectedError,
   recordMileage,
   VehicleNotFoundError,
+  VehicleStatusManagedByContractError,
   type NewVehicle,
 } from "./fleet";
 import { prisma } from "./index";
@@ -165,7 +166,8 @@ describe("changeVehicleStatus", () => {
       IllegalVehicleTransitionError,
     );
 
-    await changeVehicleStatus(leased.id, "LEASE_TO_OWN", { actorId: null });
+    // Lease-to-own is set by a contract; here the service is called as a contract would.
+    await changeVehicleStatus(leased.id, "LEASE_TO_OWN", { actorId: null, viaContract: true });
     await changeVehicleStatus(leased.id, "SOLD", { actorId: null });
 
     expect((await prisma.vehicle.findUniqueOrThrow({ where: { id: leased.id } })).status).toBe(
@@ -179,7 +181,7 @@ describe("changeVehicleStatus", () => {
     const created = await createVehicle(vehicle(), null);
 
     const results = await Promise.allSettled([
-      changeVehicleStatus(created.id, "RENTED", { actorId: null }),
+      changeVehicleStatus(created.id, "RESERVED", { actorId: null }),
       changeVehicleStatus(created.id, "MAINTENANCE", { actorId: null }),
     ]);
 
@@ -193,6 +195,19 @@ describe("changeVehicleStatus", () => {
 
     // Joined, plus the single winning change.
     expect(await prisma.vehicleStatusChange.count({ where: { vehicleId: created.id } })).toBe(2);
+  });
+
+  it("refuses to put a car on Rented or Lease-to-own by hand", async () => {
+    // INV-9: a car is out because a live contract says so. Set directly, the fleet would
+    // show a car out on a contract that exists nowhere.
+    const created = await createVehicle(vehicle(), null);
+
+    for (const to of ["RENTED", "LEASE_TO_OWN"] as const) {
+      await expect(changeVehicleStatus(created.id, to, { actorId: null })).rejects.toBeInstanceOf(
+        VehicleStatusManagedByContractError,
+      );
+    }
+    expect((await prisma.vehicle.findUniqueOrThrow({ where: { id: created.id } })).status).toBe("AVAILABLE");
   });
 
   it("does not act on a removed vehicle", async () => {

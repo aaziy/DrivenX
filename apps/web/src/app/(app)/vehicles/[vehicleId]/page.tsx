@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
-import { allowedTransitions, isTerminal, Money } from "@drivenx/core";
+import { allowedTransitions, CONTRACT_MANAGED_STATUSES, isTerminal, Money } from "@drivenx/core";
 import { prisma } from "@drivenx/db";
 
 import { requirePermission } from "@/lib/auth";
@@ -127,12 +127,16 @@ export default async function VehicleDetailPage({
             ) : can("vehicle.transition") ? (
               <>
                 <p className="muted">
-                  {t("detail.statusHint")}
+                  {t("detail.statusHint")} {t("detail.contractManagedHint")}
                   {vehicle.ownershipType === "B2B_SUPPLIER" ? ` ${t("detail.leasedHint")}` : ""}
                 </p>
                 <StatusForm
                   action={changeVehicleStatusAction.bind(null, vehicle.id)}
-                  options={allowedTransitions(vehicle.status, vehicle.ownershipType)}
+                  // Rented and Lease-to-own come from activating a contract (INV-9), so they
+                  // are never offered here even where the state machine allows them.
+                  options={allowedTransitions(vehicle.status, vehicle.ownershipType).filter(
+                    (status) => !CONTRACT_MANAGED_STATUSES.includes(status),
+                  )}
                 />
               </>
             ) : null}

@@ -23,6 +23,7 @@ import {
   prisma,
   recordMileage,
   VehicleNotFoundError,
+  VehicleStatusManagedByContractError,
   type NewVehicle,
 } from "@drivenx/db";
 
@@ -247,6 +248,7 @@ export async function changeVehicleStatusAction(
           : t("illegalTransition", { from: ts(error.from), to: ts(error.to) }),
       };
     }
+    if (error instanceof VehicleStatusManagedByContractError) return { error: t("contractManaged") };
     if (error instanceof ConcurrentVehicleChangeError) return { error: t("concurrent") };
     if (error instanceof VehicleNotFoundError) return { error: t("notFound") };
     return { error: await toUserMessage("changeVehicleStatus", error) };

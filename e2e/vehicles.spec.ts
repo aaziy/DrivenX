@@ -161,9 +161,11 @@ test.describe("fleet", () => {
       .getByLabel("Change to")
       .locator("option:not([disabled])")
       .allTextContents();
-    expect(options).toContain("Lease-to-own");
+    // Never on a plain rental, never sold by hand; lease-to-own comes from a contract.
+    expect(options).toContain("Reserved");
     expect(options).not.toContain("Rented");
     expect(options).not.toContain("Sold");
+    expect(options).not.toContain("Lease-to-own");
     await expect(page.getByText("goes to customers only on lease-to-own")).toBeVisible();
   });
 
