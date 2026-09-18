@@ -73,6 +73,20 @@ export {
   type NewSupplierPayment,
   type SupplierInvoiceRuleCode,
 } from "./supplier-invoices";
+export {
+  contractCounts,
+  expiringDocuments,
+  fleetCounts,
+  monthResult,
+  overdueInstallments,
+  payables,
+  receivables,
+  type FleetCounts,
+  type MonthResult,
+  type OverdueItem,
+  type Payables,
+  type Receivables,
+} from "./kpis";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

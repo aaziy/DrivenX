@@ -354,6 +354,21 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+/* A dashboard group's heading: quieter than a card title, above a row of tiles. */
+.section-title {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.stat-value.negative,
+td.negative {
+  color: var(--danger);
+}
+
 .stat-note {
   font-size: 12px;
   color: var(--text-muted);

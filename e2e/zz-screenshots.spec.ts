@@ -23,6 +23,10 @@ test.describe("screenshots", () => {
     // Waits on the page itself, not on a table: with no records the list renders an
     // empty state and there is no table to wait for. This spec photographs whatever is
     // there rather than depending on what another spec happened to leave behind.
+    await page.goto("/");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/dashboard-en.png`, fullPage: true });
+
     await page.goto("/customers");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/customers-en.png`, fullPage: true });
@@ -100,6 +104,10 @@ test.describe("screenshots", () => {
       // persists — and every other spec reads English labels.
       await page.locator('.language-option[lang="ar"]').click();
       await page.waitForSelector('html[dir="rtl"]');
+
+      await page.goto("/");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/dashboard-ar.png`, fullPage: true });
 
       await page.goto("/customers");
       await page.waitForSelector("h1");
