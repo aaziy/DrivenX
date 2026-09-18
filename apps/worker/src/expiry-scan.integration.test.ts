@@ -194,6 +194,54 @@ describe("runExpiryScan", () => {
     );
   });
 
+  it("names a vehicle document by the car's plate, not its database id", async () => {
+    // An expiring mulkiya is only actionable if it says which car — and the plate is
+    // what staff read in the yard and write on the renewal form.
+    const car = await prisma.vehicle.create({
+      data: {
+        code: "VEH-TEST-1",
+        make: "Nissan",
+        model: "Patrol",
+        year: 2023,
+        plateEmirate: "DUBAI",
+        plateCode: "K",
+        plateNumber: "40721",
+        vin: "JN8AY2NY0P9123456",
+        ownershipType: "COMPANY_OWNED",
+      },
+    });
+    const mulkiya = await prisma.documentCategory.create({
+      data: {
+        key: `mulkiya_${Math.random().toString(36).slice(2, 8)}`,
+        label: "Vehicle registration (mulkiya)",
+        appliesTo: ["VEHICLE"],
+        defaultReminderOffsets: [60, 30, 15, 7],
+      },
+    });
+    const document = await prisma.document.create({
+      data: {
+        ownerType: "VEHICLE",
+        ownerId: car.id,
+        categoryId: mulkiya.id,
+        expiryDate: daysFromNow(12),
+        fileKey: `vehicle/${car.id}/m.pdf`,
+        fileName: "mulkiya.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 1024,
+        reminderOffsets: [60, 30, 15, 7],
+      },
+    });
+
+    await runExpiryScan(NOW);
+
+    const notification = await prisma.notification.findFirstOrThrow({
+      where: { entityId: document.id },
+    });
+    expect(notification.body).toContain("K 40721");
+    expect(notification.body).toContain("VEH-TEST-1");
+    expect(notification.body).not.toContain(car.id);
+  });
+
   it("skips a document that has been replaced or removed", async () => {
     const replaced = await attachDocument(customerId, categoryId, daysFromNow(5));
     await prisma.document.update({ where: { id: replaced.id }, data: { status: "REPLACED" } });

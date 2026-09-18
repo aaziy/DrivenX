@@ -8,6 +8,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { createVehicle } from "./fleet";
 import { prisma } from "./index";
 import { globalSearch } from "./search";
 
@@ -95,6 +96,50 @@ describe("globalSearch", () => {
     expect(hits[0]?.kind).toBe("document");
     expect(hits[0]?.ownerType).toBe("CUSTOMER");
     expect(hits[0]?.ownerId).toBe(customer.id);
+  });
+
+  it("finds a vehicle by the plate as it is written, its VIN, or its fleet code", async () => {
+    const car = await createVehicle(
+      {
+        make: "Nissan",
+        model: "Patrol",
+        year: 2023,
+        plateEmirate: "DUBAI",
+        plateCode: "K",
+        plateNumber: "40721",
+        vin: "JN8AY2NY0P9123456",
+        currentMileageKm: 0,
+        ownershipType: "COMPANY_OWNED",
+      },
+      null,
+    );
+
+    // "K 40721" is how a plate is read out; it is stored as code and number apart.
+    for (const typed of ["K 40721", "40721", "K40721", "k 40721"]) {
+      expect((await globalSearch(typed))[0]?.id, `searching ${typed}`).toBe(car.id);
+    }
+    expect((await globalSearch("P9123456"))[0]?.id).toBe(car.id);
+    expect((await globalSearch(car.code.toLowerCase().replace("-", " ")))[0]?.id).toBe(car.id);
+    expect((await globalSearch("Nissan Patrol"))[0]?.kind).toBe("vehicle");
+  });
+
+  it("keeps vehicles out of a search that may not see them", async () => {
+    await createVehicle(
+      {
+        make: "Lexus",
+        model: "LX",
+        year: 2024,
+        plateEmirate: "DUBAI",
+        plateCode: "L",
+        plateNumber: "31337",
+        vin: "JTJHY7AX0R4123456",
+        currentMileageKm: 0,
+        ownershipType: "COMPANY_OWNED",
+      },
+      null,
+    );
+
+    expect(await globalSearch("31337", { vehicles: false })).toEqual([]);
   });
 
   it("searches only what the caller is allowed to see", async () => {

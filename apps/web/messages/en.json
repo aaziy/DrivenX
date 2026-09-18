@@ -275,9 +275,9 @@
   },
   "search": {
     "title": "Search",
-    "subtitle": "Customers, suppliers, and the numbers printed on their documents.",
+    "subtitle": "Customers, suppliers, vehicles, and the numbers printed on their documents.",
     "label": "Search everything",
-    "placeholder": "Name, mobile, code, Emirates ID…",
+    "placeholder": "Name, mobile, plate, code, Emirates ID…",
     "prompt": "Type at least two characters.",
     "resultsFor": "Results for “{query}”",
     "resultCount": "{count, plural, =0 {No matches} one {# match} other {# matches}}",
@@ -286,6 +286,7 @@
     "kinds": {
       "customer": "Customer",
       "supplier": "Supplier",
+      "vehicle": "Vehicle",
       "document": "Document"
     }
   },

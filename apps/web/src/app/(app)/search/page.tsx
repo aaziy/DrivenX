@@ -20,9 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 function hrefFor(hit: SearchHit): string | null {
   if (hit.kind === "customer") return `/customers/${hit.id}`;
   if (hit.kind === "supplier") return `/suppliers/${hit.id}`;
+  if (hit.kind === "vehicle") return `/vehicles/${hit.id}`;
 
   if (hit.ownerType === "CUSTOMER") return `/customers/${hit.ownerId}`;
   if (hit.ownerType === "SUPPLIER") return `/suppliers/${hit.ownerId}`;
+  if (hit.ownerType === "VEHICLE") return `/vehicles/${hit.ownerId}`;
   return null;
 }
 
@@ -41,6 +43,7 @@ export default async function SearchPage({
   const scope = {
     customers: principal.permissions.has("customer.view"),
     suppliers: principal.permissions.has("supplier.view"),
+    vehicles: principal.permissions.has("vehicle.view"),
     documents: principal.permissions.has("document.view"),
   };
 

@@ -64,8 +64,9 @@ async function ownerLabels(
 
   const customerIds = idsFor("CUSTOMER");
   const supplierIds = idsFor("SUPPLIER");
+  const vehicleIds = idsFor("VEHICLE");
 
-  const [customers, suppliers] = await Promise.all([
+  const [customers, suppliers, vehicles] = await Promise.all([
     customerIds.length
       ? prisma.customer.findMany({
           where: { id: { in: customerIds } },
@@ -78,7 +79,22 @@ async function ownerLabels(
           select: { id: true, code: true, companyName: true },
         })
       : [],
+    // A mulkiya or insurance policy belongs to a car, and "which car" is the plate —
+    // that is what is written on the renewal form and what staff look for in the yard.
+    vehicleIds.length
+      ? prisma.vehicle.findMany({
+          where: { id: { in: vehicleIds } },
+          select: { id: true, code: true, make: true, model: true, plateCode: true, plateNumber: true },
+        })
+      : [],
   ]);
+
+  for (const vehicle of vehicles) {
+    labels.set(
+      `VEHICLE:${vehicle.id}`,
+      `${vehicle.make} ${vehicle.model}, plate ${vehicle.plateCode} ${vehicle.plateNumber} (${vehicle.code})`,
+    );
+  }
 
   for (const customer of customers) {
     labels.set(`CUSTOMER:${customer.id}`, `${customer.fullName} (${customer.code})`);

@@ -82,7 +82,7 @@ export async function resolveDocumentEntities(
   const idsOf = (type: string) =>
     documents.filter((d) => d.ownerType === type).map((d) => d.ownerId);
 
-  const [customers, suppliers] = await Promise.all([
+  const [customers, suppliers, vehicles] = await Promise.all([
     prisma.customer.findMany({
       where: { id: { in: idsOf("CUSTOMER") } },
       select: { id: true, code: true, fullName: true },
@@ -90,6 +90,10 @@ export async function resolveDocumentEntities(
     prisma.supplier.findMany({
       where: { id: { in: idsOf("SUPPLIER") } },
       select: { id: true, code: true, companyName: true },
+    }),
+    prisma.vehicle.findMany({
+      where: { id: { in: idsOf("VEHICLE") } },
+      select: { id: true, code: true, make: true, model: true, plateCode: true, plateNumber: true },
     }),
   ]);
 
@@ -104,6 +108,12 @@ export async function resolveDocumentEntities(
     owners.set(`SUPPLIER:${s.id}`, {
       label: `${s.companyName} (${s.code})`,
       href: `/suppliers/${s.id}`,
+    });
+  }
+  for (const v of vehicles) {
+    owners.set(`VEHICLE:${v.id}`, {
+      label: `${v.make} ${v.model} · ${v.plateCode} ${v.plateNumber} (${v.code})`,
+      href: `/vehicles/${v.id}`,
     });
   }
 

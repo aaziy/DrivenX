@@ -67,6 +67,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const canSearch =
     can(principal, "customer.view") ||
     can(principal, "supplier.view") ||
+    can(principal, "vehicle.view") ||
     can(principal, "document.view");
 
   // Notifications are not gated by one permission: they are visible to anyone who can

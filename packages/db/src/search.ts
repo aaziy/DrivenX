@@ -15,7 +15,7 @@ import { formatPartyCode, normaliseUaeMobile, parsePartyCode } from "@drivenx/co
 import { Prisma } from "../generated/client";
 import { prisma } from "./index";
 
-export type SearchKind = "customer" | "supplier" | "document";
+export type SearchKind = "customer" | "supplier" | "vehicle" | "document";
 
 export interface SearchHit {
   kind: SearchKind;
@@ -31,6 +31,7 @@ export interface SearchHit {
 export interface SearchOptions {
   customers?: boolean;
   suppliers?: boolean;
+  vehicles?: boolean;
   documents?: boolean;
   limit?: number;
 }
@@ -51,7 +52,13 @@ export async function globalSearch(
   const query = rawQuery.trim();
   if (query.length < 2) return [];
 
-  const { customers = true, suppliers = true, documents = true, limit = 20 } = options;
+  const {
+    customers = true,
+    suppliers = true,
+    vehicles = true,
+    documents = true,
+    limit = 20,
+  } = options;
 
   const like = `%${query}%`;
   // "050 123 4567" and "+971501234567" are the same number; the stored form is the
@@ -62,6 +69,16 @@ export async function globalSearch(
   // Formatted by the same function that minted it. Building the string by hand here once
   // mapped every non-customer kind to SUP, which a vehicle code would have hit silently.
   const codeExact = code ? formatPartyCode(code.kind, code.sequence) : null;
+  // A plate is typed as it is written — "A 12345" — but stored as code and number apart,
+  // so the digits are matched against the number exactly.
+  // The three shapes are spelled out rather than folded into one pattern: an optional
+  // alphanumeric code in front greedily ate the leading digits of a bare "40721", leaving
+  // "21", and a plate typed without its letter — the usual way — found nothing.
+  const plateDigits =
+    /^\s*(\d{1,5})\s*$/.exec(query)?.[1] ?? // 40721
+    /^\s*[A-Za-z0-9]{1,3}\s+(\d{1,5})\s*$/.exec(query)?.[1] ?? // K 40721, 1 40721
+    /^\s*[A-Za-z]{1,3}(\d{1,5})\s*$/.exec(query)?.[1] ?? // K40721
+    "";
 
   const branches: Prisma.Sql[] = [];
 
@@ -112,6 +129,32 @@ export async function globalSearch(
              OR COALESCE(s.contact_person, '') ILIKE ${like}
              OR COALESCE(s.trn, '') ILIKE ${like}
              OR s.company_name % ${query})
+    `);
+  }
+
+  if (vehicles) {
+    branches.push(Prisma.sql`
+      SELECT 'vehicle' AS kind, v.id, (v.make || ' ' || v.model) AS label,
+             (v.plate_code || ' ' || v.plate_number) AS sublabel,
+             NULL::text AS owner_type, NULL::text AS owner_id,
+             GREATEST(
+               similarity(v.vin, ${query}),
+               similarity(v.make || ' ' || v.model, ${query}),
+               CASE WHEN v.code = ${codeExact} THEN 1.0 ELSE 0 END,
+               CASE WHEN v.plate_number = ${plateDigits} THEN 0.9 ELSE 0 END,
+               CASE WHEN v.vin ILIKE ${like}
+                      OR v.code ILIKE ${like}
+                      OR (v.make || ' ' || v.model) ILIKE ${like}
+                    THEN ${SUBSTRING_SCORE} ELSE 0 END
+             ) AS score
+      FROM vehicles v
+      WHERE v.deleted_at IS NULL
+        AND (v.vin ILIKE ${like}
+             OR v.code ILIKE ${like}
+             OR v.code = ${codeExact}
+             OR v.plate_number = ${plateDigits}
+             OR (v.make || ' ' || v.model) ILIKE ${like}
+             OR v.vin % ${query})
     `);
   }
 
