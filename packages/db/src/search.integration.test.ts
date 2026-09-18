@@ -1,0 +1,126 @@
+/**
+ * Global search against a real database.
+ *
+ * Trigram matching cannot be tested without Postgres — the whole point is what the
+ * database does with a misspelling, and a mocked query would only prove that the string
+ * I wrote is the string I wrote.
+ */
+
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { prisma } from "./index";
+import { globalSearch } from "./search";
+
+async function makeCustomer(code: string, fullName: string, mobile: string, email?: string) {
+  return prisma.customer.create({ data: { code, fullName, mobile, email: email ?? null } });
+}
+
+beforeEach(async () => {
+  await makeCustomer("CUS-00041", "Ahmed Al Mansoori", "+971501234567", "ahmed@example.com");
+  await makeCustomer("CUS-00042", "Fatima Al Suwaidi", "+971559876543");
+
+  await prisma.supplier.create({
+    data: {
+      code: "SUP-00007",
+      companyName: "Gulf Premier Motors",
+      contactPerson: "Khalid Rahman",
+      trn: "100123456789012",
+    },
+  });
+});
+
+describe("globalSearch", () => {
+  it("finds a customer by name", async () => {
+    const hits = await globalSearch("Mansoori");
+    expect(hits[0]?.kind).toBe("customer");
+    expect(hits[0]?.label).toBe("Ahmed Al Mansoori");
+  });
+
+  it("finds a name that was spelled differently", async () => {
+    // The reason this is a trigram index and not an ILIKE. An Arabic surname transliterated
+    // into Latin has no single correct spelling, and "%Mansouri%" does not appear anywhere
+    // in "Ahmed Al Mansoori" — substring matching finds nothing here.
+    const hits = await globalSearch("Mansouri");
+
+    expect(hits.map((h) => h.label)).toContain("Ahmed Al Mansoori");
+  });
+
+  it("finds a customer from a mobile number typed the way people say it", async () => {
+    // Stored as +971501234567; nobody types it that way.
+    const hits = await globalSearch("050 123 4567");
+    expect(hits[0]?.label).toBe("Ahmed Al Mansoori");
+  });
+
+  it("finds a customer by the code read out over the phone", async () => {
+    for (const typed of ["CUS-00041", "cus 41", "CUS41"]) {
+      const hits = await globalSearch(typed);
+      expect(hits[0]?.label, `searching ${typed}`).toBe("Ahmed Al Mansoori");
+    }
+  });
+
+  it("ranks an exact code above a fuzzy name match", async () => {
+    const hits = await globalSearch("CUS-00042");
+    expect(hits[0]?.label).toBe("Fatima Al Suwaidi");
+  });
+
+  it("finds a supplier by company, contact or TRN", async () => {
+    expect((await globalSearch("Gulf Premier"))[0]?.kind).toBe("supplier");
+    expect((await globalSearch("Khalid"))[0]?.label).toBe("Gulf Premier Motors");
+    expect((await globalSearch("100123456789012"))[0]?.label).toBe("Gulf Premier Motors");
+  });
+
+  it("finds a document by the number printed on it", async () => {
+    const customer = await prisma.customer.findFirstOrThrow({ where: { code: "CUS-00041" } });
+    const category = await prisma.documentCategory.create({
+      data: { key: `k_${Date.now()}`, label: "Emirates ID", appliesTo: ["CUSTOMER"] },
+    });
+    await prisma.document.create({
+      data: {
+        ownerType: "CUSTOMER",
+        ownerId: customer.id,
+        categoryId: category.id,
+        documentNumber: "784-1990-1000000-0",
+        fileKey: "customer/x/y.pdf",
+        fileName: "eid.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 10,
+        reminderOffsets: [30],
+      },
+    });
+
+    const hits = await globalSearch("784-1990-1000000-0");
+
+    // The number is on the document, not the customer — and the link has to lead back
+    // to the person it belongs to.
+    expect(hits[0]?.kind).toBe("document");
+    expect(hits[0]?.ownerType).toBe("CUSTOMER");
+    expect(hits[0]?.ownerId).toBe(customer.id);
+  });
+
+  it("searches only what the caller is allowed to see", async () => {
+    // The page decides this from the signed-in user's permissions; without it, a
+    // salesperson searching a name would be shown supplier bank contacts.
+    const hits = await globalSearch("Gulf Premier", { suppliers: false });
+    expect(hits).toEqual([]);
+  });
+
+  it("ignores a record that has been removed", async () => {
+    const customer = await prisma.customer.findFirstOrThrow({ where: { code: "CUS-00042" } });
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: { deletedAt: new Date() },
+    });
+
+    expect(await globalSearch("Suwaidi")).toEqual([]);
+  });
+
+  it("returns nothing for a query too short to mean anything", async () => {
+    // A single character matches most of the database and answers no question.
+    expect(await globalSearch("a")).toEqual([]);
+    expect(await globalSearch(" ")).toEqual([]);
+  });
+
+  it("returns nothing rather than everything when there is no match", async () => {
+    expect(await globalSearch("Zzzyxwvu")).toEqual([]);
+  });
+});

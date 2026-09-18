@@ -42,6 +42,12 @@ if (process.env.NODE_ENV !== "production") {
 export * from "../generated/client";
 export { nextCustomerCode, nextSupplierCode } from "./parties/codes";
 export {
+  globalSearch,
+  type SearchHit,
+  type SearchKind,
+  type SearchOptions,
+} from "./search";
+export {
   withAuditContext,
   withoutAudit,
   currentAuditActor,
