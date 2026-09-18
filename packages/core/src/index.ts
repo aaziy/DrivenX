@@ -17,3 +17,4 @@ export * from "./documents/categories";
 export * from "./fleet/status";
 export * from "./fleet/mileage";
 export * from "./fleet/vehicle";
+export * from "./pricing/deal";
