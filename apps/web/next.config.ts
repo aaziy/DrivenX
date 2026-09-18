@@ -37,7 +37,8 @@ const config: NextConfig = {
     "@drivenx/logger",
   ],
 
-  serverExternalPackages: ["@prisma/client", "@node-rs/argon2"],
+  // React-PDF loads its fonts and layout engine at run time; bundling it breaks both.
+  serverExternalPackages: ["@prisma/client", "@node-rs/argon2", "@react-pdf/renderer"],
 
   experimental: {
     // Enables forbidden()/unauthorized() and the forbidden.tsx boundary, so a

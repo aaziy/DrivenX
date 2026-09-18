@@ -6,6 +6,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { businessDate, EDITABLE_CONTRACT_STATUSES, Money, type ContractStatus } from "@drivenx/core";
 import { prisma } from "@drivenx/db";
 
+import { currentLocale } from "@/i18n/locale";
 import { requirePermission } from "@/lib/auth";
 
 import { DocumentsCard } from "../../documents/documents-card";
@@ -45,8 +46,9 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
   const principal = await requirePermission("contract.view");
   const { contractId } = await params;
 
-  const [t, tStatus, tTypes, tInstallment, tCharges, tMethods, format, contract, revenue] = await Promise.all([
+  const [t, tPdf, tStatus, tTypes, tInstallment, tCharges, tMethods, format, contract, revenue] = await Promise.all([
     getTranslations("contracts"),
+    getTranslations("contractPdf"),
     getTranslations("contracts.status"),
     getTranslations("contracts.types"),
     getTranslations("contracts.installmentStatus"),
@@ -62,6 +64,7 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
   ]);
 
   if (!contract) notFound();
+  const locale = await currentLocale();
 
   const can = (key: Parameters<typeof principal.permissions.has>[0]) => principal.permissions.has(key);
   const today = businessDate(new Date());
@@ -107,6 +110,20 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
               </bdi>
             </Link>
           </p>
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          {/* Plain links, not client navigation: the browser opens the PDF itself. */}
+          <a className="btn-secondary" href={`/contracts/${contract.id}/pdf`} target="_blank" rel="noopener">
+            {tPdf("download")}
+          </a>
+          <a
+            className="btn-secondary"
+            href={`/contracts/${contract.id}/pdf?lang=${locale === "ar" ? "en" : "ar"}`}
+            target="_blank"
+            rel="noopener"
+          >
+            {tPdf("downloadOther")}
+          </a>
         </div>
       </header>
 

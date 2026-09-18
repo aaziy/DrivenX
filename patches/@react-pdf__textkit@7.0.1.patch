@@ -1,0 +1,55 @@
+diff --git a/lib/textkit.js b/lib/textkit.js
+index 7bfe0d9a119a8bd1ec98ff0f4827bd6cb3a967a4..b43b7eabf59e2abda1017f11cd3f44f297d7b861 100644
+--- a/lib/textkit.js
++++ b/lib/textkit.js
+@@ -334,6 +334,30 @@ const glyphIndexAt = (index, run) => {
+     return result;
+ };
+ 
++/**
++ * First glyph that maps to the given string index.
++ *
++ * DrivenX patch: a letter that shapes to a base glyph plus a mark (Arabic "ج" is a body
++ * and a separate dot) maps both glyphs to the same string index. Starting a slice at the
++ * last of them dropped the body, so a run beginning with such a letter lost it.
++ *
++ * @param index - String index
++ * @param run - Run
++ * @returns Glyph index
++ */
++const firstGlyphIndexAt = (index, run) => {
++    let result = glyphIndexAt(index, run);
++    const glyphIndices = run?.glyphIndices;
++    if (!glyphIndices)
++        return result;
++    while (result > 0 &&
++        result < glyphIndices.length &&
++        glyphIndices[result - 1] === glyphIndices[result]) {
++        result -= 1;
++    }
++    return result;
++};
++
+ /**
+  * Returns new array starting with zero, keeping the same relation between consecutive values.
+  *
+@@ -359,7 +383,7 @@ const slice$1 = (start, end, run) => {
+     const runScale = scale(run);
+     const font = getFont(run);
+     // Get glyph start and end indices
+-    const startIndex = glyphIndexAt(start, run);
++    const startIndex = firstGlyphIndexAt(start, run);
+     const endIndex = glyphIndexAt(end - 1, run);
+     // Get start and end glyph
+     const startGlyph = run.glyphs?.[startIndex];
+@@ -2625,8 +2649,8 @@ const insertGlyph = (index, glyph, attributedString) => {
+  */
+ const advanceWidthBetween$1 = (start, end, run) => {
+     const runStart = run.start || 0;
+-    const glyphStartIndex = Math.max(0, glyphIndexAt(start - runStart, run));
+-    const glyphEndIndex = Math.max(0, glyphIndexAt(end - runStart, run));
++    const glyphStartIndex = Math.max(0, firstGlyphIndexAt(start - runStart, run));
++    const glyphEndIndex = Math.max(0, firstGlyphIndexAt(end - runStart, run));
+     const positions = (run.positions || []).slice(glyphStartIndex, glyphEndIndex);
+     return advanceWidth$2(positions);
+ };

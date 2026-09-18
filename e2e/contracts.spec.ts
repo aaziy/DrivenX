@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs";
+
 import { expect, test, type Page } from "@playwright/test";
 
 import { PERSONAS, signInExpectingSuccess } from "./helpers";
@@ -187,6 +189,30 @@ test.describe("contracts", () => {
     // The row links on the supplier's code, which this spec does not know.
     await page.getByRole("row", { name: company }).getByRole("link").first().click();
     await expect(page.getByText("Nothing is owed to this supplier.")).toBeVisible();
+  });
+
+  test("prints the contract as a PDF in either language, and only for a signed-in user", async ({ page, playwright }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await draftAndActivate(page);
+    const url = page.url();
+
+    const link = page.getByRole("link", { name: "Download PDF" });
+    await expect(link).toHaveAttribute("href", /\/contracts\/[^/]+\/pdf$/);
+
+    for (const lang of ["en", "ar"] as const) {
+      const response = await page.request.get(`${url}/pdf?lang=${lang}`);
+      expect(response.status()).toBe(200);
+      expect(response.headers()["content-type"]).toBe("application/pdf");
+      expect(response.headers()["cache-control"]).toContain("no-store");
+      const body = await response.body();
+      expect(body.subarray(0, 5).toString()).toBe("%PDF-");
+      if (process.env.SHOT_DIR) writeFileSync(`${process.env.SHOT_DIR}/contract-${lang}.pdf`, body);
+    }
+
+    // No session, no contract.
+    const anonymous = await playwright.request.newContext();
+    expect((await anonymous.get(`${url}/pdf`, { maxRedirects: 0 })).status()).toBe(401);
+    await anonymous.dispose();
   });
 
   test("sales can draft a contract but not activate one", async ({ page }) => {

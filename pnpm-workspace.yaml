@@ -30,3 +30,6 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - prisma
   - '@node-rs/argon2'
+
+patchedDependencies:
+  '@react-pdf/textkit@7.0.1': patches/@react-pdf__textkit@7.0.1.patch

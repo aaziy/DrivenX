@@ -17,6 +17,7 @@
     "@drivenx/storage": "workspace:*",
     "@node-rs/argon2": "catalog:",
     "@prisma/client": "catalog:",
+    "@react-pdf/renderer": "^4.9.0",
     "next": "catalog:",
     "next-intl": "catalog:",
     "react": "catalog:",
