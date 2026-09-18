@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 
+import { Money } from "@drivenx/core";
 import { prisma } from "@drivenx/db";
 
 import { SubmitButton } from "@/components/form";
 import { requirePermission } from "@/lib/auth";
 
+import { installmentStatusTone } from "../../contracts/tone";
 import { DocumentsCard } from "../../documents/documents-card";
 import { deleteSupplier, setSupplierStatus, updateSupplier } from "../actions";
 import { SupplierForm } from "../supplier-form";
@@ -35,9 +37,21 @@ export default async function SupplierDetailPage({
   const principal = await requirePermission("supplier.view");
   const { supplierId } = await params;
 
-  const [t, supplier] = await Promise.all([
+  const canSeePayables = principal.permissions.has("supplier_invoice.view");
+
+  const [t, tInstallment, format, supplier, payables] = await Promise.all([
     getTranslations("suppliers"),
+    getTranslations("contracts.installmentStatus"),
+    getFormatter(),
     loadSupplier(supplierId),
+    // What is owed now: raised and not settled. Months not yet due are not a debt.
+    canSeePayables
+      ? prisma.supplierInvoice.findMany({
+          where: { supplierId, raisedOn: { not: null }, status: { not: "PAID" } },
+          orderBy: [{ dueDate: "asc" }, { sequence: "asc" }],
+          include: { contract: { select: { id: true, number: true } } },
+        })
+      : [],
   ]);
 
   if (!supplier) notFound();
@@ -95,6 +109,59 @@ export default async function SupplierDetailPage({
             )}
           </div>
         </div>
+
+        {canSeePayables ? (
+          <div className="card">
+            <div className="card-header">
+              <h2>{t("payables.title")}</h2>
+              <span className="muted">
+                {t("payables.outstanding", {
+                  amount: Money.format(payables.reduce((sum, item) => sum + item.amountFils - item.paidFils, 0n)),
+                })}
+              </span>
+            </div>
+            {payables.length === 0 ? (
+              <div className="card-body">
+                <p className="muted">{t("payables.empty")}</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>{t("payables.columns.contract")}</th>
+                      <th>{t("payables.columns.due")}</th>
+                      <th className="numeric">{t("payables.columns.amount")}</th>
+                      <th className="numeric">{t("payables.columns.paid")}</th>
+                      <th>{t("payables.columns.status")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payables.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <Link href={`/contracts/${item.contract.id}`}>
+                            <bdi>{item.contract.number}</bdi>
+                          </Link>
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {format.dateTime(item.dueDate, { dateStyle: "medium", timeZone: "UTC" })}
+                        </td>
+                        <td className="numeric">{Money.format(item.amountFils, { currency: null })}</td>
+                        <td className="numeric">{Money.format(item.paidFils, { currency: null })}</td>
+                        <td>
+                          <span className={`badge ${installmentStatusTone(item.status)}`.trim()}>
+                            {tInstallment(item.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {principal.permissions.has("document.view") ? (
           <DocumentsCard

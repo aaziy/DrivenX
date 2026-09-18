@@ -5,8 +5,8 @@
  * Returns every violation it finds rather than stopping at the first, so it can serve as
  * a health check as well as a test: run it and read the list. An empty list means the
  * books are internally consistent — the schedules add up, every payment is fully
- * accounted for, the ledger holds exactly the revenue that has been issued, and no car is
- * out without a contract.
+ * accounted for, the ledger holds exactly the revenue that has been issued and the supplier
+ * cost that has been raised, and no car is out without a contract.
  */
 
 import { expandCharge, vatOn, type ScheduledCharge } from "@drivenx/core";
@@ -126,6 +126,34 @@ export async function reconcile(): Promise<Violation[]> {
   for (const item of priced) {
     if (item.vatFils !== vatOn(item.netFils, item.vatBasisPoints) || item.grossFils !== item.netFils + item.vatFils) {
       violations.push({ invariant: "INV-10", subject: item.id, detail: "VAT or gross does not follow from net" });
+    }
+  }
+
+  // INV-11: what a supplier invoice says is paid is exactly what was paid against it.
+  const payables = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT s.id FROM supplier_invoices s
+    LEFT JOIN supplier_payments p ON p.supplier_invoice_id = s.id
+    GROUP BY s.id, s.paid_fils
+    HAVING s.paid_fils <> COALESCE(SUM(p.amount_fils), 0)`;
+  for (const row of payables) {
+    violations.push({ invariant: "INV-11", subject: row.id, detail: "supplier paid ≠ sum of payments" });
+  }
+
+  // INV-12: a contract's supplier cost in the ledger is exactly the invoices raised on it.
+  const supplierCost = await prisma.$queryRaw<Array<{ number: string; ledger: bigint; raised: bigint }>>`
+    SELECT c.number,
+      (SELECT COALESCE(SUM(l.amount_fils), 0) FROM ledger_entries l
+        WHERE l.contract_id = c.id AND l.category = 'cost.supplier')::bigint AS ledger,
+      (SELECT COALESCE(SUM(s.amount_fils), 0) FROM supplier_invoices s
+        WHERE s.contract_id = c.id AND s.raised_on IS NOT NULL)::bigint AS raised
+    FROM contracts c`;
+  for (const row of supplierCost) {
+    if (row.ledger !== row.raised) {
+      violations.push({
+        invariant: "INV-12",
+        subject: row.number,
+        detail: `ledger supplier cost ${row.ledger} ≠ raised ${row.raised}`,
+      });
     }
   }
 

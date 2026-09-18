@@ -40,6 +40,7 @@ export function SubmitButton({
 export function Field({
   label,
   name,
+  id = name,
   type = "text",
   required,
   hint,
@@ -51,6 +52,8 @@ export function Field({
 }: {
   label: string;
   name: string;
+  /** Defaults to the name; set it when two forms on one page share field names. */
+  id?: string;
   type?: string;
   required?: boolean;
   hint?: string;
@@ -61,17 +64,17 @@ export function Field({
   /** Email addresses and passwords are typed left-to-right whatever the page language. */
   dir?: "ltr" | "rtl" | "auto";
 }) {
-  const hintId = hint ? `${name}-hint` : undefined;
-  const errorId = error ? `${name}-error` : undefined;
+  const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
 
   return (
     <div className="field">
-      <label htmlFor={name}>
+      <label htmlFor={id}>
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
       <input
-        id={name}
+        id={id}
         name={name}
         type={type}
         required={required}

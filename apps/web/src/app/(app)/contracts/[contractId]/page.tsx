@@ -9,9 +9,14 @@ import { prisma } from "@drivenx/db";
 import { requirePermission } from "@/lib/auth";
 
 import { DocumentsCard } from "../../documents/documents-card";
-import { activateContractAction, recordPaymentAction, waiveInstallmentAction } from "../actions";
+import {
+  activateContractAction,
+  recordPaymentAction,
+  recordSupplierPaymentAction,
+  waiveInstallmentAction,
+} from "../actions";
 import { contractStatusTone, installmentStatusTone } from "../tone";
-import { ActivateForm, PaymentForm, WaiveForm } from "./panels";
+import { ActivateForm, PaymentForm, SupplierPaymentForm, WaiveForm } from "./panels";
 
 async function loadContract(contractId: string) {
   return prisma.contract.findFirst({
@@ -26,6 +31,7 @@ async function loadContract(contractId: string) {
       },
       payments: { orderBy: { receivedOn: "desc" }, include: { recordedBy: { select: { fullName: true } } } },
       statusChanges: { orderBy: { changedAt: "desc" }, include: { changedBy: { select: { fullName: true } } } },
+      supplierInvoices: { orderBy: { sequence: "asc" } },
     },
   });
 }
@@ -72,6 +78,12 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
   );
   const outstanding = scheduled.gross - scheduled.paid;
   const bookedRevenue = revenue.reduce((sum, row) => sum + (row._sum.amountFils ?? 0n), 0n);
+
+  // What the supplier is owed is what has fallen due; later months are not yet a debt.
+  const payables = contract.supplierInvoices;
+  const supplierOwed = payables.reduce((sum, item) => sum + (item.raisedOn ? item.amountFils : 0n), 0n);
+  const supplierPaid = payables.reduce((sum, item) => sum + item.paidFils, 0n);
+  const openPayables = payables.filter((item) => item.paidFils < item.amountFils);
 
   return (
     <>
@@ -221,6 +233,73 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                         {payment.creditFils > 0n ? t("detail.credit", { amount: Money.format(payment.creditFils) }) : null}
                       </td>
                       <td className="muted">{payment.recordedBy ? t("detail.by", { name: payment.recordedBy.fullName }) : null}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+
+        {payables.length > 0 && can("supplier_invoice.view") ? (
+          <div className="card">
+            <div className="card-header">
+              <h2>{t("supplier.title")}</h2>
+              <span className="muted">
+                {t("supplier.summary", { owed: Money.format(supplierOwed), paid: Money.format(supplierPaid) })}
+              </span>
+            </div>
+            <div className="card-body">
+              <p className="muted" style={{ marginBlockEnd: 12 }}>
+                {t("supplier.hint", { supplier: contract.supplier?.companyName ?? "" })}
+              </p>
+              {live && can("supplier_invoice.manage") ? (
+                openPayables.length > 0 ? (
+                  <SupplierPaymentForm
+                    action={recordSupplierPaymentAction.bind(null, contract.id)}
+                    today={today}
+                    invoices={openPayables.map((item) => ({
+                      id: item.id,
+                      label: t("supplier.invoiceOption", {
+                        due: day(item.dueDate),
+                        left: Money.format(item.amountFils - item.paidFils),
+                      }),
+                    }))}
+                  />
+                ) : (
+                  <p className="muted">{t("supplier.allPaid")}</p>
+                )
+              ) : null}
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>{t("supplier.columns.due")}</th>
+                    <th>{t("supplier.columns.period")}</th>
+                    <th className="numeric">{t("supplier.columns.amount")}</th>
+                    <th className="numeric">{t("supplier.columns.paid")}</th>
+                    <th>{t("supplier.columns.status")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payables.map((item) => (
+                    <tr key={item.id}>
+                      <td style={{ whiteSpace: "nowrap" }}>{day(item.dueDate)}</td>
+                      <td className="muted" style={{ whiteSpace: "nowrap" }}>
+                        {day(item.periodStart)} – {day(item.periodEnd)}
+                      </td>
+                      <td className="numeric" style={{ whiteSpace: "nowrap" }}>
+                        {Money.format(item.amountFils, { currency: null })}
+                      </td>
+                      <td className="numeric" style={{ whiteSpace: "nowrap" }}>
+                        {Money.format(item.paidFils, { currency: null })}
+                      </td>
+                      <td>
+                        <span className={`badge ${installmentStatusTone(item.status)}`.trim()}>
+                          {tInstallment(item.status)}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

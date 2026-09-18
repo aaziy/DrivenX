@@ -31,6 +31,7 @@ import type { Tx } from "./tx";
 import { fromDbDate, toDbDate } from "./dates";
 import { prisma } from "./index";
 import { postToLedger } from "./ledger";
+import { raiseDueSupplierInvoicesForContract, writeSupplierSchedule } from "./supplier-invoices";
 
 export type ContractRuleCode =
   | "customerNotFound"
@@ -47,7 +48,8 @@ export type ContractRuleCode =
   | "installmentNotFound"
   | "waiveNeedsReason"
   | "alreadyWaived"
-  | "waivePaidInstallment";
+  | "waivePaidInstallment"
+  | "supplierCostMissing";
 
 export class ContractRuleError extends Error {
   constructor(readonly code: ContractRuleCode) {
@@ -262,7 +264,7 @@ async function issueDueForContract(
 export async function activateContract(
   contractId: string,
   options: { actorId: string | null; today: IsoDate },
-): Promise<{ installments: number; issued: number }> {
+): Promise<{ installments: number; issued: number; supplierInvoices: number; supplierRaised: number }> {
   try {
     return await prisma.$transaction(
       async (tx) => {
@@ -272,7 +274,9 @@ export async function activateContract(
           where: { id: contractId, deletedAt: null },
           include: {
             customer: { select: { status: true } },
-            vehicle: { select: { id: true, status: true, ownershipType: true } },
+            vehicle: {
+              select: { id: true, status: true, ownershipType: true, supplierId: true, supplierMonthlyCostFils: true },
+            },
           },
         });
         if (!contract) throw new ContractRuleError("contractNotFound");
@@ -328,6 +332,29 @@ export async function activateContract(
           installments += expanded.length;
         }
 
+        // A leased-in car costs DrivenX its monthly lease for every month the customer has it
+        // (P1D-13). Without the agreed cost there is nothing to write, and activating anyway
+        // would report the whole rental as profit.
+        const supplierId = contract.supplierId ?? contract.vehicle.supplierId;
+        let supplierInvoices = 0;
+        if (contract.vehicle.ownershipType === "B2B_SUPPLIER") {
+          const monthlyCost = contract.vehicle.supplierMonthlyCostFils;
+          if (!supplierId || monthlyCost === null || monthlyCost <= 0n) {
+            throw new ContractRuleError("supplierCostMissing");
+          }
+          supplierInvoices = await writeSupplierSchedule(
+            tx,
+            {
+              id: contractId,
+              vehicleId: contract.vehicle.id,
+              supplierId,
+              startDate: terms.startDate,
+              durationMonths: terms.durationMonths,
+            },
+            monthlyCost,
+          );
+        }
+
         const moved = await tx.vehicle.updateMany({
           where: { id: contract.vehicle.id, status: contract.vehicle.status },
           data: { status: vehicleTarget },
@@ -352,7 +379,9 @@ export async function activateContract(
         });
 
         const issued = await issueDueForContract(tx, contract, options.today);
-        return { installments, issued };
+        const supplierRaised =
+          supplierInvoices > 0 ? await raiseDueSupplierInvoicesForContract(tx, contractId, options.today) : 0;
+        return { installments, issued, supplierInvoices, supplierRaised };
       },
       { timeout: 30_000 },
     );

@@ -17,7 +17,10 @@ import {
   activateContract,
   ContractRuleError,
   createContract,
+  prisma,
   recordPayment,
+  recordSupplierPayment,
+  SupplierInvoiceRuleError,
   waiveInstallment,
   type NewContract,
 } from "@drivenx/db";
@@ -59,6 +62,10 @@ async function explain(error: unknown, operation: string): Promise<string> {
     return t("illegalTransition", { from: ts(error.from), to: ts(error.to) });
   }
   if (error instanceof InvalidPaymentError) return t("invalidPayment");
+  if (error instanceof SupplierInvoiceRuleError) {
+    const ts = await getTranslations("contracts.supplier.errors");
+    return ts(error.code);
+  }
   return toUserMessage(operation, error);
 }
 
@@ -207,5 +214,54 @@ export async function waiveInstallmentAction(
     return { success: t("waived") };
   } catch (error) {
     return { error: await explain(error, "waiveInstallment") };
+  }
+}
+
+/** A payment out to the supplier of a leased-in car, against one of its invoices. */
+export async function recordSupplierPaymentAction(
+  contractId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("supplier_invoice.manage");
+  const [t, tc, ts] = await Promise.all([
+    getTranslations("contracts.errors"),
+    getTranslations("contracts"),
+    getTranslations("contracts.supplier.errors"),
+  ]);
+
+  const invoiceId = text(formData, "invoiceId");
+  if (!invoiceId) return { error: ts("chooseInvoice") };
+
+  const amount = money(text(formData, "amount"));
+  if (amount === null || amount === "invalid" || amount === 0n) return { error: ts("invalidPayment") };
+
+  const paidOn = text(formData, "paidOn");
+  if (!isIsoDate(paidOn)) return { error: t("receivedOn") };
+
+  const method = text(formData, "method");
+  if (!(PAYMENT_METHODS as readonly string[]).includes(method)) return { error: t("method") };
+
+  // The invoice must belong to this contract, so a doctored form cannot pay another one.
+  const owned = await prisma.supplierInvoice.count({ where: { id: invoiceId, contractId } });
+  if (owned === 0) return { error: ts("invoiceNotFound") };
+
+  try {
+    await asActor(principal, () =>
+      recordSupplierPayment(
+        invoiceId,
+        {
+          amountFils: amount,
+          paidOn,
+          method: method as (typeof PAYMENT_METHODS)[number],
+          reference: text(formData, "reference") || null,
+        },
+        { actorId: principal.id, today: businessDate(new Date()) },
+      ),
+    );
+    revalidatePath(`/contracts/${contractId}`);
+    return { success: tc("supplier.recorded") };
+  } catch (error) {
+    return { error: await explain(error, "recordSupplierPayment") };
   }
 }

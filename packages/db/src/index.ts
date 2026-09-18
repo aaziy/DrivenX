@@ -64,6 +64,15 @@ export {
   type NewContract,
   type NewPayment,
 } from "./contracts";
+export {
+  raiseDueSupplierInvoices,
+  recordSupplierPayment,
+  refreshSupplierOverdue,
+  setSupplierReference,
+  SupplierInvoiceRuleError,
+  type NewSupplierPayment,
+  type SupplierInvoiceRuleCode,
+} from "./supplier-invoices";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

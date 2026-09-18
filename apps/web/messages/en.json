@@ -240,7 +240,39 @@
       "rentalRequired": "Enter the monthly rental.",
       "allowance": "Enter the mileage allowance as a whole number of kilometres.",
       "receivedOn": "Enter the date it was received.",
-      "method": "Choose how it was paid."
+      "method": "Choose how it was paid.",
+      "supplierCostMissing": "This car is leased from a supplier but has no monthly cost recorded. Add it on the vehicle, then activate."
+    },
+    "supplier": {
+      "title": "Supplier payments",
+      "hint": "What DrivenX owes {supplier} for this car, one invoice a month. The cost is booked when each falls due; paying it moves cash only.",
+      "summary": "{owed} owed so far · {paid} paid",
+      "columns": {
+        "due": "Due",
+        "period": "Period",
+        "amount": "Amount",
+        "paid": "Paid",
+        "status": "Status",
+        "reference": "Supplier ref."
+      },
+      "invoice": "Invoice",
+      "chooseInvoice": "Choose an invoice…",
+      "invoiceOption": "{due} · {left} left",
+      "amount": "Amount paid (AED)",
+      "paidOn": "Paid on",
+      "method": "Method",
+      "reference": "Reference",
+      "record": "Record supplier payment",
+      "recording": "Recording…",
+      "recorded": "Supplier payment recorded.",
+      "allPaid": "Every supplier invoice on this contract is paid.",
+      "errors": {
+        "chooseInvoice": "Choose which invoice this pays.",
+        "invoiceNotFound": "That supplier invoice no longer exists.",
+        "invalidPayment": "Enter an amount greater than zero.",
+        "overpayment": "That is more than is left to pay on the invoice.",
+        "paymentInFuture": "A payment cannot be dated in the future."
+      }
     }
   },
   "deals": {
@@ -763,6 +795,18 @@
       "trn": "A TRN is 15 digits.",
       "iban": "That IBAN is not valid. Check it against the supplier’s bank letter.",
       "notFound": "That supplier no longer exists."
+    },
+    "payables": {
+      "title": "Payables",
+      "empty": "Nothing is owed to this supplier.",
+      "outstanding": "{amount} outstanding",
+      "columns": {
+        "contract": "Contract",
+        "due": "Due",
+        "amount": "Amount",
+        "paid": "Paid",
+        "status": "Status"
+      }
     }
   },
   "users": {

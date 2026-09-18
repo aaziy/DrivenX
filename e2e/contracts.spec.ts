@@ -120,6 +120,75 @@ test.describe("contracts", () => {
     await expect(second.getByRole("button", { name: "Waive" })).toHaveCount(0);
   });
 
+  test("a leased-in car on lease-to-own owes its supplier each month", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    serial += 1;
+    const stamp = `${Date.now()}${serial}`.slice(-9);
+    const company = `E2E Lessor ${stamp}`;
+    const name = `E2E Buyer ${stamp}`;
+    const plate = stamp.slice(-5);
+
+    await page.goto("/suppliers");
+    await page.getByLabel("Company name").fill(company);
+    await page.getByRole("button", { name: "Add supplier" }).click();
+    await expect(page.locator(".alert-success")).toBeVisible();
+
+    await page.goto("/customers");
+    await page.getByLabel("Full name").fill(name);
+    await page.getByLabel("Mobile").fill("050 765 4321");
+    await page.getByRole("button", { name: "Add customer" }).click();
+    await expect(page.locator(".alert-success")).toBeVisible();
+
+    await page.goto("/vehicles/new");
+    await page.getByLabel("Make").fill("Nissan");
+    await page.getByRole("textbox", { name: "Model", exact: true }).fill("Patrol");
+    await page.getByRole("spinbutton", { name: "Model year" }).fill("2025");
+    await page.getByLabel("Plate code").fill("L");
+    await page.getByLabel("Plate number").fill(plate);
+    await page.getByLabel("VIN or chassis number").fill(`JN1${stamp.padStart(14, "0")}`);
+    await page.getByRole("radio", { name: "Leased from a supplier" }).check();
+    await choose(page, "Supplier", company);
+    await page.getByLabel("Monthly cost to the supplier (AED)").fill("2,400");
+    await page.getByRole("button", { name: "Add vehicle" }).click();
+    await page.waitForURL(/\/vehicles\/(?!new)[^/]+$/);
+
+    await page.goto("/contracts/new");
+    await choose(page, "Customer", name);
+    await choose(page, "Vehicle", plate);
+    // A leased-in car leaves only lease-to-own to choose.
+    await expect(page.getByRole("radio", { name: "Lease-to-own" })).toBeChecked();
+    await expect(page.getByRole("radio", { name: "Long-term rental" })).toBeDisabled();
+    await page.getByLabel("Term (months)").fill("3");
+    await page.getByRole("textbox", { name: "Monthly rental (AED, excluding VAT)" }).fill("3,400");
+    await page.getByRole("button", { name: "Save as draft" }).click();
+    await page.waitForURL(/\/contracts\/(?!new)[^/]+$/);
+    await page.getByRole("button", { name: "Activate contract" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Active");
+
+    // One supplier invoice a month; the first is due today and already owed.
+    const payables = page.locator(".card", { has: page.getByRole("heading", { name: "Supplier payments" }) });
+    await expect(payables.locator("tbody tr")).toHaveCount(3);
+    await expect(payables).toContainText("AED 2,400.00 owed so far · AED 0.00 paid");
+    await expect(payables.locator("tbody tr").first()).toContainText("Due");
+
+    // Paying more than the invoice is stopped; paying it in full settles it.
+    await page.getByLabel("Amount paid (AED)").fill("2,500");
+    await page.getByRole("button", { name: "Record supplier payment" }).click();
+    await expect(page.getByText("That is more than is left to pay on the invoice.")).toBeVisible();
+
+    await page.getByLabel("Amount paid (AED)").fill("2,400");
+    await page.getByRole("button", { name: "Record supplier payment" }).click();
+    await expect(payables.locator("tbody tr").first()).toContainText("Paid");
+    await expect(payables).toContainText("AED 2,400.00 owed so far · AED 2,400.00 paid");
+
+    // Nothing else is owed yet, so the supplier's page has no open payables.
+    // Filtered to this company: the list is paged, and earlier runs leave suppliers behind.
+    await page.goto(`/suppliers?q=${encodeURIComponent(company)}`);
+    // The row links on the supplier's code, which this spec does not know.
+    await page.getByRole("row", { name: company }).getByRole("link").first().click();
+    await expect(page.getByText("Nothing is owed to this supplier.")).toBeVisible();
+  });
+
   test("sales can draft a contract but not activate one", async ({ page }) => {
     // Sales holds contract.create, not contract.activate: a salesperson writes the deal,
     // someone else commits the car and the schedule.

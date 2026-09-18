@@ -71,6 +71,7 @@ model User {
   createdContracts      Contract[]
   contractStatusChanges ContractStatusChange[]
   recordedPayments      Payment[]
+  supplierPayments      SupplierPayment[]
   waivedInstallments    Installment[]
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -268,6 +269,8 @@ model Supplier {
 
   vehicles  Vehicle[]
   contracts Contract[]
+  invoices  SupplierInvoice[]
+  payments  SupplierPayment[]
 
   @@index([companyName])
   @@index([status])
@@ -501,9 +504,10 @@ model Vehicle {
   status VehicleStatus @default(AVAILABLE)
   notes  String?
 
-  statusChanges   VehicleStatusChange[]
-  mileageReadings MileageReading[]
-  contracts       Contract[]
+  statusChanges    VehicleStatusChange[]
+  mileageReadings  MileageReading[]
+  contracts        Contract[]
+  supplierInvoices SupplierInvoice[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -662,10 +666,11 @@ model Contract {
   activatedAt  DateTime? @map("activated_at")
   cancelReason String?   @map("cancel_reason")
 
-  charges       ContractCharge[]
-  installments  Installment[]
-  payments      Payment[]
-  statusChanges ContractStatusChange[]
+  charges          ContractCharge[]
+  installments     Installment[]
+  payments         Payment[]
+  statusChanges    ContractStatusChange[]
+  supplierInvoices SupplierInvoice[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -782,6 +787,77 @@ model PaymentAllocation {
   @@index([installmentId])
   @@index([paymentId])
   @@map("payment_allocations")
+}
+
+enum SupplierInvoiceStatus {
+  UPCOMING
+  DUE
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+
+  @@map("supplier_invoice_status")
+}
+
+/// What DrivenX owes the supplier of a leased-in car for one contract month (P1D-13).
+/// Written at activation, beside the customer's schedule. The cost is recognised when it
+/// falls due (raisedOn), as revenue is when an instalment is issued.
+model SupplierInvoice {
+  id         String   @id @default(cuid())
+  supplierId String   @map("supplier_id")
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  vehicleId  String   @map("vehicle_id")
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  contractId String   @map("contract_id")
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  sequence   Int
+
+  periodStart DateTime @map("period_start") @db.Date
+  periodEnd   DateTime @map("period_end") @db.Date
+  dueDate     DateTime @map("due_date") @db.Date
+
+  /// The monthly cost agreed with the supplier, copied from the vehicle at activation.
+  amountFils BigInt @map("amount_fils")
+  /// Always the sum of this invoice's payments, never above the amount.
+  paidFils   BigInt @default(0) @map("paid_fils")
+
+  status            SupplierInvoiceStatus @default(UPCOMING)
+  /// The day the cost was posted to the ledger. Null until it falls due.
+  raisedOn          DateTime?             @map("raised_on") @db.Date
+  /// The supplier's own invoice number, once their paper arrives.
+  supplierReference String?               @map("supplier_reference")
+
+  payments SupplierPayment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([contractId, sequence])
+  @@index([supplierId, dueDate])
+  @@index([dueDate, status])
+  @@map("supplier_invoices")
+}
+
+/// Money paid out to a supplier against one invoice. Cash only: the cost was booked when
+/// the invoice fell due, so paying it never touches the ledger.
+model SupplierPayment {
+  id                String          @id @default(cuid())
+  supplierInvoiceId String          @map("supplier_invoice_id")
+  supplierInvoice   SupplierInvoice @relation(fields: [supplierInvoiceId], references: [id], onDelete: Restrict)
+  supplierId        String          @map("supplier_id")
+  supplier          Supplier        @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  paidOn            DateTime        @map("paid_on") @db.Date
+  amountFils        BigInt          @map("amount_fils")
+  method            PaymentMethod
+  reference         String?
+
+  recordedById String?  @map("recorded_by_id")
+  recordedBy   User?    @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([supplierInvoiceId])
+  @@index([supplierId, paidOn])
+  @@map("supplier_payments")
 }
 
 /// The single source of financial truth (§3.2). Append-only, enforced by a trigger:

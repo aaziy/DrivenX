@@ -77,6 +77,8 @@ These run on every commit from 1D onward. Any failure is a build-breaker, no exc
 | INV-8 | Vehicle profitability == `Σ ledger entries WHERE vehicleId` — no orphaned costs |
 | INV-9 | Every `ACTIVE` contract has exactly one `RENTED` or `LEASE_TO_OWN` vehicle, and vice versa |
 | INV-10 | For any instalment: `grossFils == netFils + vatFils`, and `vatFils` is the rate stored on that instalment applied to `netFils` — so a future rate change cannot rewrite an issued invoice |
+| INV-11 | For any supplier invoice: `paidFils == Σ its payments` and `paidFils <= amountFils` |
+| INV-12 | For any contract: `Σ ledger cost.supplier == Σ supplier invoices raised` — the lease is costed in the month it is owed, never on payment |
 
 INV-1 is the one that quietly destroys projects. Split AED 3,400 across 36 months naively and you
 lose fils to rounding; the contract total no longer matches the sum of its installments; three months

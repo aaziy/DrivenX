@@ -63,6 +63,15 @@ test.describe("screenshots", () => {
       await page.screenshot({ path: `${SHOT_DIR}/contract-detail-en.png`, fullPage: true });
     }
 
+    // A lease-to-own contract, which on a leased-in car also carries the supplier's invoices.
+    await page.goto("/contracts");
+    const leaseToOwn = page.locator("tbody tr", { hasText: "Lease-to-own" }).locator("a").first();
+    if (await leaseToOwn.count()) {
+      await leaseToOwn.click();
+      await page.waitForURL(/\/contracts\/(?!new)[^/]+$/);
+      await page.screenshot({ path: `${SHOT_DIR}/contract-lto-en.png`, fullPage: true });
+    }
+
     await page.goto("/deals");
     await page.waitForSelector("h1");
     await page.getByLabel("Monthly rental to the customer (AED)").fill("3500");
@@ -119,6 +128,14 @@ test.describe("screenshots", () => {
         await firstContract.click();
         await page.waitForURL(/\/contracts\/(?!new)[^/]+$/);
         await page.screenshot({ path: `${SHOT_DIR}/contract-detail-ar.png`, fullPage: true });
+      }
+
+      await page.goto("/contracts");
+      const leaseToOwn = page.locator("tbody tr", { hasText: "إيجار منتهٍ بالتملك" }).locator("a").first();
+      if (await leaseToOwn.count()) {
+        await leaseToOwn.click();
+        await page.waitForURL(/\/contracts\/(?!new)[^/]+$/);
+        await page.screenshot({ path: `${SHOT_DIR}/contract-lto-ar.png`, fullPage: true });
       }
 
       await page.goto("/deals");

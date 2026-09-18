@@ -90,3 +90,59 @@ export function WaiveForm({ action }: { action: Action }) {
     </form>
   );
 }
+
+/** Pays one supplier invoice. Only invoices with something left on them are offered. */
+export function SupplierPaymentForm({
+  action,
+  today,
+  invoices,
+}: {
+  action: Action;
+  today: string;
+  invoices: { id: string; label: string }[];
+}) {
+  const [state, formAction] = useActionState<ContractFormState, FormData>(action, {});
+  const t = useTranslations("contracts.supplier");
+  const tMethods = useTranslations("contracts.methods");
+
+  return (
+    <form action={formAction}>
+      {state.error ? <Alert tone="error">{state.error}</Alert> : null}
+      {state.success ? <Alert tone="success">{state.success}</Alert> : null}
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+          gap: 12,
+        }}
+      >
+        <div className="field">
+          <label htmlFor="supplierInvoiceId">{t("invoice")}</label>
+          <select id="supplierInvoiceId" name="invoiceId" defaultValue={invoices[0]?.id ?? ""}>
+            <option value="">{t("chooseInvoice")}</option>
+            {invoices.map((invoice) => (
+              <option key={invoice.id} value={invoice.id}>
+                {invoice.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Field label={t("amount")} name="amount" id="supplierAmount" required dir="ltr" />
+        <Field label={t("paidOn")} name="paidOn" id="supplierPaidOn" type="date" dir="ltr" defaultValue={today} />
+        <div className="field">
+          <label htmlFor="supplierMethod">{t("method")}</label>
+          <select id="supplierMethod" name="method" defaultValue="BANK_TRANSFER">
+            {METHODS.map((method) => (
+              <option key={method} value={method}>
+                {tMethods(method)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Field label={t("reference")} name="reference" id="supplierReference" dir="ltr" />
+      </div>
+      <SubmitButton pendingLabel={t("recording")}>{t("record")}</SubmitButton>
+    </form>
+  );
+}
