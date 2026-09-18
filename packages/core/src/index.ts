@@ -18,3 +18,4 @@ export * from "./fleet/status";
 export * from "./fleet/mileage";
 export * from "./fleet/vehicle";
 export * from "./pricing/deal";
+export * from "./contracts";
