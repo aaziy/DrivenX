@@ -36,11 +36,12 @@ describe("parsePartyCode", () => {
     expect(parsePartyCode("cus-00042")).toEqual({ kind: "customer", sequence: 42 });
     expect(parsePartyCode("CUS 42")).toEqual({ kind: "customer", sequence: 42 });
     expect(parsePartyCode("SUP7")).toEqual({ kind: "supplier", sequence: 7 });
+    expect(parsePartyCode("veh 12")).toEqual({ kind: "vehicle", sequence: 12 });
     expect(parsePartyCode("  CUS-00042  ")).toEqual({ kind: "customer", sequence: 42 });
   });
 
   it.each([
-    ["VEH-00001", "a prefix that is not a party"],
+    ["INV-00001", "a prefix that is not a record code"],
     ["CUS-", "no number"],
     ["CUS-00000", "sequences start at one"],
     ["Ahmed", "an ordinary name search"],

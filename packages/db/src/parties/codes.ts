@@ -30,6 +30,13 @@ export async function nextCustomerCode(): Promise<string> {
   return formatPartyCode("customer", sequenceValue(rows));
 }
 
+export async function nextVehicleCode(): Promise<string> {
+  const rows = await prisma.$queryRaw<
+    Array<{ nextval: bigint }>
+  >`SELECT nextval('vehicle_code_seq')`;
+  return formatPartyCode("vehicle", sequenceValue(rows));
+}
+
 export async function nextSupplierCode(): Promise<string> {
   const rows = await prisma.$queryRaw<
     Array<{ nextval: bigint }>

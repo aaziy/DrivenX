@@ -14,3 +14,5 @@ export * from "./time";
 export * from "./parties/codes";
 export * from "./documents/expiry";
 export * from "./documents/categories";
+export * from "./fleet/status";
+export * from "./fleet/mileage";

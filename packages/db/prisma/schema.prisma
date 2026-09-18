@@ -39,12 +39,12 @@ enum Locale {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  fullName     String    @map("full_name")
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String  @map("password_hash")
+  fullName     String  @map("full_name")
   phone        String?
-  isActive     Boolean   @default(true) @map("is_active")
+  isActive     Boolean @default(true) @map("is_active")
 
   // Lockout policy (P0-06)
   lastLoginAt  DateTime? @map("last_login_at")
@@ -63,6 +63,10 @@ model User {
   createdSuppliers  Supplier[]
   uploadedDocuments Document[]
   notifications     Notification[]
+
+  createdVehicles      Vehicle[]
+  vehicleStatusChanges VehicleStatusChange[]
+  mileageReadings      MileageReading[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -200,12 +204,12 @@ model Customer {
   code   String      @unique
   status PartyStatus @default(ACTIVE)
 
-  fullName    String  @map("full_name")
+  fullName    String    @map("full_name")
   mobile      String
   email       String?
   dateOfBirth DateTime? @map("date_of_birth")
   nationality String?
-  addressLine String? @map("address_line")
+  addressLine String?   @map("address_line")
   city        String?
 
   emergencyName  String? @map("emergency_name")
@@ -254,6 +258,8 @@ model Supplier {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
+  vehicles Vehicle[]
+
   @@index([companyName])
   @@index([status])
   @@map("suppliers")
@@ -295,9 +301,9 @@ model DocumentCategory {
   /// passport for a customer and trade licence for a supplier.
   appliesTo DocumentOwnerType[] @map("applies_to")
 
-  requiresExpiry Boolean @default(true) @map("requires_expiry")
+  requiresExpiry         Boolean @default(true) @map("requires_expiry")
   /// Days before expiry to warn, per §6. Overridable per document.
-  defaultReminderOffsets Int[] @default([60, 30, 15, 7]) @map("default_reminder_offsets")
+  defaultReminderOffsets Int[]   @default([60, 30, 15, 7]) @map("default_reminder_offsets")
 
   /// Seeded categories are protected from deletion, not from editing.
   isSystem Boolean @default(false) @map("is_system")
@@ -411,4 +417,129 @@ model Notification {
   @@index([userId, readAt])
   @@index([type, dueOn])
   @@map("notifications")
+}
+
+// ===========================================================================
+// Milestone 1B — Fleet (SOW §4)
+// ===========================================================================
+
+enum OwnershipType {
+  /// Bought by DrivenX; the purchase price is its cost.
+  COMPANY_OWNED
+  /// Leased in from a supplier; the monthly cost to that supplier is its cost.
+  B2B_SUPPLIER
+
+  @@map("ownership_type")
+}
+
+/// Transitions between these are governed by @drivenx/core fleet/status.ts, never set freely.
+enum VehicleStatus {
+  AVAILABLE
+  RESERVED
+  RENTED
+  LEASE_TO_OWN
+  MAINTENANCE
+  ACCIDENT
+  RETURNED
+  SOLD
+  INACTIVE
+
+  @@map("vehicle_status")
+}
+
+/// Plates are issued per emirate: "A 12345" in Dubai and in Abu Dhabi are different cars.
+enum Emirate {
+  ABU_DHABI
+  DUBAI
+  SHARJAH
+  AJMAN
+  UMM_AL_QUWAIN
+  RAS_AL_KHAIMAH
+  FUJAIRAH
+
+  @@map("emirate")
+}
+
+model Vehicle {
+  id   String @id @default(cuid())
+  /// Human-facing fleet number, VEH-00001, from a sequence like party codes.
+  code String @unique
+
+  make    String
+  model   String
+  year    Int
+  variant String?
+  colour  String?
+
+  plateEmirate Emirate @default(DUBAI) @map("plate_emirate")
+  /// The letter or number category printed beside the number.
+  plateCode    String  @map("plate_code")
+  plateNumber  String  @map("plate_number")
+  vin          String  @unique
+
+  /// Always the highest recorded reading; see MileageReading.
+  currentMileageKm Int @default(0) @map("current_mileage_km")
+
+  ownershipType OwnershipType @map("ownership_type")
+  /// Required when B2B_SUPPLIER — enforced by a CHECK constraint, not only by the form.
+  supplierId    String?       @map("supplier_id")
+  supplier      Supplier?     @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  sourceDate    DateTime?     @map("source_date")
+
+  purchasePriceFils       BigInt? @map("purchase_price_fils")
+  supplierMonthlyCostFils BigInt? @map("supplier_monthly_cost_fils")
+
+  status VehicleStatus @default(AVAILABLE)
+  notes  String?
+
+  statusChanges   VehicleStatusChange[]
+  mileageReadings MileageReading[]
+
+  createdById String? @map("created_by_id")
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([plateEmirate, plateCode, plateNumber])
+  @@index([status, ownershipType])
+  @@index([supplierId])
+  @@index([make, model])
+  @@map("vehicles")
+}
+
+/// Every status a vehicle has held, for the detail page's timeline (P1B-07).
+model VehicleStatusChange {
+  id         String         @id @default(cuid())
+  vehicleId  String         @map("vehicle_id")
+  vehicle    Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  /// Null on the entry that records the vehicle joining the fleet.
+  fromStatus VehicleStatus? @map("from_status")
+  toStatus   VehicleStatus  @map("to_status")
+  reason     String?
+
+  changedById String?  @map("changed_by_id")
+  changedBy   User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  @@index([vehicleId, changedAt])
+  @@map("vehicle_status_changes")
+}
+
+/// Odometer readings (P1B-08). Monotonic: see @drivenx/core fleet/mileage.ts.
+model MileageReading {
+  id        String   @id @default(cuid())
+  vehicleId String   @map("vehicle_id")
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  readingKm Int      @map("reading_km")
+  readAt    DateTime @default(now()) @map("read_at")
+  note      String?
+
+  recordedById String?  @map("recorded_by_id")
+  recordedBy   User?    @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([vehicleId, readAt])
+  @@map("mileage_readings")
 }

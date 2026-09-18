@@ -9,9 +9,14 @@
  * guarantee no two concurrent creates receive the same number.
  */
 
+/**
+ * Vehicles share the format though they are not parties: staff read a fleet code out
+ * over the phone exactly as they read a customer's, and search resolves both the same way.
+ */
 export const PARTY_CODE_PREFIX = {
   customer: "CUS",
   supplier: "SUP",
+  vehicle: "VEH",
 } as const;
 
 export type PartyKind = keyof typeof PARTY_CODE_PREFIX;
@@ -34,7 +39,7 @@ export function formatPartyCode(kind: PartyKind, sequence: number): string {
  * instead of falling through to a text match on every column.
  */
 export function parsePartyCode(code: string): { kind: PartyKind; sequence: number } | null {
-  const match = /^\s*(CUS|SUP)[\s-]*(\d{1,12})\s*$/i.exec(code);
+  const match = /^\s*(CUS|SUP|VEH)[\s-]*(\d{1,12})\s*$/i.exec(code);
   if (!match) return null;
 
   const prefix = match[1]!.toUpperCase();

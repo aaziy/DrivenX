@@ -40,7 +40,16 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export * from "../generated/client";
-export { nextCustomerCode, nextSupplierCode } from "./parties/codes";
+export { nextCustomerCode, nextSupplierCode, nextVehicleCode } from "./parties/codes";
+export {
+  changeVehicleStatus,
+  ConcurrentVehicleChangeError,
+  createVehicle,
+  MileageRejectedError,
+  recordMileage,
+  VehicleNotFoundError,
+  type NewVehicle,
+} from "./fleet";
 export {
   globalSearch,
   type SearchHit,

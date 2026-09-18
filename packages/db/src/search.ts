@@ -10,7 +10,7 @@
  * list of everything containing "Ahmed" in no particular order is not search.
  */
 
-import { normaliseUaeMobile, parsePartyCode } from "@drivenx/core";
+import { formatPartyCode, normaliseUaeMobile, parsePartyCode } from "@drivenx/core";
 
 import { Prisma } from "../generated/client";
 import { prisma } from "./index";
@@ -59,7 +59,9 @@ export async function globalSearch(
   const mobileLike = `%${normaliseUaeMobile(query) ?? query}%`;
   // "cus 42" should find CUS-00042 rather than fuzzily matching every code.
   const code = parsePartyCode(query);
-  const codeExact = code ? `${code.kind === "customer" ? "CUS" : "SUP"}-${String(code.sequence).padStart(5, "0")}` : null;
+  // Formatted by the same function that minted it. Building the string by hand here once
+  // mapped every non-customer kind to SUP, which a vehicle code would have hit silently.
+  const codeExact = code ? formatPartyCode(code.kind, code.sequence) : null;
 
   const branches: Prisma.Sql[] = [];
 
