@@ -1,4 +1,3 @@
-import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createTranslator } from "next-intl";
 
@@ -161,9 +160,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ cont
     page: (current: number, total: number) => t("page", { current, total }),
   } as ContractPdfLabels;
 
-  const pdf = await renderToBuffer(
-    createElement(ContractPdf, { data, labels, direction: locale === "ar" ? "rtl" : "ltr" }),
-  );
+  // Called, not mounted: renderToBuffer takes the <Document> element itself, and the
+  // component is a plain function of its props with no hooks.
+  const pdf = await renderToBuffer(ContractPdf({ data, labels, direction: locale === "ar" ? "rtl" : "ltr" }));
 
   const fileName = `${contract.number}${locale === "ar" ? "-ar" : ""}.pdf`;
   return new Response(new Uint8Array(pdf), {
