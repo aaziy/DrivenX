@@ -46,8 +46,11 @@ export async function unreadCount(principal: Principal): Promise<number> {
 export interface ResolvedEntity {
   /** Where clicking the notification should land. */
   href: string;
-  /** What the document is — the category's label. */
+  /** The category's stored label — used as written once the client has reworded it. */
   what: string;
+  /** Enough to translate a seeded label instead; see i18n/labels.ts. */
+  categoryKey: string;
+  categoryIsSystem: boolean;
   /** Whose it is, with their code. */
   who: string;
 }
@@ -72,7 +75,7 @@ export async function resolveDocumentEntities(
       id: true,
       ownerType: true,
       ownerId: true,
-      category: { select: { label: true } },
+      category: { select: { key: true, label: true, isSystem: true } },
     },
   });
 
@@ -111,6 +114,8 @@ export async function resolveDocumentEntities(
     resolved.set(document.id, {
       href: owner.href,
       what: document.category.label,
+      categoryKey: document.category.key,
+      categoryIsSystem: document.category.isSystem,
       who: owner.label,
     });
   }

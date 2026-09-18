@@ -7,6 +7,7 @@
  */
 
 import { DEFAULT_ROLES } from "@drivenx/auth/permissions";
+import { DOCUMENT_CATEGORIES } from "@drivenx/core";
 
 export interface RoleLike {
   key: string;
@@ -29,6 +30,26 @@ export function seededRoleKey(role: RoleLike): string | null {
 export function seededRoleDescriptionKey(role: RoleLike): string | null {
   const definition = seededDefinition(role);
   return definition && definition.description === role.description ? definition.key : null;
+}
+
+export interface CategoryLike {
+  key: string;
+  label: string;
+  isSystem: boolean;
+}
+
+/**
+ * The category key to translate the label under, or null once the client has reworded it.
+ *
+ * Same rule as roles: a seeded category still carrying its seeded label is shown in the
+ * reader's language, and one the Super Admin has renamed keeps their wording. Without
+ * this, an Arabic page reads "Emirates ID" in the middle of an Arabic sentence.
+ */
+export function seededCategoryKey(category: CategoryLike): string | null {
+  if (!category.isSystem) return null;
+
+  const definition = DOCUMENT_CATEGORIES.find((candidate) => candidate.key === category.key);
+  return definition && definition.label === category.label ? definition.key : null;
 }
 
 /** "lead.view_all" -> "permissions.lead.view_all": permission keys are already a path. */

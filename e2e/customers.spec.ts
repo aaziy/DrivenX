@@ -47,7 +47,8 @@ test.describe("customers", () => {
     // Search finds them by name. Waiting for the navigation the search starts, not just
     // for the row: clicking into a page that is still loading loses the click, which is
     // a failure that passes twice and then fails for no reason anyone can see.
-    await page.getByLabel("Search").fill(name);
+    // `exact`, because the sidebar's "Search everything" box also contains "Search".
+    await page.getByLabel("Search", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Search" }).click();
     await page.waitForURL(/[?&]q=/);
     await expect(page.locator(`tr:has-text("${name}")`)).toBeVisible();

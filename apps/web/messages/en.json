@@ -32,6 +32,7 @@
     "administration": "Administration",
     "users": "Users",
     "roles": "Roles & permissions",
+    "documentTypes": "Document types",
     "audit": "Audit log"
   },
   "login": {
@@ -62,6 +63,90 @@
     "notYetTitle": "What is not here yet",
     "notYetBody1": "These tiles deliberately show only what exists. The KPIs from SOW §3 — fleet counts, monthly revenue, cost, profit, customer outstanding, supplier payables, expiring documents — are milestone 1E, and each will be an aggregation over the ledger rather than a stored column.",
     "notYetBody2": "Showing placeholder numbers now would make the system look further along than it is."
+  },
+  "documentCategories": {
+    "title": "Document types",
+    "subtitle": "What can be attached to a record, and how long before expiry to start warning.",
+    "addTitle": "Add a document type",
+    "allTitle": "All document types",
+    "emptyTitle": "No document types yet",
+    "created": "Added {name}.",
+    "updated": "Changes saved.",
+    "deleted": "Document type removed.",
+    "seeded": "Built in",
+    "edit": "Edit",
+    "columns": {
+      "label": "Document type",
+      "appliesTo": "Attaches to",
+      "expiry": "Expiry",
+      "reminders": "Warns at",
+      "inUse": "In use"
+    },
+    "expiryRequired": "Required",
+    "expiryOptional": "Not tracked",
+    "remindersNone": "—",
+    "remindersDays": "{days} days before",
+    "owners": {
+      "CUSTOMER": "Customer",
+      "SUPPLIER": "Supplier",
+      "VEHICLE": "Vehicle",
+      "CONTRACT": "Contract",
+      "INSURANCE_POLICY": "Insurance policy"
+    },
+    "form": {
+      "label": "Name",
+      "appliesTo": "Attaches to",
+      "requiresExpiry": "Has an expiry date that should be chased",
+      "reminders": "Warn this many days before expiry",
+      "remindersHint": "Comma separated, for example 60, 30, 15, 7. Leave empty for no warnings.",
+      "submit": "Add document type",
+      "submitting": "Adding…",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "delete": "Remove",
+      "deleting": "Removing…"
+    },
+    "errors": {
+      "label": "Enter a name for this document type.",
+      "appliesTo": "Choose at least one kind of record.",
+      "reminders": "Enter whole numbers of days, separated by commas.",
+      "expiryNeedsReminders": "A type that expires needs at least one warning.",
+      "notFound": "That document type no longer exists.",
+      "isSystem": "A built-in document type can be edited but not removed.",
+      "inUse": "That document type is attached to {count} documents and cannot be removed."
+    },
+    "defaultLabels": {
+      "emirates_id": "Emirates ID",
+      "driving_licence": "Driving licence",
+      "passport": "Passport",
+      "visa": "Residence visa",
+      "customer_other": "Other customer document",
+      "trade_licence": "Trade licence",
+      "vat_certificate": "VAT certificate",
+      "supplier_agreement": "Supplier agreement",
+      "mulkiya": "Vehicle registration (mulkiya)",
+      "vehicle_photo": "Vehicle photo",
+      "vehicle_other": "Other vehicle document",
+      "insurance_policy": "Insurance policy",
+      "signed_contract": "Signed contract",
+      "handover_report": "Handover or return report"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "subtitle": "Customers, suppliers, and the numbers printed on their documents.",
+    "label": "Search everything",
+    "placeholder": "Name, mobile, code, Emirates ID…",
+    "prompt": "Type at least two characters.",
+    "resultsFor": "Results for “{query}”",
+    "resultCount": "{count, plural, =0 {No matches} one {# match} other {# matches}}",
+    "empty": "Nothing matches “{query}”.",
+    "open": "Open",
+    "kinds": {
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "document": "Document"
+    }
   },
   "notifications": {
     "title": "Notifications",

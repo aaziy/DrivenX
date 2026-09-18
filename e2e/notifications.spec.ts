@@ -64,9 +64,11 @@ test.describe("notifications", () => {
     runExpiryScan();
 
     await page.goto("/notifications");
-    const row = page.locator("tr", { hasText: "Document expiring" }).first();
+    // Located by the customer, not by "the first expiring document": notifications
+    // accumulate across runs, so the first row belongs to whoever ran the suite before.
+    const row = page.locator("tr", { hasText: name }).first();
     await expect(row).toBeVisible();
-    await expect(row).toContainText(name);
+    await expect(row).toContainText("Document expiring");
 
     // The unread count reaches the sidebar, so it is noticed without opening the page.
     await expect(page.locator(".nav-badge")).toBeVisible();

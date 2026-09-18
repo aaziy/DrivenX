@@ -60,6 +60,20 @@ test.describe("documents", () => {
     await expect(row).toBeVisible();
     await expect(row).toContainText("784-1990-1000000-0");
     await expect(row.getByRole("link", { name: "Download" })).toBeVisible();
+
+    // Renewing it supersedes the old scan, so the nightly scan stops chasing a document
+    // that has already been replaced.
+    await page.getByLabel("Document type").selectOption({ label: "Emirates ID" });
+    await page.getByLabel("File").setInputFiles({
+      name: "emirates-id-renewed.pdf",
+      mimeType: "application/pdf",
+      buffer: PDF_BYTES,
+    });
+    await page.getByLabel("Expiry date").fill("2029-06-30");
+    await page.getByRole("button", { name: "Attach document" }).click();
+    await expect(page.locator(".alert-success")).toBeVisible();
+
+    await expect(page.locator("tr", { hasText: "784-1990-1000000-0" })).toContainText("Replaced");
   });
 
   test("refuses an executable renamed as a PDF", async ({ page }) => {

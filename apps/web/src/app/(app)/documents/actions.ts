@@ -141,7 +141,7 @@ export async function uploadDocument(
 
   try {
     await asActor(principal, async () => {
-      await prisma.document.create({
+      const created = await prisma.document.create({
         data: {
           ownerType,
           ownerId,
@@ -163,6 +163,31 @@ export async function uploadDocument(
           uploadedById: principal.id,
         },
       });
+
+      /**
+       * A renewed document supersedes the one it replaces.
+       *
+       * Staff renew an Emirates ID and upload the new scan; without this the old one
+       * stays VALID, keeps its expiry date, and the nightly scan goes on chasing a
+       * document that has already been replaced — which is how people learn to ignore
+       * the alerts. The scan skips REPLACED, so marking it here is what closes that.
+       *
+       * Only for types that track expiry. A category like "Other customer document"
+       * legitimately holds many unrelated files, and superseding those would hide them.
+       */
+      if (category.requiresExpiry) {
+        await prisma.document.updateMany({
+          where: {
+            ownerType,
+            ownerId,
+            categoryId: category.id,
+            id: { not: created.id },
+            deletedAt: null,
+            status: { not: "REPLACED" },
+          },
+          data: { status: "REPLACED", replacedById: created.id, replacedAt: new Date() },
+        });
+      }
     });
   } catch (error) {
     // The bytes are already in storage. Without this the object is orphaned: paid for,

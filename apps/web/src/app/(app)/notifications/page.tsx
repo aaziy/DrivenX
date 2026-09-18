@@ -5,6 +5,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { prisma } from "@drivenx/db";
 
 import { SubmitButton } from "@/components/form";
+import { seededCategoryKey } from "@/i18n/labels";
 import { requireUser } from "@/lib/auth";
 import { resolveDocumentEntities, visibilityWhere, visibleTypes } from "@/lib/notifications";
 
@@ -21,8 +22,9 @@ export default async function NotificationsPage() {
   const principal = await requireUser();
   const types = visibleTypes(principal);
 
-  const [t, format, notifications] = await Promise.all([
+  const [t, tCat, format, notifications] = await Promise.all([
     getTranslations("notifications"),
+    getTranslations("documentCategories"),
     getFormatter(),
     types.length === 0
       ? []
@@ -89,10 +91,20 @@ export default async function NotificationsPage() {
                         ? t(`types.DOCUMENT_EXPIRY.${state}.title`)
                         : notification.title;
 
+                    // A seeded document type is named in the reader's language; one the
+                    // client reworded keeps their wording.
+                    const seededKey = entity
+                      ? seededCategoryKey({
+                          key: entity.categoryKey,
+                          label: entity.what,
+                          isSystem: entity.categoryIsSystem,
+                        })
+                      : null;
+
                     const detail =
                       notification.type === "DOCUMENT_EXPIRY" && entity
                         ? t(`types.DOCUMENT_EXPIRY.${state}.body`, {
-                            what: entity.what,
+                            what: seededKey ? tCat(`defaultLabels.${seededKey}`) : entity.what,
                             who: entity.who,
                             date: notification.dueOn
                               ? format.dateTime(notification.dueOn, { dateStyle: "medium" })
@@ -121,18 +133,21 @@ export default async function NotificationsPage() {
                           </time>
                         </td>
                         <td>
+                          {/* "Open" comes last so it sits flush at the end of every row.
+                              With it first, rows that also carry "Mark read" pushed it
+                              inwards and the column read as ragged. */}
                           <span className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
-                            {entity ? (
-                              <Link className="btn-secondary" href={entity.href}>
-                                {t("open")}
-                              </Link>
-                            ) : null}
                             {notification.readAt === null ? (
                               <form action={markNotificationRead.bind(null, notification.id)}>
                                 <SubmitButton variant="secondary" pendingLabel={t("marking")}>
                                   {t("markRead")}
                                 </SubmitButton>
                               </form>
+                            ) : null}
+                            {entity ? (
+                              <Link className="btn-secondary" href={entity.href}>
+                                {t("open")}
+                              </Link>
                             ) : null}
                           </span>
                         </td>

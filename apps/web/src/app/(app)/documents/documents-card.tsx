@@ -5,6 +5,7 @@ import { daysUntilExpiry, expiryStatus, type ExpiryStatus } from "@drivenx/core"
 import { prisma, type DocumentOwnerType } from "@drivenx/db";
 
 import { SubmitButton } from "@/components/form";
+import { seededCategoryKey } from "@/i18n/labels";
 import { maxUploadBytes } from "@/lib/storage";
 
 import { deleteDocument, uploadDocument } from "./actions";
@@ -30,8 +31,9 @@ export async function DocumentsCard({
 }) {
   const now = new Date();
 
-  const [t, format, documents, categories] = await Promise.all([
+  const [t, tCat, format, documents, categories] = await Promise.all([
     getTranslations("documents"),
+    getTranslations("documentCategories"),
     getFormatter(),
     prisma.document.findMany({
       where: { ownerType, ownerId, deletedAt: null },
@@ -43,6 +45,12 @@ export async function DocumentsCard({
       orderBy: { label: "asc" },
     }),
   ]);
+
+  /** Seeded types read in the reader's language; a type the client renamed keeps theirs. */
+  const categoryLabel = (category: { key: string; label: string; isSystem: boolean }) => {
+    const key = seededCategoryKey(category);
+    return key ? tCat(`defaultLabels.${key}`) : category.label;
+  };
 
   const tone: Record<ExpiryStatus, string> = {
     valid: "badge-success",
@@ -71,9 +79,7 @@ export async function DocumentsCard({
             action={uploadDocument.bind(null, ownerType, ownerId)}
             categories={categories.map((category) => ({
               id: category.id,
-              // The client owns these labels once they edit them (§17), so the stored
-              // label is shown rather than a translated constant.
-              label: category.label,
+              label: categoryLabel(category),
               requiresExpiry: category.requiresExpiry,
             }))}
             limitMb={Math.floor(maxUploadBytes() / (1024 * 1024))}
@@ -99,12 +105,17 @@ export async function DocumentsCard({
             </thead>
             <tbody>
               {documents.map((document) => {
-                const status = expiryStatus(document.expiryDate, document.reminderOffsets, now);
+                // A superseded document keeps its dates, so asking the expiry engine
+                // would report it as expiring and contradict the row's own badge.
+                const replaced = document.status === "REPLACED";
+                const status = replaced
+                  ? null
+                  : expiryStatus(document.expiryDate, document.reminderOffsets, now);
 
                 return (
                   <tr key={document.id}>
                     <td>
-                      <div style={{ fontWeight: 560 }}>{document.category.label}</div>
+                      <div style={{ fontWeight: 560 }}>{categoryLabel(document.category)}</div>
                       <div className="muted" style={{ fontSize: 12.5 }}>
                         <bdi>{document.fileName}</bdi>
                       </div>
@@ -131,9 +142,13 @@ export async function DocumentsCard({
                       )}
                     </td>
                     <td>
-                      <span className={`badge ${tone[status]}`.trim()}>
-                        {t(`status.${status}`)}
-                      </span>
+                      {status === null ? (
+                        <span className="badge">{t("status.replaced")}</span>
+                      ) : (
+                        <span className={`badge ${tone[status]}`.trim()}>
+                          {t(`status.${status}`)}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <span className="row" style={{ gap: 8 }}>

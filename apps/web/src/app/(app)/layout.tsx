@@ -40,6 +40,11 @@ const NAV_DEFINITION: Array<{
     items: [
       { href: "/admin/users", labelKey: "users", permission: "user.view" },
       { href: "/admin/roles", labelKey: "roles", permission: "role.view" },
+      {
+        href: "/admin/document-categories",
+        labelKey: "documentTypes",
+        permission: "settings.manage",
+      },
       { href: "/admin/audit", labelKey: "audit", permission: "audit.view" },
     ],
   },
@@ -47,11 +52,18 @@ const NAV_DEFINITION: Array<{
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const principal = await requireUser();
-  const [t, tc, locale] = await Promise.all([
+  const [t, tc, ts, locale] = await Promise.all([
     getTranslations("nav"),
     getTranslations("common"),
+    getTranslations("search"),
     currentLocale(),
   ]);
+
+  // Searching is pointless for someone who can reach none of the things it searches.
+  const canSearch =
+    can(principal, "customer.view") ||
+    can(principal, "supplier.view") ||
+    can(principal, "document.view");
 
   // Notifications are not gated by one permission: they are visible to anyone who can
   // see at least one kind of notification, which is a question about the catalogue
@@ -82,6 +94,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="brand-mark">DrivenX</span>
           <span className="brand-sub">{tc("brandSub")}</span>
         </div>
+
+        {canSearch ? (
+          /* A plain GET form: results stay linkable and it works before JavaScript loads,
+             which matters for the one control staff use most. */
+          <form action="/search" method="get" className="sidebar-search" role="search">
+            <input
+              type="search"
+              name="q"
+              aria-label={ts("label")}
+              placeholder={ts("placeholder")}
+            />
+          </form>
+        ) : null}
 
         <Nav groups={groups} ariaLabel={t("mainLabel")} />
 

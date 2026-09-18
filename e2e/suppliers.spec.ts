@@ -40,13 +40,14 @@ test.describe("suppliers", () => {
     await expect(row).toBeVisible();
     await expect(row).toContainText("SUP-");
 
-    await page.getByLabel("Search").fill(company);
+    // `exact`, because the sidebar's "Search everything" box also contains "Search".
+    await page.getByLabel("Search", { exact: true }).fill(company);
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page.locator(`tr:has-text("${company}")`)).toBeVisible();
 
     // By digits alone. This fails if the number is stored as typed, because the spaces
     // in "04 321 7654" sit between the digits being searched for.
-    await page.getByLabel("Search").fill("3217654");
+    await page.getByLabel("Search", { exact: true }).fill("3217654");
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page.locator(`tr:has-text("${company}")`)).toBeVisible();
   });

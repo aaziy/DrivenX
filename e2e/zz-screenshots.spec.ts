@@ -44,6 +44,15 @@ test.describe("screenshots", () => {
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/notifications-en.png`, fullPage: true });
 
+    // "E2E" matches the records the other specs leave behind, so the page has results.
+    await page.goto("/search?q=E2E");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/search-en.png`, fullPage: true });
+
+    await page.goto("/admin/document-categories");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/document-types-en.png`, fullPage: true });
+
     try {
       // The signed-in user's language lives on their row, not in a cookie, so this
       // persists — and every other spec reads English labels.
@@ -61,6 +70,14 @@ test.describe("screenshots", () => {
       await page.goto("/notifications");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/notifications-ar.png`, fullPage: true });
+
+      await page.goto("/search?q=E2E");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/search-ar.png`, fullPage: true });
+
+      await page.goto("/admin/document-categories");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/document-types-ar.png`, fullPage: true });
     } finally {
       // Restore English whatever happened above, or the persona is left in Arabic and
       // the next run's specs fail looking for labels that are no longer there.

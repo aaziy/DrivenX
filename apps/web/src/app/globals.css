@@ -151,6 +151,14 @@ a {
   color: var(--text-faint);
 }
 
+.sidebar-search {
+  margin-block: 10px 2px;
+}
+
+.sidebar-search input {
+  font-size: 13px;
+}
+
 .nav-group-label {
   font-size: 10px;
   text-transform: uppercase;
@@ -419,6 +427,31 @@ table.data tbody tr:hover {
 .field label {
   font-size: 12.5px;
   font-weight: 560;
+}
+
+/* A label for a group of controls, where a single `label` element would be wrong
+ * because it cannot point at more than one input. */
+.field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 560;
+  margin-block-end: 6px;
+}
+
+/* A checkbox beside its text. The width and height rules above apply to every input,
+ * which would stretch a checkbox across the row and stand it 36px tall. */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: auto;
+  height: auto;
+  accent-color: var(--brand);
 }
 
 .field-hint {
