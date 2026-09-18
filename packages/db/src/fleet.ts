@@ -117,12 +117,13 @@ export async function changeVehicleStatus(
   await prisma.$transaction(async (tx) => {
     const vehicle = await tx.vehicle.findFirst({
       where: { id: vehicleId, deletedAt: null },
-      select: { status: true },
+      select: { status: true, ownershipType: true },
     });
     if (!vehicle) throw new VehicleNotFoundError(vehicleId);
 
-    // Throws IllegalVehicleTransitionError, which names both ends for the message.
-    assertTransition(vehicle.status, to);
+    // Throws IllegalVehicleTransitionError, which names both ends for the message and
+    // says whether the car's ownership is the reason.
+    assertTransition(vehicle.status, to, vehicle.ownershipType);
 
     const updated = await tx.vehicle.updateMany({
       where: { id: vehicleId, status: vehicle.status, deletedAt: null },

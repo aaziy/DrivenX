@@ -47,17 +47,45 @@ const TRANSITIONS: Record<VehicleStatus, readonly VehicleStatus[]> = {
 /** Statuses in which the car is committed to a customer and cannot be offered to another. */
 export const ON_CONTRACT_STATUSES: readonly VehicleStatus[] = ["RESERVED", "RENTED", "LEASE_TO_OWN"];
 
+/** Mirrors the `OwnershipType` enum in the Prisma schema. */
+export type VehicleOwnership = "COMPANY_OWNED" | "B2B_SUPPLIER";
+
 export function isVehicleStatus(value: string): value is VehicleStatus {
   return (VEHICLE_STATUSES as readonly string[]).includes(value);
 }
 
-export function allowedTransitions(from: VehicleStatus): readonly VehicleStatus[] {
-  return TRANSITIONS[from];
+/**
+ * What ownership forbids on top of the table.
+ *
+ * A car leased in from a supplier is not DrivenX's to put on a plain rental or to sell:
+ * it goes to a customer only on lease-to-own, and is sold only as the end of that lease
+ * — the buyout. Answered by the client on 2026-09-18.
+ */
+function ownershipAllows(from: VehicleStatus, to: VehicleStatus, ownership: VehicleOwnership): boolean {
+  if (ownership !== "B2B_SUPPLIER") return true;
+  if (to === "RENTED") return false;
+  if (to === "SOLD") return from === "LEASE_TO_OWN";
+  return true;
+}
+
+/**
+ * Ownership is required, not defaulted. A default would let a caller that forgot it skip
+ * the supplier rule silently; required, the compiler finds every caller that has to say.
+ */
+export function allowedTransitions(
+  from: VehicleStatus,
+  ownership: VehicleOwnership,
+): readonly VehicleStatus[] {
+  return TRANSITIONS[from].filter((to) => ownershipAllows(from, to, ownership));
 }
 
 /** Staying in the same status is not a transition, so it is never "allowed". */
-export function canTransition(from: VehicleStatus, to: VehicleStatus): boolean {
-  return TRANSITIONS[from].includes(to);
+export function canTransition(
+  from: VehicleStatus,
+  to: VehicleStatus,
+  ownership: VehicleOwnership,
+): boolean {
+  return TRANSITIONS[from].includes(to) && ownershipAllows(from, to, ownership);
 }
 
 export function isTerminal(status: VehicleStatus): boolean {
@@ -67,15 +95,31 @@ export function isTerminal(status: VehicleStatus): boolean {
 export class IllegalVehicleTransitionError extends Error {
   readonly from: VehicleStatus;
   readonly to: VehicleStatus;
+  /**
+   * True when the move is legal in the table but not for a car leased from a supplier,
+   * so the message can say why rather than only that it was refused.
+   */
+  readonly blockedByOwnership: boolean;
 
-  constructor(from: VehicleStatus, to: VehicleStatus) {
-    super(`A vehicle cannot move from ${from} to ${to}`);
+  constructor(from: VehicleStatus, to: VehicleStatus, blockedByOwnership = false) {
+    super(
+      blockedByOwnership
+        ? `A vehicle leased from a supplier cannot move from ${from} to ${to}`
+        : `A vehicle cannot move from ${from} to ${to}`,
+    );
     this.name = "IllegalVehicleTransitionError";
     this.from = from;
     this.to = to;
+    this.blockedByOwnership = blockedByOwnership;
   }
 }
 
-export function assertTransition(from: VehicleStatus, to: VehicleStatus): void {
-  if (!canTransition(from, to)) throw new IllegalVehicleTransitionError(from, to);
+export function assertTransition(
+  from: VehicleStatus,
+  to: VehicleStatus,
+  ownership: VehicleOwnership,
+): void {
+  if (canTransition(from, to, ownership)) return;
+  const legalInTable = TRANSITIONS[from].includes(to);
+  throw new IllegalVehicleTransitionError(from, to, legalInTable);
 }

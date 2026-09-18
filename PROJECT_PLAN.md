@@ -395,6 +395,7 @@ Answer before the dependent phase starts.
 | 11 | **Hosting decision.** **Answered 2026-09-17: data need not stay in the UAE.** Target is a Hostinger VPS (KVM 2) running the same Docker stack as development; Hostinger Business shared hosting was ruled out (no PostgreSQL, no storage server, no background jobs). **Remaining:** account created in DrivenX's name (§20), and who maintains the server after handover. | 0 | Staging and client testing wait on the account existing. |
 | 12 | **Input VAT on supplier invoices.** Is the 5% DrivenX pays its suppliers recoverable? If so, vehicle cost and profit must use the net figure rather than the gross. | 1D | Raised 2026-09-17 by the VAT answer. Assuming either way puts profit out by about 5% of cost. |
 | 13 | **Tax invoice details.** DrivenX's TRN, and the invoice numbering the FTA expects on a tax invoice. | 1D | Affects the invoice layout, not the calculations. |
+| 14 | **Cars leased in from a supplier.** **Answered 2026-09-18:** a B2B car goes to a customer only on lease-to-own — never on a plain rental, and never sold except as the end of that lease-to-own (the buyout). | 1B / 1D | Enforced in the vehicle state machine, not only on screen: for a leased-in car, Available/Reserved → Rented and Available/Accident/Inactive → Sold are refused; Lease-to-own → Sold stays open. Contracts in 1D will offer only lease-to-own for these cars, and the deal calculator prices them as lease-to-own. |
 
 ---
 

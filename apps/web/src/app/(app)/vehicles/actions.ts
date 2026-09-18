@@ -188,9 +188,19 @@ export async function updateVehicleAction(
 
   const existing = await prisma.vehicle.findFirst({
     where: { id: vehicleId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!existing) return { error: t("notFound") };
+
+  // Reclassifying a car as leased-in while it is on a plain rental, or after it has been
+  // sold, would put it in a state the supplier rule forbids — by editing its ownership
+  // rather than its status. Refused here for the same reason the status move is.
+  if (
+    result.data.ownershipType === "B2B_SUPPLIER" &&
+    (existing.status === "RENTED" || existing.status === "SOLD")
+  ) {
+    return { error: t("ownershipConflict") };
+  }
 
   try {
     // Status and mileage are not editable here: each has its own rules and its own
@@ -231,7 +241,11 @@ export async function changeVehicleStatusAction(
     );
   } catch (error) {
     if (error instanceof IllegalVehicleTransitionError) {
-      return { error: t("illegalTransition", { from: ts(error.from), to: ts(error.to) }) };
+      return {
+        error: error.blockedByOwnership
+          ? t("leasedOnlyLto")
+          : t("illegalTransition", { from: ts(error.from), to: ts(error.to) }),
+      };
     }
     if (error instanceof ConcurrentVehicleChangeError) return { error: t("concurrent") };
     if (error instanceof VehicleNotFoundError) return { error: t("notFound") };

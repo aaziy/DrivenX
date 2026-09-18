@@ -152,6 +152,27 @@ describe("changeVehicleStatus", () => {
     expect(await prisma.vehicleStatusChange.count({ where: { vehicleId: created.id } })).toBe(2);
   });
 
+  it("keeps a car leased from a supplier off plain rentals, and sells it only at buyout", async () => {
+    const leased = await createVehicle(
+      vehicle({ ownershipType: "B2B_SUPPLIER", supplierId }),
+      null,
+    );
+
+    await expect(
+      changeVehicleStatus(leased.id, "RENTED", { actorId: null }),
+    ).rejects.toMatchObject({ name: "IllegalVehicleTransitionError", blockedByOwnership: true });
+    await expect(changeVehicleStatus(leased.id, "SOLD", { actorId: null })).rejects.toThrow(
+      IllegalVehicleTransitionError,
+    );
+
+    await changeVehicleStatus(leased.id, "LEASE_TO_OWN", { actorId: null });
+    await changeVehicleStatus(leased.id, "SOLD", { actorId: null });
+
+    expect((await prisma.vehicle.findUniqueOrThrow({ where: { id: leased.id } })).status).toBe(
+      "SOLD",
+    );
+  });
+
   it("lets exactly one of two simultaneous changes win", async () => {
     // Two staff act on the same available car at once. Without the compare-and-set both
     // would write, and the timeline would contradict itself.

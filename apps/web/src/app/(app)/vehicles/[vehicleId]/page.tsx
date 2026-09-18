@@ -126,10 +126,13 @@ export default async function VehicleDetailPage({
               <p className="muted">{t("detail.terminal")}</p>
             ) : can("vehicle.transition") ? (
               <>
-                <p className="muted">{t("detail.statusHint")}</p>
+                <p className="muted">
+                  {t("detail.statusHint")}
+                  {vehicle.ownershipType === "B2B_SUPPLIER" ? ` ${t("detail.leasedHint")}` : ""}
+                </p>
                 <StatusForm
                   action={changeVehicleStatusAction.bind(null, vehicle.id)}
-                  options={allowedTransitions(vehicle.status)}
+                  options={allowedTransitions(vehicle.status, vehicle.ownershipType)}
                 />
               </>
             ) : null}

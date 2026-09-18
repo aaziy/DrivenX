@@ -132,6 +132,41 @@ test.describe("fleet", () => {
     await expect(page.getByLabel("Change to")).toHaveCount(0);
   });
 
+  test("offers a car leased from a supplier only lease-to-own", async ({ page }) => {
+    // The client's rule (2026-09-18): a leased-in car never goes on a plain rental and is
+    // never sold except at the end of a lease-to-own.
+    await signInExpectingSuccess(page, PERSONAS.management);
+
+    const company = `E2E Lessor ${Date.now()}`;
+    await page.goto("/suppliers");
+    await page.getByLabel("Company name").fill(company);
+    await page.getByRole("button", { name: "Add supplier" }).click();
+    await expect(page.locator(".alert-success")).toBeVisible();
+
+    await page.goto("/vehicles/new");
+    await fillVehicle(page);
+    await page.getByRole("radio", { name: "Leased from a supplier" }).check();
+    // By role: the label reads "Supplier *". The option is found by the company name,
+    // since its full text also carries a supplier code this spec does not know.
+    const supplierSelect = page.getByRole("combobox", { name: "Supplier", exact: true });
+    const supplierValue = await supplierSelect
+      .locator("option", { hasText: company })
+      .getAttribute("value");
+    await supplierSelect.selectOption(supplierValue ?? "");
+    await page.getByLabel("Monthly cost to the supplier (AED)").fill("2,400");
+    await page.getByRole("button", { name: "Add vehicle" }).click();
+    await page.waitForURL(/\/vehicles\/(?!new)[^/]+$/);
+
+    const options = await page
+      .getByLabel("Change to")
+      .locator("option:not([disabled])")
+      .allTextContents();
+    expect(options).toContain("Lease-to-own");
+    expect(options).not.toContain("Rented");
+    expect(options).not.toContain("Sold");
+    await expect(page.getByText("goes to customers only on lease-to-own")).toBeVisible();
+  });
+
   test("sales can see the fleet but cannot add to it or move a car", async ({ page }) => {
     // Sales holds vehicle.view only — enough to quote a car, not to change the fleet.
     await signInExpectingSuccess(page, PERSONAS.management);
