@@ -68,7 +68,12 @@ model User {
   vehicleStatusChanges VehicleStatusChange[]
   mileageReadings      MileageReading[]
 
-  createdContracts      Contract[]
+  createdContracts      Contract[]             @relation("ContractCreatedBy")
+  soldContracts         Contract[]             @relation("ContractSalesperson")
+  createdLeads          Lead[]                 @relation("LeadCreatedBy")
+  assignedLeads         Lead[]                 @relation("LeadSalesperson")
+  leadStatusChanges     LeadStatusChange[]
+  leadQuotes            LeadQuote[]
   contractStatusChanges ContractStatusChange[]
   recordedPayments      Payment[]
   supplierPayments      SupplierPayment[]
@@ -231,6 +236,7 @@ model Customer {
 
   contracts Contract[]
   payments  Payment[]
+  leads     Lead[]
 
   // Global search (§16) hits name and mobile constantly. A trigram index for
   // partial matches arrives with P1A-09, as raw SQL Prisma cannot express.
@@ -508,6 +514,8 @@ model Vehicle {
   mileageReadings  MileageReading[]
   contracts        Contract[]
   supplierInvoices SupplierInvoice[]
+  interestedLeads  Lead[]
+  leadQuotes       LeadQuote[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -672,8 +680,15 @@ model Contract {
   statusChanges    ContractStatusChange[]
   supplierInvoices SupplierInvoice[]
 
+  /// The lead it was converted from, if any, and who is credited with the sale (P1F-04).
+  /// Set from the lead on conversion; a contract written directly credits its author.
+  leadId        String? @unique @map("lead_id")
+  lead          Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  salespersonId String? @map("salesperson_id")
+  salesperson   User?   @relation("ContractSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+
   createdById String? @map("created_by_id")
-  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?   @relation("ContractCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -916,4 +931,115 @@ model ContractStatusChange {
 
   @@index([contractId, changedAt])
   @@map("contract_status_changes")
+}
+
+// ===========================================================================
+// Leads (milestone 1F, SOW §7)
+// ===========================================================================
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DEAL_CREATED
+  CONTRACTED
+  LOST
+
+  @@map("lead_status")
+}
+
+enum LeadSource {
+  WALK_IN
+  PHONE
+  WHATSAPP
+  WEBSITE
+  SOCIAL
+  REFERRAL
+  OTHER
+
+  @@map("lead_source")
+}
+
+/// Someone who might rent or buy (P1F-01). Owned by a salesperson: Sales Staff see only
+/// their own (P1F-05).
+model Lead {
+  id     String     @id @default(cuid())
+  /// LEAD-00001, from a sequence like other record codes.
+  code   String     @unique
+  status LeadStatus @default(NEW)
+
+  name   String
+  mobile String
+  email  String?
+  source LeadSource @default(OTHER)
+
+  interestedVehicleId String?  @map("interested_vehicle_id")
+  interestedVehicle   Vehicle? @relation(fields: [interestedVehicleId], references: [id], onDelete: SetNull)
+  /// What they said they can pay a month, net of VAT.
+  budgetFils          BigInt?  @map("budget_fils")
+  durationMonths      Int?     @map("duration_months")
+  notes               String?
+
+  salespersonId String? @map("salesperson_id")
+  salesperson   User?   @relation("LeadSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+
+  lostReason String?   @map("lost_reason")
+  /// The customer record it became, matched on mobile or created at conversion.
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contract   Contract?
+
+  quotes        LeadQuote[]
+  statusChanges LeadStatusChange[]
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([salespersonId, status])
+  @@index([status])
+  @@index([mobile])
+  @@map("leads")
+}
+
+/// A priced deal for a lead, from the deal calculator (P1F-04). Kept, not overwritten:
+/// the latest is what converts, the earlier ones show how the price moved.
+model LeadQuote {
+  id        String       @id @default(cuid())
+  leadId    String       @map("lead_id")
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  vehicleId String       @map("vehicle_id")
+  vehicle   Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  type      ContractType
+
+  durationMonths      Int    @map("duration_months")
+  /// All net of VAT, as the calculator and contracts take them.
+  monthlyRentalFils   BigInt @map("monthly_rental_fils")
+  downPaymentFils     BigInt @default(0) @map("down_payment_fils")
+  annualInsuranceFils BigInt @default(0) @map("annual_insurance_fils")
+  buyoutFils          BigInt @default(0) @map("buyout_fils")
+
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([leadId, createdAt])
+  @@map("lead_quotes")
+}
+
+model LeadStatusChange {
+  id          String      @id @default(cuid())
+  leadId      String      @map("lead_id")
+  lead        Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStatus  LeadStatus? @map("from_status")
+  toStatus    LeadStatus  @map("to_status")
+  note        String?
+  changedById String?     @map("changed_by_id")
+  changedBy   User?       @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime    @default(now()) @map("changed_at")
+
+  @@index([leadId, changedAt])
+  @@map("lead_status_changes")
 }

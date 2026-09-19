@@ -72,6 +72,10 @@ export interface NewContract {
   mileageAllowanceKm?: number | null;
   excessMileageRateFils?: bigint | null;
   terms?: string | null;
+  /** The lead it converts, when it came from one (P1F-04). */
+  leadId?: string | null;
+  /** Who is credited with the sale; defaults to whoever writes the contract. */
+  salespersonId?: string | null;
 }
 
 const MAX_MONTHS = 120;
@@ -92,7 +96,9 @@ async function lockContract(tx: Tx, contractId: string): Promise<void> {
 }
 
 async function nextContractNumber(): Promise<string> {
-  const rows = await prisma.$queryRaw<Array<{ nextval: bigint }>>`SELECT nextval('contract_code_seq')`;
+  const rows = await prisma.$queryRaw<
+    Array<{ nextval: bigint }>
+  >`SELECT nextval('contract_code_seq')`;
   return `CON-${String(rows[0]?.nextval ?? 0n).padStart(5, "0")}`;
 }
 
@@ -111,7 +117,12 @@ export async function nextInvoiceNumber(tx: Tx): Promise<string> {
 }
 
 function validTerms(input: NewContract): boolean {
-  const money = [input.monthlyRentalFils, input.downPaymentFils, input.buyoutFils, input.annualInsuranceFils];
+  const money = [
+    input.monthlyRentalFils,
+    input.downPaymentFils,
+    input.buyoutFils,
+    input.annualInsuranceFils,
+  ];
   return (
     /^\d{4}-\d{2}-\d{2}$/.test(input.startDate) &&
     Number.isInteger(input.durationMonths) &&
@@ -121,13 +132,22 @@ function validTerms(input: NewContract): boolean {
   );
 }
 
-/** Write a draft. Nothing financial exists until it is activated. */
-export async function createContract(input: NewContract, actorId: string | null) {
+/**
+ * Write a draft. Nothing financial exists until it is activated.
+ *
+ * Runs in its own transaction, or in the caller's when given one — converting a lead
+ * writes the customer, the contract and the lead's new status together or not at all.
+ */
+export async function createContract(input: NewContract, actorId: string | null, within?: Tx) {
   if (!validTerms(input)) throw new ContractRuleError("invalidTerms");
+  const db: Tx = within ?? prisma;
 
   const [customer, vehicle] = await Promise.all([
-    prisma.customer.findFirst({ where: { id: input.customerId, deletedAt: null }, select: { status: true } }),
-    prisma.vehicle.findFirst({
+    db.customer.findFirst({
+      where: { id: input.customerId, deletedAt: null },
+      select: { status: true },
+    }),
+    db.vehicle.findFirst({
       where: { id: input.vehicleId, deletedAt: null },
       select: { ownershipType: true, supplierId: true },
     }),
@@ -146,7 +166,7 @@ export async function createContract(input: NewContract, actorId: string | null)
 
   const number = await nextContractNumber();
 
-  return prisma.$transaction(async (tx) => {
+  const write = async (tx: Tx) => {
     const contract = await tx.contract.create({
       data: {
         number,
@@ -165,6 +185,8 @@ export async function createContract(input: NewContract, actorId: string | null)
         mileageAllowanceKm: input.mileageAllowanceKm ?? null,
         excessMileageRateFils: input.excessMileageRateFils ?? null,
         terms: input.terms ?? null,
+        leadId: input.leadId ?? null,
+        salespersonId: input.salespersonId ?? actorId,
         createdById: actorId,
       },
     });
@@ -172,7 +194,8 @@ export async function createContract(input: NewContract, actorId: string | null)
       data: { contractId: contract.id, fromStatus: null, toStatus: "DRAFT", changedById: actorId },
     });
     return contract;
-  });
+  };
+  return within ? write(within) : prisma.$transaction(write);
 }
 
 type IssuableInstallment = {
@@ -237,7 +260,12 @@ async function issueDueForContract(
   today: IsoDate,
 ): Promise<number> {
   const due = await tx.installment.findMany({
-    where: { contractId: contract.id, invoiceNumber: null, waivedAt: null, dueDate: { lte: toDbDate(today) } },
+    where: {
+      contractId: contract.id,
+      invoiceNumber: null,
+      waivedAt: null,
+      dueDate: { lte: toDbDate(today) },
+    },
     orderBy: [{ dueDate: "asc" }, { sequence: "asc" }],
     select: {
       id: true,
@@ -264,7 +292,12 @@ async function issueDueForContract(
 export async function activateContract(
   contractId: string,
   options: { actorId: string | null; today: IsoDate },
-): Promise<{ installments: number; issued: number; supplierInvoices: number; supplierRaised: number }> {
+): Promise<{
+  installments: number;
+  issued: number;
+  supplierInvoices: number;
+  supplierRaised: number;
+}> {
   try {
     return await prisma.$transaction(
       async (tx) => {
@@ -275,12 +308,19 @@ export async function activateContract(
           include: {
             customer: { select: { status: true } },
             vehicle: {
-              select: { id: true, status: true, ownershipType: true, supplierId: true, supplierMonthlyCostFils: true },
+              select: {
+                id: true,
+                status: true,
+                ownershipType: true,
+                supplierId: true,
+                supplierMonthlyCostFils: true,
+              },
             },
           },
         });
         if (!contract) throw new ContractRuleError("contractNotFound");
-        if (contract.customer.status === "BLACKLISTED") throw new ContractRuleError("customerBlacklisted");
+        if (contract.customer.status === "BLACKLISTED")
+          throw new ContractRuleError("customerBlacklisted");
 
         assertContractTransition(contract.status, "ACTIVE");
 
@@ -375,19 +415,30 @@ export async function activateContract(
           data: { status: "ACTIVE", activatedAt: new Date() },
         });
         await tx.contractStatusChange.create({
-          data: { contractId, fromStatus: contract.status, toStatus: "ACTIVE", changedById: options.actorId },
+          data: {
+            contractId,
+            fromStatus: contract.status,
+            toStatus: "ACTIVE",
+            changedById: options.actorId,
+          },
         });
 
         const issued = await issueDueForContract(tx, contract, options.today);
         const supplierRaised =
-          supplierInvoices > 0 ? await raiseDueSupplierInvoicesForContract(tx, contractId, options.today) : 0;
+          supplierInvoices > 0
+            ? await raiseDueSupplierInvoicesForContract(tx, contractId, options.today)
+            : 0;
         return { installments, issued, supplierInvoices, supplierRaised };
       },
       { timeout: 30_000 },
     );
   } catch (error) {
     // The partial unique index (INV-9) is the last word on a car already on a live contract.
-    if (typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2002") {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: unknown }).code === "P2002"
+    ) {
       throw new ContractRuleError("vehicleOnLiveContract");
     }
     throw error;
@@ -399,12 +450,16 @@ export async function activateContract(
  * work, and safe to run any number of times. Each contract is its own transaction, so one
  * failure does not hold up the rest.
  */
-export async function issueDueInstallments(today: IsoDate): Promise<{ contracts: number; issued: number }> {
+export async function issueDueInstallments(
+  today: IsoDate,
+): Promise<{ contracts: number; issued: number }> {
   const contracts = await prisma.contract.findMany({
     where: {
       status: { in: ["ACTIVE", "OVERDUE"] },
       deletedAt: null,
-      installments: { some: { invoiceNumber: null, waivedAt: null, dueDate: { lte: toDbDate(today) } } },
+      installments: {
+        some: { invoiceNumber: null, waivedAt: null, dueDate: { lte: toDbDate(today) } },
+      },
     },
     select: { id: true, customerId: true, vehicleId: true, supplierId: true, number: true },
   });
@@ -435,7 +490,10 @@ async function refreshContractStatus(
   contractId: string,
   actorId: string | null,
 ): Promise<void> {
-  const contract = await tx.contract.findUniqueOrThrow({ where: { id: contractId }, select: { status: true } });
+  const contract = await tx.contract.findUniqueOrThrow({
+    where: { id: contractId },
+    select: { status: true },
+  });
   if (contract.status !== "ACTIVE" && contract.status !== "OVERDUE") return;
 
   const late = await tx.installment.count({ where: { contractId, status: "OVERDUE" } });
@@ -527,7 +585,12 @@ export async function recordPayment(
           data: {
             paidFils,
             status: installmentStatus(
-              { dueDate: fromDbDate(item.dueDate), grossFils: item.grossFils, paidFils, waived: false },
+              {
+                dueDate: fromDbDate(item.dueDate),
+                grossFils: item.grossFils,
+                paidFils,
+                waived: false,
+              },
               options.today,
             ),
           },
@@ -557,7 +620,10 @@ export async function waiveInstallment(
   const reason = options.reason.trim();
   if (!reason) throw new ContractRuleError("waiveNeedsReason");
 
-  const found = await prisma.installment.findUnique({ where: { id: installmentId }, select: { contractId: true } });
+  const found = await prisma.installment.findUnique({
+    where: { id: installmentId },
+    select: { contractId: true },
+  });
   if (!found) throw new ContractRuleError("installmentNotFound");
 
   await prisma.$transaction(async (tx) => {
@@ -565,14 +631,23 @@ export async function waiveInstallment(
 
     const item = await tx.installment.findUniqueOrThrow({
       where: { id: installmentId },
-      include: { contract: { select: { id: true, number: true, customerId: true, vehicleId: true, supplierId: true } } },
+      include: {
+        contract: {
+          select: { id: true, number: true, customerId: true, vehicleId: true, supplierId: true },
+        },
+      },
     });
     if (item.waivedAt) throw new ContractRuleError("alreadyWaived");
     if (item.paidFils > 0n) throw new ContractRuleError("waivePaidInstallment");
 
     await tx.installment.update({
       where: { id: installmentId },
-      data: { waivedAt: new Date(), waiveReason: reason, waivedById: options.actorId, status: "WAIVED" },
+      data: {
+        waivedAt: new Date(),
+        waiveReason: reason,
+        waivedById: options.actorId,
+        status: "WAIVED",
+      },
     });
 
     if (item.invoiceNumber !== null) {
@@ -606,7 +681,9 @@ export async function waiveInstallment(
  * become Overdue, and so does any live contract carrying one. Run after issuing, so what
  * fell due yesterday is already issued.
  */
-export async function refreshOverdue(today: IsoDate): Promise<{ installments: number; contracts: number }> {
+export async function refreshOverdue(
+  today: IsoDate,
+): Promise<{ installments: number; contracts: number }> {
   const { count } = await prisma.installment.updateMany({
     where: {
       invoiceNumber: { not: null },
