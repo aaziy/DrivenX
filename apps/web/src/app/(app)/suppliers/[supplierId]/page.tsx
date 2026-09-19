@@ -39,8 +39,9 @@ export default async function SupplierDetailPage({
 
   const canSeePayables = principal.permissions.has("supplier_invoice.view");
 
-  const [t, tInstallment, format, supplier, payables] = await Promise.all([
+  const [t, tStatements, tInstallment, format, supplier, payables] = await Promise.all([
     getTranslations("suppliers"),
+    getTranslations("statements"),
     getTranslations("contracts.installmentStatus"),
     getFormatter(),
     loadSupplier(supplierId),
@@ -78,6 +79,11 @@ export default async function SupplierDetailPage({
             <bdi>{supplier.code}</bdi> · {statusLabel(supplier.status)}
           </p>
         </div>
+        {principal.permissions.has("supplier_invoice.view") ? (
+          <Link className="btn-secondary" href={`/suppliers/${supplier.id}/statement`}>
+            {tStatements("open")}
+          </Link>
+        ) : null}
       </header>
 
       <div className="page-body stack">

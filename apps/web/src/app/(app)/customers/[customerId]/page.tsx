@@ -42,8 +42,9 @@ export default async function CustomerDetailPage({
   const principal = await requirePermission("customer.view");
   const { customerId } = await params;
 
-  const [t, customer] = await Promise.all([
+  const [t, tStatements, customer] = await Promise.all([
     getTranslations("customers"),
+    getTranslations("statements"),
     loadCustomer(customerId),
   ]);
 
@@ -71,6 +72,11 @@ export default async function CustomerDetailPage({
             <bdi>{customer.code}</bdi> · {statusLabel(customer.status)}
           </p>
         </div>
+        {principal.permissions.has("payment.view") ? (
+          <Link className="btn-secondary" href={`/customers/${customer.id}/statement`}>
+            {tStatements("open")}
+          </Link>
+        ) : null}
       </header>
 
       <div className="page-body stack">

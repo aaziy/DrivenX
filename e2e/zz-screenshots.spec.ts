@@ -42,6 +42,9 @@ test.describe("screenshots", () => {
       // returns immediately and photographs the list again.
       await page.waitForURL(/\/customers\/.+/);
       await page.screenshot({ path: `${SHOT_DIR}/customer-detail-en.png`, fullPage: true });
+      await page.goto(`${page.url()}/statement?from=2026-01-01`);
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/statement-en.png`, fullPage: true });
     }
 
     await page.goto("/suppliers");
@@ -120,6 +123,14 @@ test.describe("screenshots", () => {
       await page.goto("/customers");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/customers-ar.png`, fullPage: true });
+      const customerAr = page.locator("tbody tr a").first();
+      if (await customerAr.count()) {
+        await customerAr.click();
+        await page.waitForURL(/\/customers\/.+/);
+        await page.goto(`${page.url()}/statement?from=2026-01-01`);
+        await page.waitForSelector("h1");
+        await page.screenshot({ path: `${SHOT_DIR}/statement-ar.png`, fullPage: true });
+      }
 
       await page.goto("/suppliers");
       await page.waitForSelector("h1");

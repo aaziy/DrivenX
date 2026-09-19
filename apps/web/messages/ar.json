@@ -1180,5 +1180,41 @@
     "total": "الإجمالي",
     "empty": "لم يُسجَّل شيء في هذه الأشهر.",
     "rowCount": "{count, plural, one {صف واحد} two {صفان} few {# صفوف} many {# صفاً} other {# صف}}"
+  },
+  "statements": {
+    "customerTitle": "كشف الحساب",
+    "supplierTitle": "كشف حساب المورد",
+    "customerSubtitle": "ما صدر من فواتير لـ {name} وما دفعه، مع الرصيد بعد كل سطر.",
+    "supplierSubtitle": "ما فوتره {name} على DrivenX وما دُفع له، مع الرصيد بعد كل سطر.",
+    "back": "العودة إلى {name}",
+    "open": "كشف الحساب",
+    "from": "من",
+    "to": "إلى",
+    "apply": "عرض",
+    "rangeInvalid": "يجب أن يسبق تاريخ البداية تاريخ النهاية.",
+    "opening": "الرصيد المرحّل",
+    "closing": "الرصيد الختامي",
+    "columns": {
+      "date": "التاريخ",
+      "item": "البند",
+      "reference": "المرجع",
+      "contract": "العقد",
+      "debit": "المفوتر",
+      "credit": "المدفوع / المعفى",
+      "balance": "الرصيد"
+    },
+    "kinds": {
+      "invoice": "فاتورة",
+      "payment": "دفعة",
+      "waiver": "إعفاء"
+    },
+    "supplierKinds": {
+      "invoice": "فاتورة مورد",
+      "payment": "دفعة للمورد",
+      "waiver": "إعفاء"
+    },
+    "inCredit": "رصيد دائن",
+    "empty": "لا توجد فواتير أو دفعات في هذه الفترة.",
+    "vatNote": "المبالغ إجمالية كما فُوترت ودُفعت."
   }
 }

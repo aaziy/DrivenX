@@ -215,6 +215,23 @@ test.describe("contracts", () => {
     await anonymous.dispose();
   });
 
+  test("the customer's statement shows the invoice, the payment and what is left", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await draftAndActivate(page);
+    await pay(page, "2,000");
+
+    // The subtitle links to the customer; their page links to the statement.
+    await page.locator(".page-subtitle a").first().click();
+    await page.getByRole("link", { name: "Statement" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Statement of account" })).toBeVisible();
+
+    const table = page.getByRole("table");
+    await expect(table.locator("tbody tr", { hasText: "Invoice" })).toContainText(/INV-\d{6}/);
+    await expect(table.locator("tbody tr", { hasText: "Payment" })).toContainText("2,000.00");
+    // 3,570.00 invoiced less 2,000.00 paid.
+    await expect(table.locator("tfoot")).toContainText("1,570.00");
+  });
+
   test("sales can draft a contract but not activate one", async ({ page }) => {
     // Sales holds contract.create, not contract.activate: a salesperson writes the deal,
     // someone else commits the car and the schedule.

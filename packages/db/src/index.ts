@@ -96,6 +96,13 @@ export {
   type ProfitRow,
   type ReportDimension,
 } from "./reports";
+export {
+  customerStatement,
+  supplierStatement,
+  type Statement,
+  type StatementLine,
+  type StatementLineKind,
+} from "./statements";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

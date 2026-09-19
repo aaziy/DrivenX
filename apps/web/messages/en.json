@@ -1180,5 +1180,41 @@
     "total": "Total",
     "empty": "Nothing was booked in these months.",
     "rowCount": "{count, plural, one {# row} other {# rows}}"
+  },
+  "statements": {
+    "customerTitle": "Statement of account",
+    "supplierTitle": "Supplier statement",
+    "customerSubtitle": "What {name} was invoiced and what they paid, with the balance after each line.",
+    "supplierSubtitle": "What {name} billed DrivenX and what was paid to them, with the balance after each line.",
+    "back": "Back to {name}",
+    "open": "Statement",
+    "from": "From",
+    "to": "To",
+    "apply": "Show",
+    "rangeInvalid": "The start date must come before the end date.",
+    "opening": "Balance brought forward",
+    "closing": "Closing balance",
+    "columns": {
+      "date": "Date",
+      "item": "Item",
+      "reference": "Reference",
+      "contract": "Contract",
+      "debit": "Invoiced",
+      "credit": "Paid / credited",
+      "balance": "Balance"
+    },
+    "kinds": {
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "waiver": "Waived"
+    },
+    "supplierKinds": {
+      "invoice": "Supplier invoice",
+      "payment": "Payment to supplier",
+      "waiver": "Waived"
+    },
+    "inCredit": "In credit",
+    "empty": "No invoices or payments in this range.",
+    "vatNote": "Amounts are gross, as invoiced and paid."
   }
 }
