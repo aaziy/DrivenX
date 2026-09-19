@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { expect, test } from "@playwright/test";
 
 import { PERSONAS, signInExpectingSuccess } from "./helpers";
@@ -29,6 +31,20 @@ test.describe("profitability report", () => {
     }
   });
 
+  test("exports what is on screen to Excel", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await page.goto("/reports/profitability?view=month&from=2026-01&to=2026-12");
+    const link = page.getByRole("link", { name: "Export to Excel" });
+    if ((await link.count()) === 0) test.skip(true, "nothing booked in 2026 in this database");
+
+    const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
+    expect(download.suggestedFilename()).toBe("profitability-month-2026-01-to-2026-12.xlsx");
+    const path = await download.path();
+    const bytes = readFileSync(path);
+    // An .xlsx is a zip archive.
+    expect(bytes.subarray(0, 2).toString()).toBe("PK");
+  });
+
   test("refuses a range that runs backwards", async ({ page }) => {
     await signInExpectingSuccess(page, PERSONAS.management);
     await page.goto("/reports/profitability?view=month&from=2026-06&to=2026-01");
@@ -40,5 +56,6 @@ test.describe("profitability report", () => {
     await expect(page.getByRole("link", { name: "Profitability" })).toHaveCount(0);
     await page.goto("/reports/profitability");
     await expect(page.getByRole("heading", { name: "Not permitted" })).toBeVisible();
+    expect((await page.request.get("/reports/profitability/export?view=vehicle")).status()).toBe(403);
   });
 });

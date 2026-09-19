@@ -230,6 +230,12 @@ test.describe("contracts", () => {
     await expect(table.locator("tbody tr", { hasText: "Payment" })).toContainText("2,000.00");
     // 3,570.00 invoiced less 2,000.00 paid.
     await expect(table.locator("tfoot")).toContainText("1,570.00");
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("link", { name: "Export to Excel" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^statement-CUS-\d+-\d{4}-\d{2}-\d{2}-to-\d{4}-\d{2}-\d{2}\.xlsx$/);
   });
 
   test("sales can draft a contract but not activate one", async ({ page }) => {

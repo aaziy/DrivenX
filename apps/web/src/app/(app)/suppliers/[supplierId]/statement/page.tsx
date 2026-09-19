@@ -6,7 +6,8 @@ import { getTranslations } from "next-intl/server";
 import { businessDate } from "@drivenx/core";
 import { supplierStatement, prisma } from "@drivenx/db";
 
-import { StatementView, statementRange } from "@/components/statement-view";
+import { StatementView } from "@/components/statement-view";
+import { statementRange } from "@/lib/reports/range";
 import { requirePermission } from "@/lib/auth";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,7 +22,7 @@ export default async function SupplierStatementPage({
   params: Promise<{ supplierId: string }>;
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  await requirePermission("supplier_invoice.view");
+  const principal = await requirePermission("supplier_invoice.view");
   const [{ supplierId }, query] = await Promise.all([params, searchParams]);
 
   const party = await prisma.supplier.findFirst({
@@ -48,7 +49,16 @@ export default async function SupplierStatementPage({
         </div>
       </header>
       <div className="page-body stack">
-        <StatementView statement={statement} side="supplier" valid={range.valid} />
+        <StatementView
+          statement={statement}
+          side="supplier"
+          valid={range.valid}
+          exportHref={
+            principal.permissions.has("report.export")
+              ? `/suppliers/${party.id}/statement/export?from=${range.from}&to=${range.to}`
+              : null
+          }
+        />
       </div>
     </>
   );

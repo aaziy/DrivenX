@@ -1179,7 +1179,8 @@
     },
     "total": "Total",
     "empty": "Nothing was booked in these months.",
-    "rowCount": "{count, plural, one {# row} other {# rows}}"
+    "rowCount": "{count, plural, one {# row} other {# rows}}",
+    "exportExcel": "Export to Excel"
   },
   "statements": {
     "customerTitle": "Statement of account",
@@ -1215,6 +1216,7 @@
     },
     "inCredit": "In credit",
     "empty": "No invoices or payments in this range.",
-    "vatNote": "Amounts are gross, as invoiced and paid."
+    "vatNote": "Amounts are gross, as invoiced and paid.",
+    "exportExcel": "Export to Excel"
   }
 }

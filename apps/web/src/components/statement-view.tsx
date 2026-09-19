@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
-import { isIsoDate, Money } from "@drivenx/core";
+import { Money } from "@drivenx/core";
 import type { Statement } from "@drivenx/db";
 
 /**
@@ -14,10 +14,13 @@ export async function StatementView({
   statement,
   side,
   valid,
+  exportHref,
 }: {
   statement: Statement | null;
   side: "customer" | "supplier";
   valid: boolean;
+  /** Where to download it as Excel, or null when the reader may not export. */
+  exportHref: string | null;
 }) {
   const [t, format] = await Promise.all([getTranslations("statements"), getFormatter()]);
   const day = (iso: string) =>
@@ -62,7 +65,14 @@ export async function StatementView({
               <h2>
                 {day(statement.from)} – {day(statement.to)}
               </h2>
-              <span className="muted">{t("vatNote")}</span>
+              <span className="row" style={{ gap: 12, alignItems: "center" }}>
+                <span className="muted">{t("vatNote")}</span>
+                {exportHref ? (
+                  <a className="btn-secondary" href={exportHref}>
+                    {t("exportExcel")}
+                  </a>
+                ) : null}
+              </span>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table className="data" aria-label={t("columns.balance")}>
@@ -141,14 +151,4 @@ export async function StatementView({
       </div>
     </>
   );
-}
-
-/** A statement's range from the query string: this year to date unless told otherwise. */
-export function statementRange(
-  params: { from?: string; to?: string },
-  today: string,
-): { from: string; to: string; valid: boolean } {
-  const from = params.from && isIsoDate(params.from) ? params.from : `${today.slice(0, 4)}-01-01`;
-  const to = params.to && isIsoDate(params.to) ? params.to : today;
-  return { from, to, valid: from <= to };
 }

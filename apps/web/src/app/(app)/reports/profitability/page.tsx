@@ -3,22 +3,15 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { businessDate, Money } from "@drivenx/core";
-import { profitReport, REPORT_DIMENSIONS, type ProfitFigures, type ReportDimension } from "@drivenx/db";
+import { profitReport, REPORT_DIMENSIONS, type ProfitFigures } from "@drivenx/db";
 
 import { requirePermission } from "@/lib/auth";
+import { monthInput, profitabilityQuery } from "@/lib/reports/range";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("reports");
   return { title: `${t("profitabilityTitle")} · DrivenX` };
 }
-
-/** "2026-03" from a month input, as the ledger's 202603; null when it is not one. */
-function parseMonth(value: string | undefined): number | null {
-  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value ?? "");
-  return match ? Number(match[1]) * 100 + Number(match[2]) : null;
-}
-
-const asInput = (period: number) => `${Math.floor(period / 100)}-${String(period % 100).padStart(2, "0")}`;
 
 /**
  * Profitability (P1E-05, P1E-06), by vehicle, customer, supplier, contract or month.
@@ -31,15 +24,10 @@ export default async function ProfitabilityPage({
 }: {
   searchParams: Promise<{ view?: string; from?: string; to?: string }>;
 }) {
-  await requirePermission("report.financial");
+  const principal = await requirePermission("report.financial");
   const params = await searchParams;
 
-  const today = businessDate(new Date());
-  const thisMonth = Number(today.slice(0, 4)) * 100 + Number(today.slice(5, 7));
-  const view: ReportDimension = REPORT_DIMENSIONS.find((d) => d === params.view) ?? "vehicle";
-  const from = parseMonth(params.from) ?? Math.floor(thisMonth / 100) * 100 + 1;
-  const to = parseMonth(params.to) ?? thisMonth;
-  const rangeValid = from <= to;
+  const { view, from, to, valid: rangeValid } = profitabilityQuery(params, businessDate(new Date()));
 
   const [t, format, report] = await Promise.all([
     getTranslations("reports"),
@@ -117,11 +105,11 @@ export default async function ProfitabilityPage({
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="from">{t("from")}</label>
-              <input id="from" name="from" type="month" dir="ltr" defaultValue={asInput(from)} />
+              <input id="from" name="from" type="month" dir="ltr" defaultValue={monthInput(from)} />
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="to">{t("to")}</label>
-              <input id="to" name="to" type="month" dir="ltr" defaultValue={asInput(to)} />
+              <input id="to" name="to" type="month" dir="ltr" defaultValue={monthInput(to)} />
             </div>
             <button type="submit" className="btn-primary">
               {t("apply")}
@@ -134,7 +122,18 @@ export default async function ProfitabilityPage({
             <h2>
               {monthLabel(String(from))} – {monthLabel(String(to))}
             </h2>
-            {report ? <span className="muted">{t("rowCount", { count: report.rows.length })}</span> : null}
+            <span className="row" style={{ gap: 12, alignItems: "center" }}>
+              {report ? <span className="muted">{t("rowCount", { count: report.rows.length })}</span> : null}
+              {report && report.rows.length > 0 && principal.permissions.has("report.export") ? (
+                // A plain link: the browser downloads the file itself.
+                <a
+                  className="btn-secondary"
+                  href={`/reports/profitability/export?view=${view}&from=${monthInput(from)}&to=${monthInput(to)}`}
+                >
+                  {t("exportExcel")}
+                </a>
+              ) : null}
+            </span>
           </div>
 
           {!report ? (
