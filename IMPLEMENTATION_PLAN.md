@@ -326,7 +326,7 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | P1E-08 | Supplier statement |
 | P1E-09 | Excel export (SheetJS) on every report |
 | P1E-10 | PDF export (React-PDF) on every report |
-| P1E-11 | Query performance pass — indexes, materialised view for the dashboard if p95 > 500ms |
+| P1E-11 | Query performance pass — indexes, materialised view for the dashboard if p95 > 500ms — **Measured 2026-09-19** (`pnpm bench:dashboard`): at 1,000 contracts (39k instalments) the worst p95 is 27 ms; at 5,000 (195k instalments, 60k ledger entries) it is 107 ms (profitability by contract). Well under 500 ms, so no materialised view |
 
 **Tests**
 - Reconciliation: **INV-6** — every KPI equals its ledger aggregate; every report cross-foots to the
