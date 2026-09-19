@@ -48,6 +48,10 @@ const NAV_DEFINITION: Array<{
     items: [{ href: "/vehicles", labelKey: "vehicles", permission: "vehicle.view" }],
   },
   {
+    labelKey: "reports",
+    items: [{ href: "/reports/profitability", labelKey: "profitability", permission: "report.financial" }],
+  },
+  {
     labelKey: "administration",
     items: [
       { href: "/admin/users", labelKey: "users", permission: "user.view" },

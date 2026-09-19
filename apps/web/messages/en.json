@@ -35,6 +35,8 @@
     "suppliers": "Suppliers",
     "fleet": "Fleet",
     "vehicles": "Vehicles",
+    "reports": "Reports",
+    "profitability": "Profitability",
     "administration": "Administration",
     "users": "Users",
     "roles": "Roles & permissions",
@@ -1136,5 +1138,47 @@
     "page": "Page {current} of {total}",
     "download": "Download PDF",
     "downloadOther": "PDF in Arabic"
+  },
+  "reports": {
+    "profitabilityTitle": "Profitability",
+    "profitabilitySubtitle": "Revenue and cost from the ledger, net of VAT. Insurance is reported apart from rental.",
+    "view": "View by",
+    "views": {
+      "vehicle": "Vehicle",
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "contract": "Contract",
+      "month": "Month"
+    },
+    "from": "From",
+    "to": "To",
+    "apply": "Show",
+    "rangeInvalid": "The start month must come before the end month.",
+    "columns": {
+      "vehicle": "Vehicle",
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "contract": "Contract",
+      "month": "Month",
+      "rental": "Rental",
+      "insurance": "Insurance",
+      "otherRevenue": "Other income",
+      "revenue": "Revenue",
+      "supplierCost": "Supplier lease",
+      "otherCost": "Other cost",
+      "cost": "Cost",
+      "profit": "Profit",
+      "margin": "Margin"
+    },
+    "unassigned": {
+      "vehicle": "Not linked to a vehicle",
+      "customer": "Not linked to a customer",
+      "supplier": "Company-owned cars (no supplier)",
+      "contract": "Not linked to a contract",
+      "month": "—"
+    },
+    "total": "Total",
+    "empty": "Nothing was booked in these months.",
+    "rowCount": "{count, plural, one {# row} other {# rows}}"
   }
 }

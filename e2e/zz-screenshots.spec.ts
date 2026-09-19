@@ -27,6 +27,10 @@ test.describe("screenshots", () => {
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/dashboard-en.png`, fullPage: true });
 
+    await page.goto("/reports/profitability?view=vehicle&from=2026-01&to=2026-12");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/profitability-en.png`, fullPage: true });
+
     await page.goto("/customers");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/customers-en.png`, fullPage: true });
@@ -108,6 +112,10 @@ test.describe("screenshots", () => {
       await page.goto("/");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/dashboard-ar.png`, fullPage: true });
+
+      await page.goto("/reports/profitability?view=vehicle&from=2026-01&to=2026-12");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/profitability-ar.png`, fullPage: true });
 
       await page.goto("/customers");
       await page.waitForSelector("h1");

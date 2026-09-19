@@ -35,6 +35,8 @@
     "suppliers": "الموردون",
     "fleet": "الأسطول",
     "vehicles": "المركبات",
+    "reports": "التقارير",
+    "profitability": "الربحية",
     "administration": "الإدارة",
     "users": "المستخدمون",
     "roles": "الأدوار والصلاحيات",
@@ -1136,5 +1138,47 @@
     "page": "صفحة {current} من {total}",
     "download": "تنزيل PDF",
     "downloadOther": "PDF بالإنجليزية"
+  },
+  "reports": {
+    "profitabilityTitle": "الربحية",
+    "profitabilitySubtitle": "الإيرادات والتكاليف من دفتر الأستاذ، غير شاملة الضريبة. يُعرض التأمين منفصلاً عن الإيجار.",
+    "view": "العرض حسب",
+    "views": {
+      "vehicle": "المركبة",
+      "customer": "العميل",
+      "supplier": "المورد",
+      "contract": "العقد",
+      "month": "الشهر"
+    },
+    "from": "من",
+    "to": "إلى",
+    "apply": "عرض",
+    "rangeInvalid": "يجب أن يسبق شهر البداية شهر النهاية.",
+    "columns": {
+      "vehicle": "المركبة",
+      "customer": "العميل",
+      "supplier": "المورد",
+      "contract": "العقد",
+      "month": "الشهر",
+      "rental": "الإيجار",
+      "insurance": "التأمين",
+      "otherRevenue": "إيرادات أخرى",
+      "revenue": "الإيرادات",
+      "supplierCost": "إيجار المورد",
+      "otherCost": "تكاليف أخرى",
+      "cost": "التكاليف",
+      "profit": "الربح",
+      "margin": "الهامش"
+    },
+    "unassigned": {
+      "vehicle": "غير مرتبط بمركبة",
+      "customer": "غير مرتبط بعميل",
+      "supplier": "سيارات مملوكة للشركة (بدون مورد)",
+      "contract": "غير مرتبط بعقد",
+      "month": "—"
+    },
+    "total": "الإجمالي",
+    "empty": "لم يُسجَّل شيء في هذه الأشهر.",
+    "rowCount": "{count, plural, one {صف واحد} two {صفان} few {# صفوف} many {# صفاً} other {# صف}}"
   }
 }

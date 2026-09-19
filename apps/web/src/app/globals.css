@@ -413,6 +413,13 @@ table.data tbody tr:hover {
   background: var(--surface-2);
 }
 
+/* A report's total: set apart from the rows it adds up. */
+table.data tr.report-total td {
+  border-top: 2px solid var(--text);
+  border-bottom: none;
+  background: var(--surface);
+}
+
 .numeric,
 table.data th.numeric {
   text-align: end;

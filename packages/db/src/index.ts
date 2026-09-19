@@ -87,6 +87,15 @@ export {
   type Payables,
   type Receivables,
 } from "./kpis";
+export {
+  periodMonth,
+  profitReport,
+  REPORT_DIMENSIONS,
+  type ProfitFigures,
+  type ProfitReport,
+  type ProfitRow,
+  type ReportDimension,
+} from "./reports";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";
