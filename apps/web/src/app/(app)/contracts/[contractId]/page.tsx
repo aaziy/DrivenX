@@ -33,6 +33,8 @@ async function loadContract(contractId: string) {
       payments: { orderBy: { receivedOn: "desc" }, include: { recordedBy: { select: { fullName: true } } } },
       statusChanges: { orderBy: { changedAt: "desc" }, include: { changedBy: { select: { fullName: true } } } },
       supplierInvoices: { orderBy: { sequence: "asc" } },
+      salesperson: { select: { fullName: true } },
+      lead: { select: { id: true, code: true } },
     },
   });
 }
@@ -109,6 +111,15 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                 {contract.vehicle.make} {contract.vehicle.model} {contract.vehicle.plateCode} {contract.vehicle.plateNumber}
               </bdi>
             </Link>
+            {contract.salesperson ? <> · {t("detail.soldBy", { name: contract.salesperson.fullName })}</> : null}
+            {contract.lead ? (
+              <>
+                {" · "}
+                <Link href={`/leads/${contract.lead.id}`}>
+                  <bdi>{contract.lead.code}</bdi>
+                </Link>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="row" style={{ gap: 8 }}>

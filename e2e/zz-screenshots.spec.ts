@@ -18,6 +18,8 @@ const SHOT_DIR = process.env["SHOT_DIR"] ?? "";
 
 test.describe("screenshots", () => {
   test.skip(!SHOT_DIR, "SHOT_DIR is not set");
+  // A tour of every screen in two languages, each compiled on first visit in dev mode.
+  test.setTimeout(180_000);
 
   test("captures customers and suppliers in both languages", async ({ page }) => {
     await signInExpectingSuccess(page, PERSONAS.superAdmin);
@@ -28,6 +30,19 @@ test.describe("screenshots", () => {
     await page.goto("/");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/dashboard-en.png`, fullPage: true });
+
+    await page.goto("/leads?view=board");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/leads-board-en.png`, fullPage: true });
+    await page.goto("/leads?status=all");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/leads-en.png`, fullPage: true });
+    const firstLead = page.locator("tbody tr a").first();
+    if (await firstLead.count()) {
+      await firstLead.click();
+      await page.waitForURL(/\/leads\/(?!new)[^/?]+$/);
+      await page.screenshot({ path: `${SHOT_DIR}/lead-detail-en.png`, fullPage: true });
+    }
 
     await page.goto("/reports/profitability?view=vehicle&from=2026-01&to=2026-12");
     await page.waitForSelector("h1");
@@ -119,6 +134,18 @@ test.describe("screenshots", () => {
       await page.goto("/");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/dashboard-ar.png`, fullPage: true });
+
+      await page.goto("/leads?view=board");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/leads-board-ar.png`, fullPage: true });
+      await page.goto("/leads?status=all");
+      await page.waitForSelector("h1");
+      const firstLeadAr = page.locator("tbody tr a").first();
+      if (await firstLeadAr.count()) {
+        await firstLeadAr.click();
+        await page.waitForURL(/\/leads\/(?!new)[^/?]+$/);
+        await page.screenshot({ path: `${SHOT_DIR}/lead-detail-ar.png`, fullPage: true });
+      }
 
       await page.goto("/reports/profitability?view=vehicle&from=2026-01&to=2026-12");
       await page.waitForSelector("h1");

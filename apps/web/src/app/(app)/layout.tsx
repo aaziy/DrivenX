@@ -30,7 +30,10 @@ const NAV_DEFINITION: Array<{
   },
   {
     labelKey: "sales",
-    items: [{ href: "/deals", labelKey: "dealCalculator", permission: "deal.calculate" }],
+    items: [
+      { href: "/leads", labelKey: "leads", permission: "lead.view" },
+      { href: "/deals", labelKey: "dealCalculator", permission: "deal.calculate" },
+    ],
   },
   {
     labelKey: "contractsGroup",

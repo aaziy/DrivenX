@@ -413,6 +413,48 @@ table.data tbody tr:hover {
   background: var(--surface-2);
 }
 
+/* The lead board: one column per pipeline stage, scrolling sideways on narrow screens. */
+.lead-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.lead-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  min-height: 160px;
+}
+
+.lead-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.lead-card:hover {
+  border-color: var(--text-muted);
+}
+
+.lead-card .muted {
+  font-size: 12px;
+}
+
 /* A report's total: set apart from the rows it adds up. */
 table.data tr.report-total td {
   border-top: 2px solid var(--text);
