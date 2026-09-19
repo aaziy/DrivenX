@@ -46,6 +46,12 @@ export interface ProfitReport {
 
 type LedgerSum = { key: string | null; direction: string; category: string; amount: bigint };
 
+/** Narrow a report to the contracts of one type, or one salesperson's sales (P1E-04). */
+export interface ReportFilters {
+  contractType?: "LONG_TERM_RENTAL" | "LEASE_TO_OWN" | "B2B_RENTAL" | "OTHER" | null;
+  salespersonId?: string | null;
+}
+
 /**
  * The ledger for the range, summed by the dimension, direction and category.
  *
@@ -55,29 +61,58 @@ type LedgerSum = { key: string | null; direction: string; category: string; amou
  * (search.ts builds its whole statement with Prisma.sql and passes it as one argument,
  * which works.)
  */
-function ledgerSums(dimension: ReportDimension, fromMonth: number, toMonth: number): Promise<LedgerSum[]> {
+function ledgerSums(
+  dimension: ReportDimension,
+  fromMonth: number,
+  toMonth: number,
+  filters: ReportFilters,
+): Promise<LedgerSum[]> {
+  // Filters narrow to entries on matching contracts; null means "any", and then every
+  // entry counts, including those on no contract at all.
+  const type = filters.contractType ?? null;
+  const salesperson = filters.salespersonId ?? null;
   // Reversals are negative, so summing everything is already net of them.
   switch (dimension) {
     case "vehicle":
       return prisma.$queryRaw<LedgerSum[]>`
-        SELECT vehicle_id AS key, direction::text AS direction, category, SUM(amount_fils)::bigint AS amount
-        FROM ledger_entries WHERE period_month BETWEEN ${fromMonth} AND ${toMonth} GROUP BY 1, 2, 3`;
+        SELECT l.vehicle_id AS key, l.direction::text AS direction, l.category, SUM(l.amount_fils)::bigint AS amount
+        FROM ledger_entries l LEFT JOIN contracts c ON c.id = l.contract_id
+        WHERE l.period_month BETWEEN ${fromMonth} AND ${toMonth}
+          AND (${type}::text IS NULL OR c.type::text = ${type}::text)
+          AND (${salesperson}::text IS NULL OR c.salesperson_id = ${salesperson}::text)
+        GROUP BY 1, 2, 3`;
     case "customer":
       return prisma.$queryRaw<LedgerSum[]>`
-        SELECT customer_id AS key, direction::text AS direction, category, SUM(amount_fils)::bigint AS amount
-        FROM ledger_entries WHERE period_month BETWEEN ${fromMonth} AND ${toMonth} GROUP BY 1, 2, 3`;
+        SELECT l.customer_id AS key, l.direction::text AS direction, l.category, SUM(l.amount_fils)::bigint AS amount
+        FROM ledger_entries l LEFT JOIN contracts c ON c.id = l.contract_id
+        WHERE l.period_month BETWEEN ${fromMonth} AND ${toMonth}
+          AND (${type}::text IS NULL OR c.type::text = ${type}::text)
+          AND (${salesperson}::text IS NULL OR c.salesperson_id = ${salesperson}::text)
+        GROUP BY 1, 2, 3`;
     case "supplier":
       return prisma.$queryRaw<LedgerSum[]>`
-        SELECT supplier_id AS key, direction::text AS direction, category, SUM(amount_fils)::bigint AS amount
-        FROM ledger_entries WHERE period_month BETWEEN ${fromMonth} AND ${toMonth} GROUP BY 1, 2, 3`;
+        SELECT l.supplier_id AS key, l.direction::text AS direction, l.category, SUM(l.amount_fils)::bigint AS amount
+        FROM ledger_entries l LEFT JOIN contracts c ON c.id = l.contract_id
+        WHERE l.period_month BETWEEN ${fromMonth} AND ${toMonth}
+          AND (${type}::text IS NULL OR c.type::text = ${type}::text)
+          AND (${salesperson}::text IS NULL OR c.salesperson_id = ${salesperson}::text)
+        GROUP BY 1, 2, 3`;
     case "contract":
       return prisma.$queryRaw<LedgerSum[]>`
-        SELECT contract_id AS key, direction::text AS direction, category, SUM(amount_fils)::bigint AS amount
-        FROM ledger_entries WHERE period_month BETWEEN ${fromMonth} AND ${toMonth} GROUP BY 1, 2, 3`;
+        SELECT l.contract_id AS key, l.direction::text AS direction, l.category, SUM(l.amount_fils)::bigint AS amount
+        FROM ledger_entries l LEFT JOIN contracts c ON c.id = l.contract_id
+        WHERE l.period_month BETWEEN ${fromMonth} AND ${toMonth}
+          AND (${type}::text IS NULL OR c.type::text = ${type}::text)
+          AND (${salesperson}::text IS NULL OR c.salesperson_id = ${salesperson}::text)
+        GROUP BY 1, 2, 3`;
     case "month":
       return prisma.$queryRaw<LedgerSum[]>`
-        SELECT period_month::text AS key, direction::text AS direction, category, SUM(amount_fils)::bigint AS amount
-        FROM ledger_entries WHERE period_month BETWEEN ${fromMonth} AND ${toMonth} GROUP BY 1, 2, 3`;
+        SELECT l.period_month::text AS key, l.direction::text AS direction, l.category, SUM(l.amount_fils)::bigint AS amount
+        FROM ledger_entries l LEFT JOIN contracts c ON c.id = l.contract_id
+        WHERE l.period_month BETWEEN ${fromMonth} AND ${toMonth}
+          AND (${type}::text IS NULL OR c.type::text = ${type}::text)
+          AND (${salesperson}::text IS NULL OR c.salesperson_id = ${salesperson}::text)
+        GROUP BY 1, 2, 3`;
   }
 }
 
@@ -119,8 +154,9 @@ export async function profitReport(
   dimension: ReportDimension,
   fromMonth: number,
   toMonth: number,
+  filters: ReportFilters = {},
 ): Promise<ProfitReport> {
-  const sums = await ledgerSums(dimension, fromMonth, toMonth);
+  const sums = await ledgerSums(dimension, fromMonth, toMonth, filters);
 
   const byKey = new Map<string | null, ProfitFigures>();
   const total = empty();

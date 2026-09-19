@@ -6,6 +6,7 @@ import { businessDate, Money } from "@drivenx/core";
 import { profitReport, REPORT_DIMENSIONS, type ProfitFigures } from "@drivenx/db";
 
 import { requirePermission } from "@/lib/auth";
+import { salespeople } from "@/lib/leads";
 import { monthInput, profitabilityQuery } from "@/lib/reports/range";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,17 +23,19 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ProfitabilityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ view?: string; from?: string; to?: string; type?: string; salesperson?: string }>;
 }) {
   const principal = await requirePermission("report.financial");
   const params = await searchParams;
 
-  const { view, from, to, valid: rangeValid } = profitabilityQuery(params, businessDate(new Date()));
+  const { view, from, to, valid: rangeValid, filters, search } = profitabilityQuery(params, businessDate(new Date()));
 
-  const [t, format, report] = await Promise.all([
+  const [t, tTypes, format, report, people] = await Promise.all([
     getTranslations("reports"),
+    getTranslations("contracts.types"),
     getFormatter(),
-    rangeValid ? profitReport(view, from, to) : null,
+    rangeValid ? profitReport(view, from, to, filters) : null,
+    salespeople(),
   ]);
 
   const monthLabel = (period: string) =>
@@ -111,6 +114,28 @@ export default async function ProfitabilityPage({
               <label htmlFor="to">{t("to")}</label>
               <input id="to" name="to" type="month" dir="ltr" defaultValue={monthInput(to)} />
             </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="type">{t("contractType")}</label>
+              <select id="type" name="type" defaultValue={filters.contractType ?? ""}>
+                <option value="">{t("anyType")}</option>
+                {(["LONG_TERM_RENTAL", "LEASE_TO_OWN", "B2B_RENTAL", "OTHER"] as const).map((type) => (
+                  <option key={type} value={type}>
+                    {tTypes(type)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="salesperson">{t("salesperson")}</label>
+              <select id="salesperson" name="salesperson" defaultValue={filters.salespersonId ?? ""}>
+                <option value="">{t("anySalesperson")}</option>
+                {people.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button type="submit" className="btn-primary">
               {t("apply")}
             </button>
@@ -129,13 +154,13 @@ export default async function ProfitabilityPage({
                 <>
                   <a
                     className="btn-secondary"
-                    href={`/reports/profitability/export?view=${view}&from=${monthInput(from)}&to=${monthInput(to)}`}
+                    href={`/reports/profitability/export?${search}`}
                   >
                     {t("exportExcel")}
                   </a>
                   <a
                     className="btn-secondary"
-                    href={`/reports/profitability/export?view=${view}&from=${monthInput(from)}&to=${monthInput(to)}&format=pdf`}
+                    href={`/reports/profitability/export?${search}&format=pdf`}
                   >
                     {t("exportPdf")}
                   </a>

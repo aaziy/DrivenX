@@ -130,3 +130,23 @@ test.describe("leads", () => {
     }
   });
 });
+
+test.describe("sales funnel", () => {
+  test("shows each stage with its share, and a salesperson sees their own", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await page.getByRole("link", { name: "Sales funnel" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Sales funnel" })).toBeVisible();
+    for (const stage of ["New", "Contacted", "Qualified", "Deal created", "Contracted"]) {
+      await expect(page.locator(".funnel-label", { hasText: new RegExp(`^${stage}$`) })).toBeVisible();
+    }
+    await expect(page.getByRole("heading", { name: "By salesperson" })).toBeVisible();
+    await signOut(page);
+
+    // Layla sees her own funnel, with no salesperson breakdown or filter.
+    await signInExpectingSuccess(page, PERSONAS.sales);
+    await page.goto("/reports/funnel");
+    await expect(page.getByRole("heading", { level: 1, name: "Sales funnel" })).toBeVisible();
+    await expect(page.getByLabel("Salesperson")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "By salesperson" })).toHaveCount(0);
+  });
+});

@@ -137,3 +137,28 @@ describe("profitability", () => {
     expect(march.total.profitFils).toBe(0n);
   });
 });
+
+describe("filters (P1E-04)", () => {
+  it("narrow to one contract type, and to one salesperson's sales", async () => {
+    const { rental, lto } = await book();
+    const sellerId = (
+      await prisma.user.create({ data: { email: `seller.${Date.now()}@x.ae`, fullName: "Seller", passwordHash: "x" } })
+    ).id;
+    await prisma.contract.update({ where: { id: lto.id }, data: { salespersonId: sellerId } });
+
+    const ltoOnly = await profitReport("contract", 202601, 202602, { contractType: "LEASE_TO_OWN" });
+    expect(ltoOnly.rows.map((row) => row.key)).toEqual([lto.id]);
+    // 2 × 3,500 rental less 2 × 2,000 lease.
+    expect(ltoOnly.total.profitFils).toBe(aed("3000"));
+
+    const theirs = await profitReport("month", 202601, 202602, { salespersonId: sellerId });
+    expect(theirs.total.revenueFils).toBe(aed("7000"));
+
+    const rentals = await profitReport("contract", 202601, 202602, { contractType: "LONG_TERM_RENTAL" });
+    expect(rentals.rows.map((row) => row.key)).toEqual([rental.id]);
+
+    // Unfiltered, nothing is lost.
+    const all = await profitReport("contract", 202601, 202602);
+    expect(all.total.profitFils).toBe(ltoOnly.total.profitFils + rentals.total.profitFils);
+  });
+});

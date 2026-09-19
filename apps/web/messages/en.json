@@ -38,6 +38,7 @@
     "vehicles": "Vehicles",
     "reports": "Reports",
     "profitability": "Profitability",
+    "funnel": "Sales funnel",
     "administration": "Administration",
     "users": "Users",
     "roles": "Roles & permissions",
@@ -1183,7 +1184,11 @@
     "empty": "Nothing was booked in these months.",
     "rowCount": "{count, plural, one {# row} other {# rows}}",
     "exportExcel": "Export to Excel",
-    "exportPdf": "Export to PDF"
+    "exportPdf": "Export to PDF",
+    "contractType": "Contract type",
+    "anyType": "Any type",
+    "salesperson": "Salesperson",
+    "anySalesperson": "Anyone"
   },
   "statements": {
     "customerTitle": "Statement of account",
@@ -1354,5 +1359,37 @@
       "startDate": "Enter a start date.",
       "money": "Enter amounts in AED, for example 3,400 or 1,450.50."
     }
+  },
+  "funnel": {
+    "title": "Sales funnel",
+    "subtitle": "How far the leads recorded in a period got, and why the lost ones were lost.",
+    "from": "From",
+    "to": "To",
+    "salesperson": "Salesperson",
+    "everyone": "Everyone",
+    "apply": "Show",
+    "rangeInvalid": "The start date must come before the end date.",
+    "headline": "{created, plural, one {# lead} other {# leads}} recorded · {contracted} contracted · {rate} conversion",
+    "stagesTitle": "Stages",
+    "stageShare": "{share} of leads",
+    "lostTitle": "Lost",
+    "lostCount": "{count, plural, =0 {None lost} one {# lead lost} other {# leads lost}}",
+    "noReasons": "No lost leads in this period.",
+    "reason": "Reason",
+    "count": "Leads",
+    "bySalespersonTitle": "By salesperson",
+    "bySourceTitle": "By source",
+    "unassigned": "Unassigned",
+    "columns": {
+      "who": "Salesperson",
+      "source": "Source",
+      "created": "Leads",
+      "qualified": "Qualified",
+      "deal": "Deal created",
+      "contracted": "Contracted",
+      "lost": "Lost",
+      "rate": "Conversion"
+    },
+    "empty": "No leads were recorded in this period."
   }
 }

@@ -1,5 +1,7 @@
 import { isIsoDate } from "@drivenx/core";
-import { REPORT_DIMENSIONS, type ReportDimension } from "@drivenx/db";
+import { REPORT_DIMENSIONS, type ReportDimension, type ReportFilters } from "@drivenx/db";
+
+const CONTRACT_TYPES = ["LONG_TERM_RENTAL", "LEASE_TO_OWN", "B2B_RENTAL", "OTHER"] as const;
 
 /** "2026-03" from a month input, as the ledger's 202603; null when it is not one. */
 export function parseMonth(value: string | undefined | null): number | null {
@@ -16,14 +18,30 @@ export const monthInput = (period: number) => `${Math.floor(period / 100)}-${Str
  * defaults to this year to date.
  */
 export function profitabilityQuery(
-  params: { view?: string | null; from?: string | null; to?: string | null },
+  params: {
+    view?: string | null;
+    from?: string | null;
+    to?: string | null;
+    type?: string | null;
+    salesperson?: string | null;
+  },
   today: string,
-): { view: ReportDimension; from: number; to: number; valid: boolean } {
+): { view: ReportDimension; from: number; to: number; valid: boolean; filters: ReportFilters; search: string } {
   const thisMonth = Number(today.slice(0, 4)) * 100 + Number(today.slice(5, 7));
   const view = REPORT_DIMENSIONS.find((d) => d === params.view) ?? "vehicle";
   const from = parseMonth(params.from) ?? Math.floor(thisMonth / 100) * 100 + 1;
   const to = parseMonth(params.to) ?? thisMonth;
-  return { view, from, to, valid: from <= to };
+  const contractType = CONTRACT_TYPES.find((type) => type === params.type) ?? null;
+  const salespersonId = params.salesperson || null;
+  // The same query, as a string, for links to exports of exactly this report.
+  const search = new URLSearchParams({
+    view,
+    from: monthInput(from),
+    to: monthInput(to),
+    ...(contractType ? { type: contractType } : {}),
+    ...(salespersonId ? { salesperson: salespersonId } : {}),
+  }).toString();
+  return { view, from, to, valid: from <= to, filters: { contractType, salespersonId }, search };
 }
 
 /** A statement's range from the query string: this year to date unless told otherwise. */

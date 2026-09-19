@@ -34,6 +34,9 @@ test.describe("screenshots", () => {
     await page.goto("/leads?view=board");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/leads-board-en.png`, fullPage: true });
+    await page.goto("/reports/funnel");
+    await page.waitForSelector("h1");
+    await page.screenshot({ path: `${SHOT_DIR}/funnel-en.png`, fullPage: true });
     await page.goto("/leads?status=all");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/leads-en.png`, fullPage: true });
@@ -138,6 +141,9 @@ test.describe("screenshots", () => {
       await page.goto("/leads?view=board");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/leads-board-ar.png`, fullPage: true });
+      await page.goto("/reports/funnel");
+      await page.waitForSelector("h1");
+      await page.screenshot({ path: `${SHOT_DIR}/funnel-ar.png`, fullPage: true });
       await page.goto("/leads?status=all");
       await page.waitForSelector("h1");
       const firstLeadAr = page.locator("tbody tr a").first();

@@ -19,12 +19,18 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams;
   const query = profitabilityQuery(
-    { view: params.get("view"), from: params.get("from"), to: params.get("to") },
+    {
+      view: params.get("view"),
+      from: params.get("from"),
+      to: params.get("to"),
+      type: params.get("type"),
+      salesperson: params.get("salesperson"),
+    },
     businessDate(new Date()),
   );
   if (!query.valid) return new Response(null, { status: 400 });
 
-  const table = await profitabilityTable(query.view, query.from, query.to);
+  const table = await profitabilityTable(query.view, query.from, query.to, query.filters);
   return renderTable(
     table,
     exportFormat(params.get("format")),

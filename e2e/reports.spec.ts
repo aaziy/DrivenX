@@ -52,6 +52,17 @@ test.describe("profitability report", () => {
     expect(readFileSync(await pdf.path()).subarray(0, 5).toString()).toBe("%PDF-");
   });
 
+  test("filters by contract type and carries the filter into its exports", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await page.goto("/reports/profitability?view=contract&from=2026-01&to=2026-12");
+    await page.getByLabel("Contract type").selectOption({ label: "Lease-to-own" });
+    await page.getByRole("button", { name: "Show" }).click();
+    await expect(page).toHaveURL(/type=LEASE_TO_OWN/);
+
+    const excel = page.getByRole("link", { name: "Export to Excel" });
+    if (await excel.count()) await expect(excel).toHaveAttribute("href", /type=LEASE_TO_OWN/);
+  });
+
   test("refuses a range that runs backwards", async ({ page }) => {
     await signInExpectingSuccess(page, PERSONAS.management);
     await page.goto("/reports/profitability?view=month&from=2026-06&to=2026-01");

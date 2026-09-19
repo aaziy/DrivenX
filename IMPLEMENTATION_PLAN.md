@@ -319,7 +319,7 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | P1E-01 | KPI service — every tile a ledger aggregate, never a stored field |
 | P1E-02 | Dashboard tiles: total/owned/B2B/available/rented vehicles, active customers, active contracts, monthly revenue, monthly cost, monthly profit, customer outstanding, supplier payables, insurance renewals, expiring documents |
 | P1E-03 | Alert panel: overdue payments, expiring Emirates IDs / licences / registration / insurance / contracts / maintenance |
-| P1E-04 | Global filters: date range, vehicle, supplier, customer, salesperson, contract type |
+| P1E-04 | Global filters: date range, vehicle, supplier, customer, salesperson, contract type — **Built 2026-09-19** on profitability: date range, view by vehicle/customer/supplier/contract/month, contract type and salesperson |
 | P1E-05 | Profitability reports — by vehicle, customer, supplier, contract, month, year |
 | P1E-06 | Revenue breakdown with **insurance separated from rental** (§11 requirement) |
 | P1E-07 | Customer statement: paid, outstanding, full transaction history |
@@ -346,7 +346,7 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | P1F-03 | Kanban + list views |
 | P1F-04 | Lead → deal calculation → contract conversion, preserving salesperson attribution |
 | P1F-05 | Sales Staff role scoped to own leads (§2) |
-| P1F-06 | Conversion funnel report |
+| P1F-06 | Conversion funnel report — **Built 2026-09-19:** reached counts come from each lead's history, so the funnel only narrows |
 
 **Tests**
 - Integration: conversion carries attribution through to the contract; Sales Staff cannot read

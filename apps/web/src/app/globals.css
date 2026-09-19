@@ -455,6 +455,39 @@ table.data tbody tr:hover {
   font-size: 12px;
 }
 
+/* The sales funnel: one bar per stage, as wide as its share of the leads. */
+.funnel-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 200px;
+  gap: 12px;
+  align-items: center;
+}
+
+.funnel-track {
+  height: 14px;
+  background: var(--surface-2);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.funnel-bar {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  border-radius: 7px;
+}
+
+.funnel-value {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .funnel-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
 /* A report's total: set apart from the rows it adds up. */
 table.data tr.report-total td {
   border-top: 2px solid var(--text);

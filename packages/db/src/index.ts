@@ -95,6 +95,7 @@ export {
   type ProfitReport,
   type ProfitRow,
   type ReportDimension,
+  type ReportFilters,
 } from "./reports";
 export {
   customerStatement,
@@ -115,6 +116,7 @@ export {
   type LeadRuleCode,
   type NewQuote,
 } from "./leads";
+export { leadFunnel, type FunnelCounts, type FunnelReport } from "./funnel";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

@@ -8,7 +8,14 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { businessDate, Money } from "@drivenx/core";
-import { profitReport, type ProfitFigures, type ReportDimension, type Statement } from "@drivenx/db";
+import {
+  prisma,
+  profitReport,
+  type ProfitFigures,
+  type ReportDimension,
+  type ReportFilters,
+  type Statement,
+} from "@drivenx/db";
 
 import { currentLocale } from "@/i18n/locale";
 import { ReportPdf } from "@/lib/pdf/report-pdf";
@@ -31,11 +38,20 @@ export function exportFormat(value: string | null): ExportFormat {
   return value === "pdf" ? "pdf" : "xlsx";
 }
 
-export async function profitabilityTable(view: ReportDimension, from: number, to: number): Promise<ReportTable> {
-  const [t, format, report] = await Promise.all([
+export async function profitabilityTable(
+  view: ReportDimension,
+  from: number,
+  to: number,
+  filters: ReportFilters = {},
+): Promise<ReportTable> {
+  const [t, tTypes, format, report, salesperson] = await Promise.all([
     getTranslations("reports"),
+    getTranslations("contracts.types"),
     getFormatter(),
-    profitReport(view, from, to),
+    profitReport(view, from, to, filters),
+    filters.salespersonId
+      ? prisma.user.findUnique({ where: { id: filters.salespersonId }, select: { fullName: true } })
+      : null,
   ]);
   const monthLabel = (period: number) =>
     format.dateTime(new Date(Date.UTC(Math.floor(period / 100), (period % 100) - 1, 1)), {
@@ -61,7 +77,13 @@ export async function profitabilityTable(view: ReportDimension, from: number, to
 
   return {
     title: t("profitabilityTitle"),
-    subtitle: `${t(`views.${view}`)} · ${monthLabel(from)} – ${monthLabel(to)}`,
+    // A filtered report says so on the page, so a printout cannot pass for the whole.
+    subtitle: [
+      t(`views.${view}`),
+      `${monthLabel(from)} – ${monthLabel(to)}`,
+      ...(filters.contractType ? [tTypes(filters.contractType)] : []),
+      ...(salesperson ? [salesperson.fullName] : []),
+    ].join(" · "),
     note: t("profitabilitySubtitle"),
     columns: [
       { label: t(`columns.${view}`), weight: 3.4 },

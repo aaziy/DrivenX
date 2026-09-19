@@ -38,6 +38,7 @@
     "vehicles": "المركبات",
     "reports": "التقارير",
     "profitability": "الربحية",
+    "funnel": "مسار المبيعات",
     "administration": "الإدارة",
     "users": "المستخدمون",
     "roles": "الأدوار والصلاحيات",
@@ -1183,7 +1184,11 @@
     "empty": "لم يُسجَّل شيء في هذه الأشهر.",
     "rowCount": "{count, plural, one {صف واحد} two {صفان} few {# صفوف} many {# صفاً} other {# صف}}",
     "exportExcel": "تصدير إلى Excel",
-    "exportPdf": "تصدير إلى PDF"
+    "exportPdf": "تصدير إلى PDF",
+    "contractType": "نوع العقد",
+    "anyType": "أي نوع",
+    "salesperson": "مندوب المبيعات",
+    "anySalesperson": "أي مندوب"
   },
   "statements": {
     "customerTitle": "كشف الحساب",
@@ -1354,5 +1359,37 @@
       "startDate": "أدخل تاريخ البدء.",
       "money": "أدخل المبالغ بالدرهم، مثل 3,400 أو 1,450.50."
     }
+  },
+  "funnel": {
+    "title": "مسار المبيعات",
+    "subtitle": "إلى أين وصل العملاء المحتملون المسجلون في فترة ما، ولماذا فُقد من فُقد.",
+    "from": "من",
+    "to": "إلى",
+    "salesperson": "مندوب المبيعات",
+    "everyone": "الجميع",
+    "apply": "عرض",
+    "rangeInvalid": "يجب أن يسبق تاريخ البداية تاريخ النهاية.",
+    "headline": "{created, plural, one {عميل محتمل واحد} two {عميلان محتملان} few {# عملاء محتملين} many {# عميلاً محتملاً} other {# عميل محتمل}} · {contracted} تم التعاقد معهم · نسبة التحويل {rate}",
+    "stagesTitle": "المراحل",
+    "stageShare": "{share} من العملاء المحتملين",
+    "lostTitle": "المفقودون",
+    "lostCount": "{count, plural, =0 {لا يوجد مفقودون} one {عميل محتمل واحد مفقود} two {عميلان مفقودان} few {# عملاء مفقودين} many {# عميلاً مفقوداً} other {# عميل مفقود}}",
+    "noReasons": "لا يوجد عملاء محتملون مفقودون في هذه الفترة.",
+    "reason": "السبب",
+    "count": "العدد",
+    "bySalespersonTitle": "حسب مندوب المبيعات",
+    "bySourceTitle": "حسب المصدر",
+    "unassigned": "غير معيّن",
+    "columns": {
+      "who": "مندوب المبيعات",
+      "source": "المصدر",
+      "created": "العدد",
+      "qualified": "مؤهَّل",
+      "deal": "صفقة مُعدّة",
+      "contracted": "تم التعاقد",
+      "lost": "مفقود",
+      "rate": "نسبة التحويل"
+    },
+    "empty": "لم يُسجَّل أي عميل محتمل في هذه الفترة."
   }
 }

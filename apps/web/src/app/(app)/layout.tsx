@@ -52,7 +52,12 @@ const NAV_DEFINITION: Array<{
   },
   {
     labelKey: "reports",
-    items: [{ href: "/reports/profitability", labelKey: "profitability", permission: "report.financial" }],
+    items: [
+      { href: "/reports/profitability", labelKey: "profitability", permission: "report.financial" },
+      // Gated on leads rather than reports: the funnel is about leads, and Operations has
+      // reports but no leads to count.
+      { href: "/reports/funnel", labelKey: "funnel", permission: "lead.view" },
+    ],
   },
   {
     labelKey: "administration",
