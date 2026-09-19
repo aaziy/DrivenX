@@ -68,9 +68,14 @@ export async function StatementView({
               <span className="row" style={{ gap: 12, alignItems: "center" }}>
                 <span className="muted">{t("vatNote")}</span>
                 {exportHref ? (
-                  <a className="btn-secondary" href={exportHref}>
-                    {t("exportExcel")}
-                  </a>
+                  <>
+                    <a className="btn-secondary" href={exportHref}>
+                      {t("exportExcel")}
+                    </a>
+                    <a className="btn-secondary" href={`${exportHref}&format=pdf`}>
+                      {t("exportPdf")}
+                    </a>
+                  </>
                 ) : null}
               </span>
             </div>

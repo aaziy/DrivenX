@@ -125,13 +125,21 @@ export default async function ProfitabilityPage({
             <span className="row" style={{ gap: 12, alignItems: "center" }}>
               {report ? <span className="muted">{t("rowCount", { count: report.rows.length })}</span> : null}
               {report && report.rows.length > 0 && principal.permissions.has("report.export") ? (
-                // A plain link: the browser downloads the file itself.
-                <a
-                  className="btn-secondary"
-                  href={`/reports/profitability/export?view=${view}&from=${monthInput(from)}&to=${monthInput(to)}`}
-                >
-                  {t("exportExcel")}
-                </a>
+                // Plain links: the browser downloads the file itself.
+                <>
+                  <a
+                    className="btn-secondary"
+                    href={`/reports/profitability/export?view=${view}&from=${monthInput(from)}&to=${monthInput(to)}`}
+                  >
+                    {t("exportExcel")}
+                  </a>
+                  <a
+                    className="btn-secondary"
+                    href={`/reports/profitability/export?view=${view}&from=${monthInput(from)}&to=${monthInput(to)}&format=pdf`}
+                  >
+                    {t("exportPdf")}
+                  </a>
+                </>
               ) : null}
             </span>
           </div>

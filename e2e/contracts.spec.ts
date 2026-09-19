@@ -236,6 +236,13 @@ test.describe("contracts", () => {
       page.getByRole("link", { name: "Export to Excel" }).click(),
     ]);
     expect(download.suggestedFilename()).toMatch(/^statement-CUS-\d+-\d{4}-\d{2}-\d{2}-to-\d{4}-\d{2}-\d{2}\.xlsx$/);
+
+    const pdfLink = page.getByRole("link", { name: "Export to PDF" });
+    const pdf = await page.request.get((await pdfLink.getAttribute("href")) ?? "");
+    expect(pdf.headers()["content-type"]).toBe("application/pdf");
+    const body = await pdf.body();
+    expect(body.subarray(0, 5).toString()).toBe("%PDF-");
+    if (process.env.SHOT_DIR) writeFileSync(`${process.env.SHOT_DIR}/statement-en.pdf`, body);
   });
 
   test("sales can draft a contract but not activate one", async ({ page }) => {

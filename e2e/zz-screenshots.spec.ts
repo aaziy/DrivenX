@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs";
+
 import { test } from "@playwright/test";
 
 import { PERSONAS, signInExpectingSuccess } from "./helpers";
@@ -30,6 +32,8 @@ test.describe("screenshots", () => {
     await page.goto("/reports/profitability?view=vehicle&from=2026-01&to=2026-12");
     await page.waitForSelector("h1");
     await page.screenshot({ path: `${SHOT_DIR}/profitability-en.png`, fullPage: true });
+    const pdfEn = await page.request.get("/reports/profitability/export?view=vehicle&from=2026-01&to=2026-12&format=pdf");
+    writeFileSync(`${SHOT_DIR}/profitability-en.pdf`, await pdfEn.body());
 
     await page.goto("/customers");
     await page.waitForSelector("h1");
@@ -119,6 +123,8 @@ test.describe("screenshots", () => {
       await page.goto("/reports/profitability?view=vehicle&from=2026-01&to=2026-12");
       await page.waitForSelector("h1");
       await page.screenshot({ path: `${SHOT_DIR}/profitability-ar.png`, fullPage: true });
+      const pdfAr = await page.request.get("/reports/profitability/export?view=vehicle&from=2026-01&to=2026-12&format=pdf");
+      writeFileSync(`${SHOT_DIR}/profitability-ar.pdf`, await pdfAr.body());
 
       await page.goto("/customers");
       await page.waitForSelector("h1");

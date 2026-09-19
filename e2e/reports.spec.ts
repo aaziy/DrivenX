@@ -43,6 +43,13 @@ test.describe("profitability report", () => {
     const bytes = readFileSync(path);
     // An .xlsx is a zip archive.
     expect(bytes.subarray(0, 2).toString()).toBe("PK");
+
+    const [pdf] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("link", { name: "Export to PDF" }).click(),
+    ]);
+    expect(pdf.suggestedFilename()).toBe("profitability-month-2026-01-to-2026-12.pdf");
+    expect(readFileSync(await pdf.path()).subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   test("refuses a range that runs backwards", async ({ page }) => {

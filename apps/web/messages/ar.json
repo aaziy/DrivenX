@@ -1180,7 +1180,8 @@
     "total": "الإجمالي",
     "empty": "لم يُسجَّل شيء في هذه الأشهر.",
     "rowCount": "{count, plural, one {صف واحد} two {صفان} few {# صفوف} many {# صفاً} other {# صف}}",
-    "exportExcel": "تصدير إلى Excel"
+    "exportExcel": "تصدير إلى Excel",
+    "exportPdf": "تصدير إلى PDF"
   },
   "statements": {
     "customerTitle": "كشف الحساب",
@@ -1217,6 +1218,7 @@
     "inCredit": "رصيد دائن",
     "empty": "لا توجد فواتير أو دفعات في هذه الفترة.",
     "vatNote": "المبالغ إجمالية كما فُوترت ودُفعت.",
-    "exportExcel": "تصدير إلى Excel"
+    "exportExcel": "تصدير إلى Excel",
+    "exportPdf": "تصدير إلى PDF"
   }
 }

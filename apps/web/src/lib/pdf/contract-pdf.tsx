@@ -12,27 +12,9 @@
  * mixed Arabic and Latin runs (a plate, an amount) were checked by eye.
  */
 
-import { join } from "node:path";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
-import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-
-const FONT_DIR = join(process.cwd(), "assets", "fonts");
-
-// Noto Sans for Latin, Noto Sans Arabic for Arabic, both open-licensed and bundled so the
-// document looks the same wherever it is generated.
-Font.register({
-  family: "NotoSans",
-  fonts: [{ src: join(FONT_DIR, "NotoSans.ttf") }, { src: join(FONT_DIR, "NotoSans-Bold.ttf"), fontWeight: 700 }],
-});
-Font.register({
-  family: "NotoSansArabic",
-  fonts: [
-    { src: join(FONT_DIR, "NotoSansArabic.ttf") },
-    { src: join(FONT_DIR, "NotoSansArabic-Bold.ttf"), fontWeight: 700 },
-  ],
-});
-// Contract wording is never hyphenated: a split plate or amount misreads.
-Font.registerHyphenationCallback((word) => [word]);
+import { directionStyles, pdfFontFamily } from "./fonts";
 
 export interface ContractPdfRow {
   due: string;
@@ -92,8 +74,6 @@ export interface ContractPdfLabels {
   page: (current: number, total: number) => string;
 }
 
-/** Arabic letters, and the marks Intl puts in Arabic dates to keep their parts in order. */
-const ARABIC = /[\u0600-\u06FF\u200F\u061C]/;
 const INK = "#1f2933";
 const MUTED = "#6b7280";
 const RULE = "#d9dee4";
@@ -149,20 +129,10 @@ export function ContractPdf({
   labels: ContractPdfLabels;
   direction: "ltr" | "rtl";
 }) {
-  const rtl = direction === "rtl";
-  const row = { flexDirection: rtl ? "row-reverse" : "row" } as const;
-  // Every Text takes one of these, so none is left at the default direction.
-  const start = { textAlign: rtl ? "right" : "left", direction } as const;
-  const end = { textAlign: rtl ? "left" : "right", direction } as const;
+  const { rtl, row, start, end, own } = directionStyles(direction);
   const footerStart = { textAlign: start.textAlign, direction } as const;
   const footerEnd = { textAlign: end.textAlign, direction } as const;
-  // A phone number, VIN or code has no Arabic in it and keeps its own left-to-right order
-  // on an Arabic page, still aligned to the page's side: "+971…" must not become "…971+".
-  const own = (text: string | null) =>
-    ({ direction: rtl && ARABIC.test(text ?? "") ? "rtl" : "ltr" }) as const;
-  // The script the document is in is tried first. With Latin first, some Arabic letters
-  // at the start of a word were dropped.
-  const fontFamily = (rtl ? ["NotoSansArabic", "NotoSans"] : ["NotoSans", "NotoSansArabic"]) as unknown as string;
+  const fontFamily = pdfFontFamily(rtl);
 
   const pair = (label: string, value: string | null) =>
     value ? (
