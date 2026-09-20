@@ -34,7 +34,7 @@ export interface ContractFormState {
 }
 
 const CONTRACT_TYPES = ["LONG_TERM_RENTAL", "LEASE_TO_OWN", "B2B_RENTAL", "OTHER"] as const;
-const PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "CHEQUE", "CARD", "OTHER"] as const;
+const PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "CARD", "TAMARA", "TABBY", "OTHER"] as const;
 
 const text = (formData: FormData, name: string) => String(formData.get(name) ?? "").trim();
 

@@ -129,17 +129,18 @@ describe("supplier statement", () => {
     await contract("B2B_SUPPLIER");
     await raiseDueSupplierInvoices("2026-02-01");
     const january = await prisma.supplierInvoice.findFirstOrThrow({ where: { supplierId, sequence: 1 } });
-    await recordSupplierPayment(january.id, { amountFils: aed("2000"), paidOn: "2026-01-10", method: "BANK_TRANSFER" }, {
+    // The supplier bills 2,000 net plus 5% VAT: 2,100 owed and paid.
+    await recordSupplierPayment(january.id, { amountFils: aed("2100"), paidOn: "2026-01-10", method: "BANK_TRANSFER" }, {
       actorId: null,
       today: "2026-02-01",
     });
 
     const statement = await supplierStatement(supplierId, "2026-01-01", "2026-02-28");
     expect(statement.lines.map((l) => [l.date, l.kind, l.balanceFils])).toEqual([
-      ["2026-01-01", "invoice", aed("2000")],
+      ["2026-01-01", "invoice", aed("2100")],
       ["2026-01-10", "payment", 0n],
-      ["2026-02-01", "invoice", aed("2000")],
+      ["2026-02-01", "invoice", aed("2100")],
     ]);
-    expect(statement.closingFils).toBe(aed("2000"));
+    expect(statement.closingFils).toBe(aed("2100"));
   });
 });

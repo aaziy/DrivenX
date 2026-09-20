@@ -148,7 +148,7 @@ export async function supplierStatement(supplierId: string, from: IsoDate, to: I
       where: { supplierId, raisedOn: { not: null }, dueDate: { lte: until } },
       select: {
         dueDate: true,
-        amountFils: true,
+        grossFils: true,
         supplierReference: true,
         contract: { select: { id: true, number: true } },
       },
@@ -171,7 +171,8 @@ export async function supplierStatement(supplierId: string, from: IsoDate, to: I
       reference: invoice.supplierReference,
       contractNumber: invoice.contract.number,
       contractId: invoice.contract.id,
-      debitFils: invoice.amountFils,
+      // What the supplier billed, VAT included: a statement is what is owed, not cost.
+      debitFils: invoice.grossFils,
       creditFils: 0n,
     })),
     ...payments.map((payment) => ({

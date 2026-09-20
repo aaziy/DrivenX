@@ -122,7 +122,7 @@ export default async function SupplierDetailPage({
               <h2>{t("payables.title")}</h2>
               <span className="muted">
                 {t("payables.outstanding", {
-                  amount: Money.format(payables.reduce((sum, item) => sum + item.amountFils - item.paidFils, 0n)),
+                  amount: Money.format(payables.reduce((sum, item) => sum + item.grossFils - item.paidFils, 0n)),
                 })}
               </span>
             </div>
@@ -153,7 +153,7 @@ export default async function SupplierDetailPage({
                         <td style={{ whiteSpace: "nowrap" }}>
                           {format.dateTime(item.dueDate, { dateStyle: "medium", timeZone: "UTC" })}
                         </td>
-                        <td className="numeric">{Money.format(item.amountFils, { currency: null })}</td>
+                        <td className="numeric">{Money.format(item.grossFils, { currency: null })}</td>
                         <td className="numeric">{Money.format(item.paidFils, { currency: null })}</td>
                         <td>
                           <span className={`badge ${installmentStatusTone(item.status)}`.trim()}>

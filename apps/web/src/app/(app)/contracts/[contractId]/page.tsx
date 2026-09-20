@@ -86,9 +86,10 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
 
   // What the supplier is owed is what has fallen due; later months are not yet a debt.
   const payables = contract.supplierInvoices;
-  const supplierOwed = payables.reduce((sum, item) => sum + (item.raisedOn ? item.amountFils : 0n), 0n);
+  // What the supplier is owed is the gross of what has fallen due; the ledger costs the net.
+  const supplierOwed = payables.reduce((sum, item) => sum + (item.raisedOn ? item.grossFils : 0n), 0n);
   const supplierPaid = payables.reduce((sum, item) => sum + item.paidFils, 0n);
-  const openPayables = payables.filter((item) => item.paidFils < item.amountFils);
+  const openPayables = payables.filter((item) => item.paidFils < item.grossFils);
 
   return (
     <>
@@ -290,7 +291,7 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                       id: item.id,
                       label: t("supplier.invoiceOption", {
                         due: day(item.dueDate),
-                        left: Money.format(item.amountFils - item.paidFils),
+                        left: Money.format(item.grossFils - item.paidFils),
                       }),
                     }))}
                   />
@@ -305,6 +306,8 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                   <tr>
                     <th>{t("supplier.columns.due")}</th>
                     <th>{t("supplier.columns.period")}</th>
+                    <th className="numeric">{t("supplier.columns.net")}</th>
+                    <th className="numeric">{t("supplier.columns.vat")}</th>
                     <th className="numeric">{t("supplier.columns.amount")}</th>
                     <th className="numeric">{t("supplier.columns.paid")}</th>
                     <th>{t("supplier.columns.status")}</th>
@@ -318,7 +321,13 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                         {day(item.periodStart)} – {day(item.periodEnd)}
                       </td>
                       <td className="numeric" style={{ whiteSpace: "nowrap" }}>
-                        {Money.format(item.amountFils, { currency: null })}
+                        {Money.format(item.netFils, { currency: null })}
+                      </td>
+                      <td className="numeric muted" style={{ whiteSpace: "nowrap" }}>
+                        {Money.format(item.vatFils, { currency: null })}
+                      </td>
+                      <td className="numeric" style={{ whiteSpace: "nowrap" }}>
+                        {Money.format(item.grossFils, { currency: null })}
                       </td>
                       <td className="numeric" style={{ whiteSpace: "nowrap" }}>
                         {Money.format(item.paidFils, { currency: null })}

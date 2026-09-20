@@ -86,10 +86,20 @@ describe("activating lease-to-own on a leased-in car", () => {
 
     const invoices = await prisma.supplierInvoice.findMany({ where: { contractId: id }, orderBy: { sequence: "asc" } });
     expect(invoices).toHaveLength(12);
-    expect(invoices.every((invoice) => invoice.amountFils === aed("2400") && invoice.supplierId === supplierId)).toBe(true);
+    // Entered net; the supplier adds 5% on top and is paid the gross.
+    expect(
+      invoices.every(
+        (invoice) =>
+          invoice.netFils === aed("2400") &&
+          invoice.vatFils === aed("120") &&
+          invoice.grossFils === aed("2520") &&
+          invoice.supplierId === supplierId,
+      ),
+    ).toBe(true);
     expect(invoices[0]?.status).toBe("DUE");
     expect(invoices[1]?.status).toBe("UPCOMING");
 
+    // Only the net reaches the ledger: the VAT on it is reclaimed, not a cost.
     const cost = await supplierCost(id);
     expect(cost.total).toBe(aed("2400"));
     expect(cost.rows[0]).toMatchObject({ direction: "COST", periodMonth: 202601, vehicleId: vehicle.id, supplierId });
@@ -184,12 +194,12 @@ describe("paying the supplier", () => {
 
     await recordSupplierPayment(
       first.id,
-      { amountFils: aed("1400"), paidOn: "2026-01-01", method: "CHEQUE", reference: "CHQ 0042" },
+      { amountFils: aed("1520"), paidOn: "2026-01-01", method: "CARD", reference: "REF 0042" },
       { actorId: null, today: "2026-01-01" },
     );
     invoice = await prisma.supplierInvoice.findUniqueOrThrow({ where: { id: first.id } });
     expect(invoice.status).toBe("PAID");
-    expect(invoice.paidFils).toBe(aed("2400"));
+    expect(invoice.paidFils).toBe(aed("2520"));
 
     expect(await prisma.ledgerEntry.count()).toBe(ledgerBefore);
   });
@@ -205,7 +215,7 @@ describe("paying the supplier", () => {
         { actorId: null, today: "2026-01-01" },
       ).catch((e: unknown) => (e as SupplierInvoiceRuleError).code);
 
-    expect(await pay("2400.01")).toBe("overpayment");
+    expect(await pay("2520.01")).toBe("overpayment");
     expect(await pay("0")).toBe("invalidPayment");
     expect(await pay("100", "2026-01-02")).toBe("paymentInFuture");
     expect(await prisma.supplierPayment.count({ where: { supplierInvoiceId: first.id } })).toBe(0);
@@ -218,7 +228,7 @@ describe("paying the supplier", () => {
 
     await recordSupplierPayment(
       second.id,
-      { amountFils: aed("2400"), paidOn: "2026-01-01", method: "BANK_TRANSFER" },
+      { amountFils: aed("2520"), paidOn: "2026-01-01", method: "BANK_TRANSFER" },
       { actorId: null, today: "2026-01-01" },
     );
     const invoice = await prisma.supplierInvoice.findUniqueOrThrow({ where: { id: second.id } });

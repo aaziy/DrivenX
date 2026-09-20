@@ -104,7 +104,7 @@ test.describe("fleet", () => {
 
     await fillVehicle(page);
     await page.getByRole("radio", { name: "Leased from a supplier" }).check();
-    await page.getByLabel("Monthly cost to the supplier (AED)").fill("2,400");
+    await page.getByLabel("Monthly cost to the supplier (AED, excluding VAT)").fill("2,400");
     await page.getByRole("button", { name: "Add vehicle" }).click();
 
     await expect(page.getByText("A leased vehicle needs its supplier.")).toBeVisible();
@@ -153,7 +153,7 @@ test.describe("fleet", () => {
       .locator("option", { hasText: company })
       .getAttribute("value");
     await supplierSelect.selectOption(supplierValue ?? "");
-    await page.getByLabel("Monthly cost to the supplier (AED)").fill("2,400");
+    await page.getByLabel("Monthly cost to the supplier (AED, excluding VAT)").fill("2,400");
     await page.getByRole("button", { name: "Add vehicle" }).click();
     await page.waitForURL(/\/vehicles\/(?!new)[^/]+$/);
 

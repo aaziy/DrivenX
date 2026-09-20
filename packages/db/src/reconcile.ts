@@ -144,7 +144,7 @@ export async function reconcile(): Promise<Violation[]> {
     SELECT c.number,
       (SELECT COALESCE(SUM(l.amount_fils), 0) FROM ledger_entries l
         WHERE l.contract_id = c.id AND l.category = 'cost.supplier')::bigint AS ledger,
-      (SELECT COALESCE(SUM(s.amount_fils), 0) FROM supplier_invoices s
+      (SELECT COALESCE(SUM(s.net_fils), 0) FROM supplier_invoices s
         WHERE s.contract_id = c.id AND s.raised_on IS NOT NULL)::bigint AS raised
     FROM contracts c`;
   for (const row of supplierCost) {

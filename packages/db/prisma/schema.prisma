@@ -621,11 +621,14 @@ enum InstallmentStatus {
   @@map("installment_status")
 }
 
+/// How money moves (client, 2026-09-20). Cheques are not used, so there is no
+/// post-dated cheque tracking; Tamara and Tabby are the buy-now-pay-later providers.
 enum PaymentMethod {
   CASH
   BANK_TRANSFER
-  CHEQUE
   CARD
+  TAMARA
+  TABBY
   OTHER
 
   @@map("payment_method")
@@ -832,9 +835,14 @@ model SupplierInvoice {
   dueDate     DateTime @map("due_date") @db.Date
 
   /// The monthly cost agreed with the supplier, copied from the vehicle at activation.
-  amountFils BigInt @map("amount_fils")
-  /// Always the sum of this invoice's payments, never above the amount.
-  paidFils   BigInt @default(0) @map("paid_fils")
+  /// Net: the supplier adds VAT on top, and that VAT is recoverable (client, 2026-09-20),
+  /// so it is never cost. The ledger takes the net figure; the supplier is paid the gross.
+  netFils        BigInt @map("net_fils")
+  vatBasisPoints Int    @default(500) @map("vat_basis_points")
+  vatFils        BigInt @map("vat_fils")
+  grossFils      BigInt @map("gross_fils")
+  /// Always the sum of this invoice's payments, never above the gross.
+  paidFils       BigInt @default(0) @map("paid_fils")
 
   status            SupplierInvoiceStatus @default(UPCOMING)
   /// The day the cost was posted to the ledger. Null until it falls due.

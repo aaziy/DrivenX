@@ -128,10 +128,10 @@ export async function receivables(today: IsoDate): Promise<Receivables> {
 export async function payables(today: IsoDate): Promise<Payables> {
   const [open] = await prisma.$queryRaw<Array<{ outstanding: bigint; overdue: bigint }>>`
     SELECT
-      COALESCE(SUM(amount_fils - paid_fils), 0)::bigint AS outstanding,
-      COALESCE(SUM(amount_fils - paid_fils) FILTER (WHERE due_date < ${toDbDate(today)}), 0)::bigint AS overdue
+      COALESCE(SUM(gross_fils - paid_fils), 0)::bigint AS outstanding,
+      COALESCE(SUM(gross_fils - paid_fils) FILTER (WHERE due_date < ${toDbDate(today)}), 0)::bigint AS overdue
     FROM supplier_invoices
-    WHERE raised_on IS NOT NULL AND paid_fils < amount_fils`;
+    WHERE raised_on IS NOT NULL AND paid_fils < gross_fils`;
   return { outstandingFils: open?.outstanding ?? 0n, overdueFils: open?.overdue ?? 0n };
 }
 

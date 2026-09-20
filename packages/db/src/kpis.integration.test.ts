@@ -123,10 +123,11 @@ describe("balances", () => {
     expect(late[0]).toMatchObject({ customerName: "Noura", owedFils: aed("2150") });
   });
 
-  it("owes the supplier only what has fallen due", async () => {
+  it("owes the supplier the gross of what has fallen due", async () => {
     await contractOn((await car("B2B_SUPPLIER")).id, "LEASE_TO_OWN");
     await raiseDueSupplierInvoices("2026-03-01");
-    expect(await payables("2026-03-01")).toEqual({ outstandingFils: aed("6000"), overdueFils: aed("4000") });
+    // Gross: 2,000 a month net plus 5% VAT, which is what the supplier is owed.
+    expect(await payables("2026-03-01")).toEqual({ outstandingFils: aed("6300"), overdueFils: aed("4200") });
   });
 });
 

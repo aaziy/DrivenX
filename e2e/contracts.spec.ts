@@ -150,7 +150,7 @@ test.describe("contracts", () => {
     await page.getByLabel("VIN or chassis number").fill(`JN1${stamp.padStart(14, "0")}`);
     await page.getByRole("radio", { name: "Leased from a supplier" }).check();
     await choose(page, "Supplier", company);
-    await page.getByLabel("Monthly cost to the supplier (AED)").fill("2,400");
+    await page.getByLabel("Monthly cost to the supplier (AED, excluding VAT)").fill("2,400");
     await page.getByRole("button", { name: "Add vehicle" }).click();
     await page.waitForURL(/\/vehicles\/(?!new)[^/]+$/);
 
@@ -170,18 +170,19 @@ test.describe("contracts", () => {
     // One supplier invoice a month; the first is due today and already owed.
     const payables = page.locator(".card", { has: page.getByRole("heading", { name: "Supplier payments" }) });
     await expect(payables.locator("tbody tr")).toHaveCount(3);
-    await expect(payables).toContainText("AED 2,400.00 owed so far · AED 0.00 paid");
+    // 2,400 net plus 5% VAT: the supplier is owed 2,520.
+    await expect(payables).toContainText("AED 2,520.00 owed so far · AED 0.00 paid");
     await expect(payables.locator("tbody tr").first()).toContainText("Due");
 
     // Paying more than the invoice is stopped; paying it in full settles it.
-    await page.getByLabel("Amount paid (AED)").fill("2,500");
+    await page.getByLabel("Amount paid (AED)").fill("2,600");
     await page.getByRole("button", { name: "Record supplier payment" }).click();
     await expect(page.getByText("That is more than is left to pay on the invoice.")).toBeVisible();
 
-    await page.getByLabel("Amount paid (AED)").fill("2,400");
+    await page.getByLabel("Amount paid (AED)").fill("2,520");
     await page.getByRole("button", { name: "Record supplier payment" }).click();
     await expect(payables.locator("tbody tr").first()).toContainText("Paid");
-    await expect(payables).toContainText("AED 2,400.00 owed so far · AED 2,400.00 paid");
+    await expect(payables).toContainText("AED 2,520.00 owed so far · AED 2,520.00 paid");
 
     // Nothing else is owed yet, so the supplier's page has no open payables.
     // Filtered to this company: the list is paged, and earlier runs leave suppliers behind.

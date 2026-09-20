@@ -165,8 +165,9 @@
     "methods": {
       "CASH": "Cash",
       "BANK_TRANSFER": "Bank transfer",
-      "CHEQUE": "Cheque",
       "CARD": "Card",
+      "TAMARA": "Tamara",
+      "TABBY": "Tabby",
       "OTHER": "Other"
     },
     "form": {
@@ -278,12 +279,14 @@
     },
     "supplier": {
       "title": "Supplier payments",
-      "hint": "What DrivenX owes {supplier} for this car, one invoice a month. The cost is booked when each falls due; paying it moves cash only.",
+      "hint": "What DrivenX owes {supplier} for this car, one invoice a month. The agreed cost is net; the supplier adds VAT, which is reclaimed and is not a cost. The cost is booked when each invoice falls due; paying it moves cash only.",
       "summary": "{owed} owed so far · {paid} paid",
       "columns": {
         "due": "Due",
         "period": "Period",
-        "amount": "Amount",
+        "net": "Net",
+        "vat": "VAT",
+        "amount": "Total",
         "paid": "Paid",
         "status": "Status",
         "reference": "Supplier ref."
@@ -451,7 +454,7 @@
       "ownershipType": "Ownership",
       "supplier": "Supplier",
       "chooseSupplier": "Choose a supplier…",
-      "supplierMonthlyCost": "Monthly cost to the supplier (AED)",
+      "supplierMonthlyCost": "Monthly cost to the supplier (AED, excluding VAT)",
       "purchasePrice": "Purchase price (AED)",
       "moneyHint": "Excluding VAT.",
       "sourceDate": "Date acquired",

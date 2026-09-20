@@ -6,10 +6,16 @@
  * it belongs to — the mirror of revenue on the customer side — so a car's profit for a
  * month is that month's rental less that month's lease. Paying the supplier is cash moving,
  * not cost, and never reaches the ledger.
+ *
+ * The agreed monthly cost is net. The supplier adds VAT, and that VAT is recoverable
+ * (client, 2026-09-20), so the ledger costs the net amount while the supplier is paid the
+ * gross. Counting the VAT as cost would understate every leased car's profit by 5%.
  */
 
 import {
   assertSupplierPayment,
+  STANDARD_VAT_BASIS_POINTS,
+  vatOn,
   InvalidPaymentError,
   supplierInvoiceStatus,
   supplierSchedule,
@@ -39,6 +45,7 @@ export async function writeSupplierSchedule(
   monthlyCostFils: bigint,
 ): Promise<number> {
   const schedule = supplierSchedule(contract.startDate, contract.durationMonths, monthlyCostFils);
+  const vatBasisPoints = STANDARD_VAT_BASIS_POINTS;
   await tx.supplierInvoice.createMany({
     data: schedule.map((item) => ({
       supplierId: contract.supplierId,
@@ -48,7 +55,10 @@ export async function writeSupplierSchedule(
       periodStart: toDbDate(item.periodStart),
       periodEnd: toDbDate(item.periodEnd),
       dueDate: toDbDate(item.dueDate),
-      amountFils: item.amountFils,
+      netFils: item.amountFils,
+      vatBasisPoints,
+      vatFils: vatOn(item.amountFils, vatBasisPoints),
+      grossFils: item.amountFils + vatOn(item.amountFils, vatBasisPoints),
     })),
   });
   return schedule.length;
@@ -75,7 +85,7 @@ export async function raiseDueSupplierInvoicesForContract(
       where: { id: invoice.id, raisedOn: null },
       data: {
         raisedOn: toDbDate(today),
-        status: supplierInvoiceStatus({ amountFils: invoice.amountFils, paidFils: invoice.paidFils, dueDate }, today),
+        status: supplierInvoiceStatus({ amountFils: invoice.grossFils, paidFils: invoice.paidFils, dueDate }, today),
       },
     });
     if (claimed.count === 0) throw new Error(`Supplier invoice ${invoice.id} was raised concurrently`);
@@ -84,7 +94,8 @@ export async function raiseDueSupplierInvoicesForContract(
       occurredOn: dueDate,
       direction: "COST",
       category: "cost.supplier",
-      amountFils: invoice.amountFils,
+      // Net: the VAT on it is reclaimed, so it is not a cost.
+      amountFils: invoice.netFils,
       vehicleId: invoice.vehicleId,
       contractId: invoice.contractId,
       customerId: invoice.contract.customerId,
@@ -160,7 +171,8 @@ export async function recordSupplierPayment(
     if (!invoice) throw new SupplierInvoiceRuleError("invoiceNotFound");
 
     try {
-      assertSupplierPayment(payment.amountFils, invoice.amountFils - invoice.paidFils);
+      // The supplier is paid the gross, VAT and all.
+      assertSupplierPayment(payment.amountFils, invoice.grossFils - invoice.paidFils);
     } catch (error) {
       if (error instanceof SupplierOverpaymentError) throw new SupplierInvoiceRuleError("overpayment");
       if (error instanceof InvalidPaymentError) throw new SupplierInvoiceRuleError("invalidPayment");
@@ -185,7 +197,7 @@ export async function recordSupplierPayment(
       data: {
         paidFils,
         status: supplierInvoiceStatus(
-          { amountFils: invoice.amountFils, paidFils, dueDate: fromDbDate(invoice.dueDate) },
+          { amountFils: invoice.grossFils, paidFils, dueDate: fromDbDate(invoice.dueDate) },
           options.today,
         ),
       },

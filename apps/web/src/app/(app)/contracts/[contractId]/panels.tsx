@@ -23,7 +23,7 @@ export function ActivateForm({ action }: { action: Action }) {
   );
 }
 
-const METHODS = ["BANK_TRANSFER", "CASH", "CHEQUE", "CARD", "OTHER"] as const;
+const METHODS = ["BANK_TRANSFER", "CASH", "CARD", "TAMARA", "TABBY", "OTHER"] as const;
 
 export function PaymentForm({ action, today }: { action: Action; today: string }) {
   const [state, formAction] = useActionState<ContractFormState, FormData>(action, {});

@@ -367,8 +367,8 @@ arrives, not by this order.*
 |---|---|---|
 | 0 | Foundations | 1 wk |
 | 1 | Core (1A–1F) | 5–7 wks |
-| 2 | Operations | 4–5 wks |
-| 3 | Automation & integrations | 4–6 wks |
+| 2 | Operations **Answered 2026-09-20:** the cost is whatever the insurer invoices for that car, entered on the policy from their invoice. | 4–5 wks |
+| 3 | Automation & integrations **Answered 2026-09-20:** early termination is settled case by case — a settlement opens with the arrears already on it and staff add or waive lines. No fixed penalty formula. | 4–6 wks |
 | 4 | Hardening & handover | 2 wks |
 | | **Total** | **16–21 wks** for one full-time developer |
 
@@ -390,10 +390,10 @@ Answer before the dependent phase starts.
 | 6 | **Fines.** Default payer — customer or company? Is recovery automatic on the next installment? | 2 | §13 has a `payer` field but no policy. |
 | 7 | **Arabic / RTL.** **Answered 2026-09-16:** English and Arabic, switchable per person, Arabic mirrored right-to-left. Built and shipped. Arabic contracts and invoices still to confirm. | 0 / 1D | **Risk:** the Arabic text is an unreviewed draft — the client accepted it for now (2026-09-17), but financial and legal wording needs a fluent reviewer before real customers see it. PDF generation in 1D must support Arabic script. |
 | 8 | **Data migration.** **Answered 2026-09-17: nothing to import.** | 1 | No import tooling, and no separate estimate for it. Customers, suppliers and vehicles are entered as they arrive. |
-| 9 | **Payment methods.** Cash, bank transfer, cheque, card? Any bank reconciliation or cheque-tracking requirement? | 1D | §10 says "payment method" with no enumeration. Post-dated cheques are common in UAE leasing and would need their own tracking. |
+| 9 | **Payment methods.** Cash, bank transfer, cheque, card? Any bank reconciliation or cheque-tracking requirement? **Answered 2026-09-20:** bank transfer, cash, card, Tamara and Tabby. Cheques are not used, so no post-dated cheque tracking and no bank reconciliation. | 1D | §10 says "payment method" with no enumeration. Post-dated cheques are common in UAE leasing and would need their own tracking. |
 | 10 | **Concurrent users & fleet size** at launch and at 2-year projection. | 0 | Sets the infrastructure sizing decision we deferred. |
 | 11 | **Hosting decision.** **Answered 2026-09-17: data need not stay in the UAE.** Target is a Hostinger VPS (KVM 2) running the same Docker stack as development; Hostinger Business shared hosting was ruled out (no PostgreSQL, no storage server, no background jobs). **Remaining:** account created in DrivenX's name (§20), and who maintains the server after handover. | 0 | Staging and client testing wait on the account existing. |
-| 12 | **Input VAT on supplier invoices.** Is the 5% DrivenX pays its suppliers recoverable? If so, vehicle cost and profit must use the net figure rather than the gross. | 1D | Raised 2026-09-17 by the VAT answer. Assuming either way puts profit out by about 5% of cost. Supplier invoices (P1D-13) store the vehicle's monthly cost exactly as entered and cost it in full, so for now enter that figure the way profit should count it. |
+| 12 | **Input VAT on supplier invoices.** Is the 5% DrivenX pays its suppliers recoverable? If so, vehicle cost and profit must use the net figure rather than the gross. **Answered 2026-09-20: yes, recoverable.** The monthly cost entered for a leased car is net; the supplier invoice adds 5%, the ledger costs the net amount, and the VAT is tracked apart from profit. | 1D | Raised 2026-09-17 by the VAT answer. Assuming either way puts profit out by about 5% of cost. Supplier invoices (P1D-13) store the vehicle's monthly cost exactly as entered and cost it in full, so for now enter that figure the way profit should count it. |
 | 13 | **Tax invoice details.** DrivenX's TRN, and the invoice numbering the FTA expects on a tax invoice. | 1D | Affects the invoice layout, not the calculations. |
 | 14 | **Cars leased in from a supplier.** **Answered 2026-09-18:** a B2B car goes to a customer only on lease-to-own — never on a plain rental, and never sold except as the end of that lease-to-own (the buyout). | 1B / 1D | Enforced in the vehicle state machine, not only on screen: for a leased-in car, Available/Reserved → Rented and Available/Accident/Inactive → Sold are refused; Lease-to-own → Sold stays open. Contracts in 1D will offer only lease-to-own for these cars, and the deal calculator prices them as lease-to-own. |
 
