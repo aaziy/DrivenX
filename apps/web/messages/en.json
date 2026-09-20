@@ -100,7 +100,9 @@
     "expiringTitle": "Expiring documents",
     "expiringEmpty": "No document expires in the next 30 days.",
     "expired": "Expired",
-    "open": "Open"
+    "open": "Open",
+    "insuranceRenewals": "Insurance renewals",
+    "insuranceNote": "Within 30 days, or lapsed"
   },
   "contracts": {
     "title": "Contracts",
@@ -1394,5 +1396,64 @@
       "rate": "Conversion"
     },
     "empty": "No leads were recorded in this period."
+  },
+  "insurance": {
+    "cardTitle": "Insurance",
+    "hint": "What the insurer charges DrivenX for this car. The premium is their invoice, before VAT — that VAT is reclaimed and is not a cost.",
+    "none": "No cover recorded for this car.",
+    "inForce": "In force until {date}",
+    "lapsed": "Cover lapsed on {date}",
+    "expiringSoon": "Expires in {days, plural, one {# day} other {# days}}",
+    "columns": {
+      "provider": "Insurer",
+      "policyNumber": "Policy",
+      "coverage": "Cover",
+      "period": "Period",
+      "premium": "Premium",
+      "status": "Status"
+    },
+    "coverage": {
+      "COMPREHENSIVE": "Comprehensive",
+      "THIRD_PARTY": "Third party"
+    },
+    "status": {
+      "ACTIVE": "In force",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled"
+    },
+    "add": "Record a policy",
+    "adding": "Saving…",
+    "added": "Policy recorded.",
+    "form": {
+      "provider": "Insurer",
+      "policyNumber": "Policy number",
+      "coverage": "Cover",
+      "startDate": "Cover from",
+      "expiryDate": "Cover to",
+      "premium": "Premium (AED, excluding VAT)",
+      "premiumHint": "As invoiced by the insurer, before VAT.",
+      "notes": "Notes"
+    },
+    "cancel": {
+      "open": "Cancel",
+      "reason": "Why is it being cancelled?",
+      "refund": "Refunded by the insurer (AED, including VAT)",
+      "confirm": "Cancel policy",
+      "cancelling": "Cancelling…",
+      "cancelled": "Policy cancelled."
+    },
+    "errors": {
+      "vehicleNotFound": "That vehicle no longer exists.",
+      "policyNotFound": "That policy no longer exists.",
+      "invalidPolicy": "Check the insurer, policy number and premium.",
+      "datesOutOfOrder": "Cover must start before it ends.",
+      "duplicatePolicyNumber": "That insurer already has a policy with this number.",
+      "alreadyCancelled": "That policy is already cancelled.",
+      "cancelNeedsReason": "Say why the policy is being cancelled.",
+      "refundAbovePremium": "A refund cannot be more than the premium.",
+      "money": "Enter amounts in AED, for example 2,000 or 1,450.50.",
+      "dates": "Enter the dates cover runs from and to."
+    },
+    "noneInForce": "No cover in force"
   }
 }

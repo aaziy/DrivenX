@@ -188,3 +188,45 @@ test.describe("fleet", () => {
     await expect(page.getByText("You do not have permission to edit this vehicle.")).toBeVisible();
   });
 });
+
+test.describe("insurance", () => {
+  test("records a policy, shows it in force, and takes back a refund when cancelled", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await addCompanyVehicle(page);
+
+    const card = page.locator(".card", { has: page.getByRole("heading", { name: "Insurance" }) });
+    await expect(card.getByText("No cover recorded for this car.")).toBeVisible();
+
+    const policyNumber = `POL-${Date.now()}`;
+    await card.getByLabel("Insurer").fill("Oman Insurance");
+    await card.getByLabel("Policy number").fill(policyNumber);
+    await card.getByLabel("Cover to").fill("2027-12-31");
+    await card.getByLabel("Premium (AED, excluding VAT)").fill("2,000");
+    await card.getByRole("button", { name: "Record a policy" }).click();
+
+    const row = card.locator("tbody tr", { hasText: policyNumber });
+    // 2,000 net plus 5% VAT is what the insurer is paid.
+    await expect(row).toContainText("2,100.00");
+    await expect(row).toContainText("In force");
+
+    // The same policy number cannot be recorded twice for one insurer.
+    await card.getByLabel("Insurer").fill("Oman Insurance");
+    await card.getByLabel("Policy number").fill(policyNumber);
+    await card.getByLabel("Cover to").fill("2027-12-31");
+    await card.getByLabel("Premium (AED, excluding VAT)").fill("2,000");
+    await card.getByRole("button", { name: "Record a policy" }).click();
+    await expect(card.getByText("That insurer already has a policy with this number.")).toBeVisible();
+
+    await row.getByRole("button", { name: "Cancel", exact: true }).click();
+    await row.getByRole("button", { name: "Cancel policy" }).click();
+    await expect(row.getByText("Say why the policy is being cancelled.")).toBeVisible();
+
+    await row.getByPlaceholder("Why is it being cancelled?").fill("Car sold");
+    await row.getByPlaceholder("Refunded by the insurer (AED, including VAT)").fill("1,050");
+    await row.getByRole("button", { name: "Cancel policy" }).click();
+    // The row is the evidence: once cancelled the form is gone, and its message with it.
+    await expect(row).toContainText("Cancelled");
+    await expect(row).toContainText("Car sold");
+    await expect(card.getByText("No cover recorded for this car.")).toHaveCount(0);
+  });
+});

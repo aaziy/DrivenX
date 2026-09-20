@@ -85,3 +85,20 @@ export function reminderDedupeKey(documentId: string, offset: number): string {
 export function expiredDedupeKey(documentId: string, expiryDate: Date): string {
   return `document:${documentId}:expired:${businessDate(expiryDate)}`;
 }
+
+/**
+ * When an insurance policy is worth mentioning: a month out, a fortnight, a week (P1D-12).
+ *
+ * Fixed rather than per-policy: a renewal is one conversation with one broker, and the
+ * offsets a document category carries exist because a passport and a trade licence need
+ * different lead times. Cover does not.
+ */
+export const INSURANCE_REMINDER_OFFSETS: readonly number[] = [30, 15, 7];
+
+export function insuranceReminderDedupeKey(policyId: string, offset: number): string {
+  return `insurance:${policyId}:reminder:${offset}`;
+}
+
+export function insuranceExpiredDedupeKey(policyId: string, expiryDate: Date): string {
+  return `insurance:${policyId}:expired:${businessDate(expiryDate)}`;
+}

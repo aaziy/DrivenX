@@ -74,6 +74,7 @@ model User {
   assignedLeads         Lead[]                 @relation("LeadSalesperson")
   leadStatusChanges     LeadStatusChange[]
   leadQuotes            LeadQuote[]
+  insurancePolicies     InsurancePolicy[]
   contractStatusChanges ContractStatusChange[]
   recordedPayments      Payment[]
   supplierPayments      SupplierPayment[]
@@ -510,12 +511,13 @@ model Vehicle {
   status VehicleStatus @default(AVAILABLE)
   notes  String?
 
-  statusChanges    VehicleStatusChange[]
-  mileageReadings  MileageReading[]
-  contracts        Contract[]
-  supplierInvoices SupplierInvoice[]
-  interestedLeads  Lead[]
-  leadQuotes       LeadQuote[]
+  statusChanges     VehicleStatusChange[]
+  mileageReadings   MileageReading[]
+  contracts         Contract[]
+  supplierInvoices  SupplierInvoice[]
+  interestedLeads   Lead[]
+  leadQuotes        LeadQuote[]
+  insurancePolicies InsurancePolicy[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -1050,4 +1052,60 @@ model LeadStatusChange {
 
   @@index([leadId, changedAt])
   @@map("lead_status_changes")
+}
+
+// ===========================================================================
+// Insurance (P1D-10 – P1D-12, SOW §11)
+// ===========================================================================
+
+enum InsuranceCoverage {
+  COMPREHENSIVE
+  THIRD_PARTY
+
+  @@map("insurance_coverage")
+}
+
+/// A policy on one car: what the insurer charges DrivenX, against what DrivenX charges
+/// the customer for insurance on the contract.
+///
+/// The premium is the insurer's invoice (client, 2026-09-20). It is held net, with its
+/// VAT beside it, because that VAT is recoverable and is not a cost — the same rule as
+/// supplier invoices. The cost is posted to the ledger on the day cover starts, which is
+/// when the insurer invoices it.
+model InsurancePolicy {
+  id        String  @id @default(cuid())
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  provider     String
+  policyNumber String            @map("policy_number")
+  coverage     InsuranceCoverage @default(COMPREHENSIVE)
+
+  startDate  DateTime @map("start_date") @db.Date
+  expiryDate DateTime @map("expiry_date") @db.Date
+
+  premiumNetFils BigInt @map("premium_net_fils")
+  vatBasisPoints Int    @default(500) @map("vat_basis_points")
+  premiumVatFils BigInt @map("premium_vat_fils")
+  /// What DrivenX actually pays the insurer.
+  premiumFils    BigInt @map("premium_fils")
+
+  /// Cancelled before its expiry; the cover no longer stands whatever the dates say.
+  cancelledAt  DateTime? @map("cancelled_at")
+  cancelReason String?   @map("cancel_reason")
+  /// What the insurer refunded on cancellation, if anything — posted as a reversal.
+  refundFils   BigInt?   @map("refund_fils")
+
+  notes String?
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@unique([provider, policyNumber])
+  @@index([vehicleId, expiryDate])
+  @@index([expiryDate])
+  @@map("insurance_policies")
 }

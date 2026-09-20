@@ -9,6 +9,7 @@ import { prisma } from "@drivenx/db";
 import { requirePermission } from "@/lib/auth";
 
 import { DocumentsCard } from "../../documents/documents-card";
+import { InsuranceCard } from "../insurance-card";
 import {
   changeVehicleStatusAction,
   deleteVehicleAction,
@@ -184,6 +185,10 @@ export default async function VehicleDetailPage({
             </div>
           )}
         </div>
+
+        {can("insurance.view") ? (
+          <InsuranceCard vehicleId={vehicle.id} canManage={can("insurance.manage")} />
+        ) : null}
 
         {can("document.view") ? (
           <DocumentsCard

@@ -117,6 +117,17 @@ export {
   type NewQuote,
 } from "./leads";
 export { leadFunnel, type FunnelCounts, type FunnelReport } from "./funnel";
+export {
+  cancelPolicy,
+  createPolicy,
+  currentPolicy,
+  InsuranceRuleError,
+  policiesDueForRenewal,
+  policyState,
+  type InsuranceRuleCode,
+  type NewPolicy,
+  type PolicyState,
+} from "./insurance";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

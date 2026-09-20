@@ -1,9 +1,10 @@
 /**
  * The nightly expiry scan (P1A-07, SOW §6 and §16).
  *
- * One job for every expiring document, whatever it is attached to: Emirates ID, driving
- * licence, passport, visa, trade licence, mulkiya and — from milestone 1D — insurance
- * policies. That is the whole reason `Document` carries a polymorphic owner.
+ * One job for everything that runs out: every expiring document, whatever it is attached
+ * to — Emirates ID, driving licence, passport, visa, trade licence, mulkiya — which is the
+ * whole reason `Document` carries a polymorphic owner, and every insurance policy, which
+ * is a record of its own because it carries a premium and a charge (P1D-12).
  *
  * The rules are in `@drivenx/core` and are pure. This file is the I/O around them: read
  * the documents, decide what to raise, write the notifications. `now` is a parameter, so
@@ -15,6 +16,9 @@ import {
   dueReminderOffsets,
   expiredDedupeKey,
   expiryStatus,
+  insuranceExpiredDedupeKey,
+  insuranceReminderDedupeKey,
+  INSURANCE_REMINDER_OFFSETS,
   reminderDedupeKey,
 } from "@drivenx/core";
 import { prisma, type DocumentStatus } from "@drivenx/db";
@@ -34,12 +38,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ExpiryScanResult {
   documentsScanned: number;
+  policiesScanned: number;
   statusesUpdated: number;
   notificationsCreated: number;
 }
 
 interface PendingNotification {
-  type: "DOCUMENT_EXPIRY";
+  type: "DOCUMENT_EXPIRY" | "INSURANCE_EXPIRY";
   severity: "WARNING" | "CRITICAL";
   title: string;
   body: string;
@@ -188,6 +193,57 @@ export async function runExpiryScan(now: Date = new Date()): Promise<ExpiryScanR
     });
   }
 
+  const policies = await prisma.insurancePolicy.findMany({
+    where: { deletedAt: null, cancelledAt: null, expiryDate: { lte: horizon } },
+    select: {
+      id: true,
+      expiryDate: true,
+      provider: true,
+      policyNumber: true,
+      vehicle: { select: { code: true, make: true, model: true, plateCode: true, plateNumber: true } },
+    },
+  });
+
+  for (const policy of policies) {
+    const car = `${policy.vehicle.make} ${policy.vehicle.model}, plate ${policy.vehicle.plateCode} ${policy.vehicle.plateNumber} (${policy.vehicle.code})`;
+    const cover = `${policy.provider} ${policy.policyNumber}`;
+    // Cover runs to the end of its last day, so compare calendar days, not instants:
+    // against the clock, a policy expiring today would read as already lapsed.
+    const days =
+      (Date.parse(`${policy.expiryDate.toISOString().slice(0, 10)}T00:00:00Z`) -
+        Date.parse(`${businessDate(now)}T00:00:00Z`)) /
+      DAY_MS;
+
+    if (days < 0) {
+      notifications.push({
+        type: "INSURANCE_EXPIRY",
+        severity: "CRITICAL",
+        title: "Insurance has expired",
+        body: `Insurance for ${car} (${cover}) expired on ${businessDate(policy.expiryDate)}. The car is not covered.`,
+        entityType: "InsurancePolicy",
+        entityId: policy.id,
+        dueOn: policy.expiryDate,
+        dedupeKey: insuranceExpiredDedupeKey(policy.id, policy.expiryDate),
+      });
+      continue;
+    }
+
+    // The narrowest offset crossed, as for documents: one alert, the true one.
+    const narrowest = INSURANCE_REMINDER_OFFSETS.filter((offset) => days <= offset).at(-1);
+    if (narrowest === undefined) continue;
+
+    notifications.push({
+      type: "INSURANCE_EXPIRY",
+      severity: "WARNING",
+      title: "Insurance is due for renewal",
+      body: `Insurance for ${car} (${cover}) expires on ${businessDate(policy.expiryDate)}.`,
+      entityType: "InsurancePolicy",
+      entityId: policy.id,
+      dueOn: policy.expiryDate,
+      dedupeKey: insuranceReminderDedupeKey(policy.id, narrowest),
+    });
+  }
+
   await Promise.all(
     [...statusChanges].map(([status, ids]) =>
       prisma.document.updateMany({ where: { id: { in: ids } }, data: { status } }),
@@ -205,6 +261,7 @@ export async function runExpiryScan(now: Date = new Date()): Promise<ExpiryScanR
 
   return {
     documentsScanned: documents.length,
+    policiesScanned: policies.length,
     statusesUpdated,
     notificationsCreated: created.count,
   };

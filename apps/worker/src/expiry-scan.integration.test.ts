@@ -9,8 +9,8 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { reminderDedupeKey } from "@drivenx/core";
-import { prisma } from "@drivenx/db";
+import { Money, reminderDedupeKey } from "@drivenx/core";
+import { createPolicy, createVehicle, prisma } from "@drivenx/db";
 
 import { runExpiryScan } from "./expiry-scan";
 
@@ -253,5 +253,74 @@ describe("runExpiryScan", () => {
 
     expect(result.notificationsCreated).toBe(0);
     expect(await prisma.notification.count()).toBe(0);
+  });
+});
+
+describe("insurance renewals (P1D-12)", () => {
+  async function policyExpiring(expiryDate: string) {
+    const vehicle = await createVehicle(
+      {
+        make: "Kia",
+        model: "Seltos",
+        year: 2025,
+        plateEmirate: "DUBAI",
+        plateCode: "R",
+        plateNumber: String(Math.floor(Math.random() * 90000) + 10000),
+        vin: `KNAREN${String(Date.now()).slice(-11)}`,
+        currentMileageKm: 0,
+        ownershipType: "COMPANY_OWNED",
+      },
+      null,
+    );
+    return createPolicy(
+      {
+        vehicleId: vehicle.id,
+        provider: "Oman Insurance",
+        policyNumber: `REN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        coverage: "COMPREHENSIVE",
+        startDate: "2026-01-01",
+        expiryDate,
+        premiumNetFils: Money.parse("2000"),
+      },
+      null,
+    );
+  }
+
+  const alertsFor = (policyId: string) =>
+    prisma.notification.findMany({ where: { entityType: "InsurancePolicy", entityId: policyId } });
+
+  it("warns once at the nearest of 30, 15 and 7 days, and repeats on no further run", async () => {
+    const policy = await policyExpiring("2026-12-31");
+
+    // 20 days out: the 30-day warning, and only that one.
+    await runExpiryScan(new Date("2026-12-11T06:00:00Z"));
+    const alerts = await alertsFor(policy.id);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({ type: "INSURANCE_EXPIRY", severity: "WARNING" });
+    expect(alerts[0]?.body).toContain("Seltos");
+
+    // Running again the same day changes nothing.
+    await runExpiryScan(new Date("2026-12-11T20:00:00Z"));
+    expect(await alertsFor(policy.id)).toHaveLength(1);
+
+    // 10 days out: the 15-day warning is a new alert.
+    await runExpiryScan(new Date("2026-12-21T06:00:00Z"));
+    expect(await alertsFor(policy.id)).toHaveLength(2);
+  });
+
+  it("says nothing while cover is comfortable, and raises a critical alert once it lapses", async () => {
+    const policy = await policyExpiring("2026-12-31");
+
+    await runExpiryScan(new Date("2026-06-01T06:00:00Z"));
+    expect(await alertsFor(policy.id)).toHaveLength(0);
+
+    // The last day is still covered.
+    await runExpiryScan(new Date("2026-12-31T06:00:00Z"));
+    const onLastDay = await alertsFor(policy.id);
+    expect(onLastDay.every((alert) => alert.severity === "WARNING")).toBe(true);
+
+    await runExpiryScan(new Date("2027-01-02T06:00:00Z"));
+    const lapsed = await alertsFor(policy.id);
+    expect(lapsed.some((alert) => alert.severity === "CRITICAL")).toBe(true);
   });
 });

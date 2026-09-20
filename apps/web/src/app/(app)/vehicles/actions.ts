@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import {
+  businessDate,
   IllegalVehicleTransitionError,
+  isIsoDate,
   isPlausibleModelYear,
   isUaeEmirate,
   isVehicleStatus,
@@ -16,9 +18,12 @@ import {
   type Fils,
 } from "@drivenx/core";
 import {
+  cancelPolicy,
   changeVehicleStatus,
   ConcurrentVehicleChangeError,
+  createPolicy,
   createVehicle,
+  InsuranceRuleError,
   MileageRejectedError,
   prisma,
   recordMileage,
@@ -322,4 +327,81 @@ export async function deleteVehicleAction(
 
   revalidatePath("/vehicles");
   redirect("/vehicles");
+}
+
+/** Every refusal the insurance service can give, worded for the reader. */
+async function explainInsurance(error: unknown, operation: string): Promise<string> {
+  const t = await getTranslations("insurance.errors");
+  if (error instanceof InsuranceRuleError) return t(error.code);
+  return toUserMessage(operation, error);
+}
+
+export async function addPolicyAction(
+  vehicleId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("insurance.manage");
+  const [t, te] = await Promise.all([getTranslations("insurance"), getTranslations("insurance.errors")]);
+
+  const premium = money(text(formData, "premium"));
+  if (premium === "invalid" || premium === null) return { error: te("money") };
+
+  const startDate = text(formData, "startDate");
+  const expiryDate = text(formData, "expiryDate");
+  if (!isIsoDate(startDate) || !isIsoDate(expiryDate)) return { error: te("dates") };
+
+  const coverage = text(formData, "coverage") === "THIRD_PARTY" ? "THIRD_PARTY" : "COMPREHENSIVE";
+
+  try {
+    await asActor(principal, () =>
+      createPolicy(
+        {
+          vehicleId,
+          provider: text(formData, "provider"),
+          policyNumber: text(formData, "policyNumber"),
+          coverage,
+          startDate,
+          expiryDate,
+          premiumNetFils: premium,
+          notes: optional(formData, "notes"),
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainInsurance(error, "addPolicy") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return { success: t("added") };
+}
+
+export async function cancelPolicyAction(
+  vehicleId: string,
+  policyId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("insurance.manage");
+  const [t, te] = await Promise.all([getTranslations("insurance"), getTranslations("insurance.errors")]);
+
+  const refund = money(text(formData, "refund"));
+  if (refund === "invalid") return { error: te("money") };
+
+  try {
+    await asActor(principal, () =>
+      cancelPolicy(policyId, {
+        reason: text(formData, "reason"),
+        refundFils: refund,
+        actorId: principal.id,
+        today: businessDate(new Date()),
+      }),
+    );
+  } catch (error) {
+    return { error: await explainInsurance(error, "cancelPolicy") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return { success: t("cancel.cancelled") };
 }

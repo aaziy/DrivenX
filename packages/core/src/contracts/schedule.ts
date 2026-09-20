@@ -89,6 +89,17 @@ export function vatOn(net: Fils, basisPoints: number): Fils {
   return divideRound(net * BigInt(basisPoints), 10_000n, RoundingMode.HALF_UP);
 }
 
+/**
+ * The net share of a VAT-inclusive amount.
+ *
+ * For working backwards from a figure that already includes VAT — a refund from an
+ * insurer, a supplier's total — to the part that is cost. Rounded half-up once, so
+ * `net + vatOn(net)` returns the gross for every amount this system handles.
+ */
+export function netFromGross(gross: Fils, basisPoints: number): Fils {
+  return divideRound(gross * 10_000n, BigInt(10_000 + basisPoints), RoundingMode.HALF_UP);
+}
+
 /** The charges a contract's terms compose into. Zero-amount charges are left out. */
 export function chargesFor(terms: ContractTerms): ScheduledCharge[] {
   const vat = terms.vatBasisPoints ?? STANDARD_VAT_BASIS_POINTS;

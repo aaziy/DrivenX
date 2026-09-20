@@ -11,6 +11,7 @@ import {
   scheduleTotals,
   vatOn,
   type ContractTerms,
+  netFromGross,
 } from "./schedule";
 
 const aed = (value: string) => parse(value);
@@ -193,5 +194,21 @@ describe("expandCharge", () => {
     );
     expect(rest).toEqual([]);
     expect(only).toMatchObject({ dueDate: "2026-02-10", netFils: aed("250"), grossFils: aed("262.50") });
+  });
+});
+
+describe("netFromGross", () => {
+  it("works a VAT-inclusive amount back to its net share", () => {
+    expect(netFromGross(parse("2100"), 500)).toBe(parse("2000"));
+    expect(netFromGross(parse("3570"), 500)).toBe(parse("3400"));
+    expect(netFromGross(0n, 500)).toBe(0n);
+  });
+
+  it("round-trips: net plus its VAT is the gross it came from", () => {
+    for (const gross of ["0.05", "1", "999.99", "12345.67"]) {
+      const amount = parse(gross);
+      const net = netFromGross(amount, 500);
+      expect(net + vatOn(net, 500)).toBe(amount);
+    }
   });
 });
