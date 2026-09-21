@@ -230,3 +230,37 @@ test.describe("insurance", () => {
     await expect(card.getByText("No cover recorded for this car.")).toHaveCount(0);
   });
 });
+
+test.describe("maintenance", () => {
+  test("records work, moves the odometer with it, and warns when the next service nears", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await addCompanyVehicle(page, "30000");
+
+    const card = page.locator(".card", { has: page.getByRole("heading", { name: "Maintenance" }) });
+    await expect(card.getByText("No work recorded for this car.")).toBeVisible();
+
+    await card.getByLabel("Garage").fill("Fleet Garage");
+    await card.getByLabel("Odometer (km)").fill("35000");
+    await card.getByLabel("Cost (AED, excluding VAT)").fill("800");
+    await card.getByLabel("What was done").fill("Major service");
+    // Due in 200 km, so the card should say so at once.
+    await card.getByLabel("Next service at (km)").fill("35200");
+    await card.getByRole("button", { name: "Record work" }).click();
+
+    const row = card.locator("tbody tr", { hasText: "Fleet Garage" });
+    // 800 net plus 5% VAT is what the garage was paid.
+    await expect(row).toContainText("840.00");
+    await expect(row).toContainText("35,000 km");
+    await expect(card.getByText("Service due in 200 km")).toBeVisible();
+
+    // The garage's reading became the car's mileage.
+    const mileage = page.locator(".card", { has: page.getByRole("heading", { name: "Mileage" }) });
+    await expect(mileage).toContainText("35,000 km");
+
+    // An odometer below the car's last reading is refused.
+    await card.getByLabel("Garage").fill("Backstreet Garage");
+    await card.getByLabel("Odometer (km)").fill("20000");
+    await card.getByRole("button", { name: "Record work" }).click();
+    await expect(card.getByText("The odometer is below this car's last reading.")).toBeVisible();
+  });
+});

@@ -24,6 +24,8 @@ import {
   createPolicy,
   createVehicle,
   InsuranceRuleError,
+  MaintenanceRuleError,
+  recordMaintenance,
   MileageRejectedError,
   prisma,
   recordMileage,
@@ -404,4 +406,61 @@ export async function cancelPolicyAction(
 
   revalidatePath(`/vehicles/${vehicleId}`);
   return { success: t("cancel.cancelled") };
+}
+
+const MAINTENANCE_TYPES = ["SERVICE", "REPAIR", "TYRES", "INSPECTION", "BODYWORK", "OTHER"] as const;
+
+export async function recordMaintenanceAction(
+  vehicleId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("maintenance.manage");
+  const [t, te] = await Promise.all([getTranslations("maintenance"), getTranslations("maintenance.errors")]);
+
+  const cost = money(text(formData, "cost"));
+  if (cost === "invalid") return { error: te("money") };
+
+  const servicedOn = text(formData, "servicedOn");
+  if (!isIsoDate(servicedOn)) return { error: te("date") };
+
+  const odometer = Number(text(formData, "odometerKm"));
+  if (!Number.isInteger(odometer) || odometer < 0) return { error: te("mileage") };
+
+  const nextServiceOn = text(formData, "nextServiceOn");
+  const nextKmText = text(formData, "nextServiceKm");
+  const nextServiceKm = nextKmText === "" ? null : Number(nextKmText);
+  if (nextServiceKm !== null && (!Number.isInteger(nextServiceKm) || nextServiceKm < 0)) {
+    return { error: te("mileage") };
+  }
+  const type = text(formData, "type");
+
+  try {
+    await asActor(principal, () =>
+      recordMaintenance(
+        {
+          vehicleId,
+          type: (MAINTENANCE_TYPES as readonly string[]).includes(type)
+            ? (type as (typeof MAINTENANCE_TYPES)[number])
+            : "SERVICE",
+          servicedOn,
+          odometerKm: odometer,
+          vendor: text(formData, "vendor"),
+          vendorInvoiceNumber: optional(formData, "vendorInvoiceNumber"),
+          description: optional(formData, "description"),
+          costNetFils: cost ?? 0n,
+          nextServiceOn: isIsoDate(nextServiceOn) ? nextServiceOn : null,
+          nextServiceKm,
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    const tm = await getTranslations("maintenance.errors");
+    if (error instanceof MaintenanceRuleError) return { error: tm(error.code) };
+    return { error: await toUserMessage("recordMaintenance", error) };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return { success: t("added") };
 }

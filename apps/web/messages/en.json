@@ -102,7 +102,9 @@
     "expired": "Expired",
     "open": "Open",
     "insuranceRenewals": "Insurance renewals",
-    "insuranceNote": "Within 30 days, or lapsed"
+    "insuranceNote": "Within 30 days, or lapsed",
+    "serviceDue": "Service due",
+    "serviceNote": "Soon or overdue"
   },
   "contracts": {
     "title": "Contracts",
@@ -1528,6 +1530,59 @@
       "mileageBelowStart": "The mileage on return is below the car's last reading.",
       "money": "Enter amounts in AED, for example 2,000 or 1,450.50.",
       "mileage": "Enter the mileage as a whole number of kilometres."
+    }
+  },
+  "maintenance": {
+    "cardTitle": "Maintenance",
+    "hint": "What keeping this car on the road cost. The bill is the garage's, before VAT — that VAT is reclaimed and is not a cost.",
+    "none": "No work recorded for this car.",
+    "dueSoonDate": "Service due {date}",
+    "dueSoonKm": "Service due in {km} km",
+    "overdueDate": "Service overdue since {date}",
+    "overdueKm": "Service overdue by {km} km",
+    "nextOk": "Next service {date}",
+    "columns": {
+      "date": "Date",
+      "type": "Work",
+      "vendor": "Garage",
+      "odometer": "Odometer",
+      "cost": "Cost",
+      "next": "Next due"
+    },
+    "types": {
+      "SERVICE": "Service",
+      "REPAIR": "Repair",
+      "TYRES": "Tyres",
+      "INSPECTION": "Inspection",
+      "BODYWORK": "Bodywork",
+      "OTHER": "Other"
+    },
+    "km": "{km, number} km",
+    "noNext": "—",
+    "add": "Record work",
+    "adding": "Saving…",
+    "added": "Work recorded.",
+    "form": {
+      "type": "Work",
+      "servicedOn": "Date",
+      "odometer": "Odometer (km)",
+      "vendor": "Garage",
+      "invoiceNumber": "Their invoice number",
+      "cost": "Cost (AED, excluding VAT)",
+      "costHint": "As invoiced by the garage, before VAT. Leave empty for work under warranty.",
+      "description": "What was done",
+      "nextServiceOn": "Next service due",
+      "nextServiceKm": "Next service at (km)"
+    },
+    "errors": {
+      "vehicleNotFound": "That vehicle no longer exists.",
+      "recordNotFound": "That record no longer exists.",
+      "invalidRecord": "Check the garage, odometer and cost.",
+      "odometerBelowCurrent": "The odometer is below this car's last reading.",
+      "nextServiceBehind": "The next service must come after this one.",
+      "money": "Enter amounts in AED, for example 800 or 1,450.50.",
+      "mileage": "Enter the odometer as a whole number of kilometres.",
+      "date": "Enter the date of the work."
     }
   }
 }

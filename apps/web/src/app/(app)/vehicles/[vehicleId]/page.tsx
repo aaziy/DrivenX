@@ -10,6 +10,7 @@ import { requirePermission } from "@/lib/auth";
 
 import { DocumentsCard } from "../../documents/documents-card";
 import { InsuranceCard } from "../insurance-card";
+import { MaintenanceCard } from "../maintenance-card";
 import {
   changeVehicleStatusAction,
   deleteVehicleAction,
@@ -185,6 +186,14 @@ export default async function VehicleDetailPage({
             </div>
           )}
         </div>
+
+        {can("maintenance.view") ? (
+          <MaintenanceCard
+            vehicleId={vehicle.id}
+            odometerKm={vehicle.currentMileageKm}
+            canManage={can("maintenance.manage")}
+          />
+        ) : null}
 
         {can("insurance.view") ? (
           <InsuranceCard vehicleId={vehicle.id} canManage={can("insurance.manage")} />

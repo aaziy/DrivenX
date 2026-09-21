@@ -11,6 +11,7 @@ import {
   monthResult,
   overdueInstallments,
   policiesDueForRenewal,
+  vehiclesDueForService,
   payables,
   receivables,
 } from "@drivenx/db";
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
   const can = (key: Parameters<typeof principal.permissions.has>[0]) => principal.permissions.has(key);
   const today = businessDate(new Date());
 
-  const [t, tCat, format, fleet, contracts, month, owed, owing, late, expiring, renewals] = await Promise.all([
+  const [t, tCat, format, fleet, contracts, month, owed, owing, late, expiring, renewals, service] = await Promise.all([
     getTranslations("dashboard"),
     getTranslations("documentCategories"),
     getFormatter(),
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
     can("payment.view") ? overdueInstallments(today) : [],
     can("document.view") ? expiringDocuments(today) : null,
     can("insurance.view") ? policiesDueForRenewal(today) : null,
+    can("maintenance.view") ? vehiclesDueForService(today) : null,
   ]);
 
   const entities = expiring ? await resolveDocumentEntities(expiring.soonest.map((d) => d.id)) : new Map();
@@ -102,7 +104,7 @@ export default async function DashboardPage() {
           </section>
         ) : null}
 
-        {owed || owing || expiring || renewals ? (
+        {owed || owing || expiring || renewals || service ? (
           <section aria-labelledby="balances-heading" className="stack" style={{ gap: 8 }}>
             <h2 id="balances-heading" className="section-title">
               {t("balancesTitle")}
@@ -124,6 +126,14 @@ export default async function DashboardPage() {
                 : null}
               {expiring ? stat(t("documentsExpiring"), expiring.count, t("documentsNote")) : null}
               {renewals ? stat(t("insuranceRenewals"), renewals.length, t("insuranceNote")) : null}
+              {service
+                ? stat(
+                    t("serviceDue"),
+                    service.length,
+                    t("serviceNote"),
+                    service.some((row) => row.due.overdue) ? "negative" : undefined,
+                  )
+                : null}
             </div>
           </section>
         ) : null}

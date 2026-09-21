@@ -366,8 +366,8 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | P2-02 | Damage marking on a vehicle diagram, per-point photos |
 | P2-03 | Signature capture — customer and staff |
 | P2-04 | Handover / return PDF report |
-| P2-05 | `MaintenanceRecord`: service date, mileage, garage/vendor, type, description, cost, invoice, next service date/mileage → `cost.maintenance` |
-| P2-06 | Maintenance due alerts by date and mileage |
+| P2-05 | `MaintenanceRecord`: service date, mileage, garage/vendor, type, description, cost, invoice, next service date/mileage → `cost.maintenance` — **Built 2026-09-21.** Bill held net (input VAT recoverable), costed against the car and the contract it was out on that day |
+| P2-06 | Maintenance due alerts by date and mileage — **Built 2026-09-21.** Date and distance markers, 14 days / 500 km of warning, one alert per state; nightly `maintenance-due` job |
 | P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered |
 | P2-08 | Fine recovery flow — attach to the customer's next installment |
 | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |

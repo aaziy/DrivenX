@@ -141,6 +141,15 @@ export {
   type SettlementTotals,
   type TerminationOptions,
 } from "./settlements";
+export {
+  MaintenanceRuleError,
+  recordMaintenance,
+  serviceStatus,
+  vehiclesDueForService,
+  type MaintenanceRuleCode,
+  type NewMaintenance,
+  type ServiceStatus,
+} from "./maintenance";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

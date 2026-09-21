@@ -14,10 +14,12 @@ import { logger } from "@drivenx/logger";
 
 import { runContractsDailyLogged } from "./contracts-daily";
 import { runExpiryScanLogged } from "./expiry-scan";
+import { runMaintenanceDueLogged } from "./maintenance-due";
 
 const JOBS = {
   "expiry-scan": runExpiryScanLogged,
   "contracts-daily": runContractsDailyLogged,
+  "maintenance-due": runMaintenanceDueLogged,
 } as const;
 
 type JobName = keyof typeof JOBS;

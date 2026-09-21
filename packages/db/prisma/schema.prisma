@@ -75,6 +75,7 @@ model User {
   leadStatusChanges     LeadStatusChange[]
   leadQuotes            LeadQuote[]
   insurancePolicies     InsurancePolicy[]
+  maintenanceRecords    MaintenanceRecord[]
   settlementsOpened     Settlement[]           @relation("SettlementOpenedBy")
   settlementsSettled    Settlement[]           @relation("SettlementSettledBy")
   settlementLines       SettlementLine[]
@@ -300,6 +301,7 @@ enum DocumentOwnerType {
   VEHICLE
   CONTRACT
   INSURANCE_POLICY
+  MAINTENANCE
 
   @@map("document_owner_type")
 }
@@ -521,6 +523,7 @@ model Vehicle {
   interestedLeads   Lead[]
   leadQuotes        LeadQuote[]
   insurancePolicies InsurancePolicy[]
+  maintenance       MaintenanceRecord[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -690,6 +693,7 @@ model Contract {
   statusChanges    ContractStatusChange[]
   supplierInvoices SupplierInvoice[]
   settlement       Settlement?
+  maintenance      MaintenanceRecord[]
 
   /// The lead it was converted from, if any, and who is credited with the sale (P1F-04).
   /// Set from the lead on conversion; a contract written directly credits its author.
@@ -1215,4 +1219,68 @@ model SettlementLine {
 
   @@index([settlementId])
   @@map("settlement_lines")
+}
+
+// ===========================================================================
+// Maintenance (P2-05, P2-06, SOW §12)
+// ===========================================================================
+
+enum MaintenanceType {
+  SERVICE
+  REPAIR
+  TYRES
+  INSPECTION
+  BODYWORK
+  OTHER
+
+  @@map("maintenance_type")
+}
+
+/// What keeping a car on the road cost, and when it is next due (P2-05).
+///
+/// The bill is held net with its VAT beside it, because input VAT is recoverable (client,
+/// 2026-09-20) and is never cost — the same rule as supplier invoices and insurance. The
+/// net is posted to `cost.maintenance` on the day of the work, against the car and, when
+/// it was out on contract that day, against the contract too, so vehicle and contract
+/// profitability both carry it.
+model MaintenanceRecord {
+  id        String          @id @default(cuid())
+  vehicleId String          @map("vehicle_id")
+  vehicle   Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  type      MaintenanceType @default(SERVICE)
+
+  servicedOn DateTime @map("serviced_on") @db.Date
+  /// The odometer at the garage, which is also recorded as a mileage reading.
+  odometerKm Int      @map("odometer_km")
+
+  vendor              String
+  vendorInvoiceNumber String? @map("vendor_invoice_number")
+  description         String?
+
+  costNetFils    BigInt @map("cost_net_fils")
+  vatBasisPoints Int    @default(500) @map("vat_basis_points")
+  costVatFils    BigInt @map("cost_vat_fils")
+  /// What was actually paid to the garage.
+  costFils       BigInt @map("cost_fils")
+
+  /// When the next service is due, by date, by distance, or both.
+  nextServiceOn DateTime? @map("next_service_on") @db.Date
+  nextServiceKm Int?      @map("next_service_km")
+
+  /// The contract the car was out on that day, when it was out on one.
+  contractId String?   @map("contract_id")
+  contract   Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+
+  notes String?
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([vehicleId, servicedOn])
+  @@index([nextServiceOn])
+  @@index([nextServiceKm])
+  @@map("maintenance_records")
 }
