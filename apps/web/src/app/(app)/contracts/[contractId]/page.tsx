@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { businessDate, EDITABLE_CONTRACT_STATUSES, Money, type ContractStatus } from "@drivenx/core";
-import { prisma } from "@drivenx/db";
+import { prisma, settlementTotals } from "@drivenx/db";
 
 import { currentLocale } from "@/i18n/locale";
 import { requirePermission } from "@/lib/auth";
@@ -12,29 +12,44 @@ import { requirePermission } from "@/lib/auth";
 import { DocumentsCard } from "../../documents/documents-card";
 import {
   activateContractAction,
+  addSettlementLineAction,
+  openSettlementAction,
   recordPaymentAction,
   recordSupplierPaymentAction,
+  removeSettlementLineAction,
+  settleSettlementAction,
+  terminateContractAction,
   waiveInstallmentAction,
 } from "../actions";
 import { contractStatusTone, installmentStatusTone } from "../tone";
-import { ActivateForm, PaymentForm, SupplierPaymentForm, WaiveForm } from "./panels";
+import {
+  ActionButton,
+  ActivateForm,
+  OpenSettlementForm,
+  PaymentForm,
+  SettlementLineForm,
+  SupplierPaymentForm,
+  TerminateForm,
+  WaiveForm,
+} from "./panels";
 
 async function loadContract(contractId: string) {
   return prisma.contract.findFirst({
     where: { id: contractId, deletedAt: null },
     include: {
       customer: { select: { id: true, code: true, fullName: true, mobile: true } },
-      vehicle: { select: { id: true, code: true, make: true, model: true, plateCode: true, plateNumber: true } },
+      vehicle: { select: { id: true, code: true, make: true, model: true, plateCode: true, plateNumber: true, status: true } },
       supplier: { select: { id: true, companyName: true } },
       installments: {
         orderBy: [{ dueDate: "asc" }, { sequence: "asc" }],
-        include: { charge: { select: { chargeType: true } } },
+        include: { charge: { select: { chargeType: true, label: true } } },
       },
       payments: { orderBy: { receivedOn: "desc" }, include: { recordedBy: { select: { fullName: true } } } },
       statusChanges: { orderBy: { changedAt: "desc" }, include: { changedBy: { select: { fullName: true } } } },
       supplierInvoices: { orderBy: { sequence: "asc" } },
       salesperson: { select: { fullName: true } },
       lead: { select: { id: true, code: true } },
+      settlement: { include: { lines: { orderBy: { createdAt: "asc" } }, installment: { select: { invoiceNumber: true } } } },
     },
   });
 }
@@ -64,6 +79,8 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
       _sum: { amountFils: true },
     }),
   ]);
+
+  const [tSettle, settled] = await Promise.all([getTranslations("settlements"), settlementTotals(contractId)]);
 
   if (!contract) notFound();
   const locale = await currentLocale();
@@ -208,7 +225,15 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                   {contract.installments.map((item) => (
                     <tr key={item.id}>
                       <td style={{ whiteSpace: "nowrap" }}>{day(item.dueDate)}</td>
-                      <td>{tCharges(item.charge.chargeType)}</td>
+                      {/* A one-off carries its own wording — "Final settlement" says more
+                          than "Other". The standing charges are named by their type. */}
+                      <td>
+                        {item.charge.chargeType === "OTHER" ? (
+                          <bdi>{item.charge.label}</bdi>
+                        ) : (
+                          tCharges(item.charge.chargeType)
+                        )}
+                      </td>
                       <td className="muted">{item.invoiceNumber ? <bdi>{item.invoiceNumber}</bdi> : "—"}</td>
                       <td className="numeric" style={{ whiteSpace: "nowrap" }}>{Money.format(item.netFils, { currency: null })}</td>
                       <td className="numeric muted" style={{ whiteSpace: "nowrap" }}>{Money.format(item.vatFils, { currency: null })}</td>
@@ -267,6 +292,115 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                 </tbody>
               </table>
             </div>
+          </div>
+        ) : null}
+
+        {can("contract.cancel") && (live || contract.settlement) ? (
+          <div className="card">
+            <div className="card-header">
+              <h2>{contract.settlement ? tSettle("openTitle") : tSettle("title")}</h2>
+              {contract.settlement?.settledOn ? (
+                <span className="muted">{tSettle("settled", { date: day(contract.settlement.settledOn) })}</span>
+              ) : null}
+            </div>
+
+            {!contract.settlement ? (
+              <div className="card-body">
+                <p className="muted">{tSettle("openHint")}</p>
+                <OpenSettlementForm action={openSettlementAction.bind(null, contract.id)} />
+              </div>
+            ) : (
+              <>
+                <div className="card-body">
+                  <table className="deal-table" style={{ maxWidth: 460 }}>
+                    <tbody>
+                      <tr>
+                        <td>{tSettle("arrears")}</td>
+                        <td>{Money.format(settled.arrearsFils)}</td>
+                      </tr>
+                      <tr>
+                        <td>{tSettle("charges")}</td>
+                        <td>{Money.format(settled.chargesGrossFils)}</td>
+                      </tr>
+                      {settled.creditsGrossFils > 0n ? (
+                        <tr>
+                          <td>{tSettle("credits")}</td>
+                          <td>−{Money.format(settled.creditsGrossFils)}</td>
+                        </tr>
+                      ) : null}
+                      <tr className="deal-total">
+                        <td>{tSettle("totalDue")}</td>
+                        <td>{Money.format(settled.totalDueFils)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {contract.settlement.lines.length > 0 ? (
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="data">
+                      <tbody>
+                        {contract.settlement.lines.map((line) => (
+                          <tr key={line.id}>
+                            <td>
+                              <span className={`badge ${line.kind === "CREDIT" ? "badge-success" : ""}`.trim()}>
+                                {tSettle(`kinds.${line.kind}`)}
+                              </span>
+                            </td>
+                            <td className="muted">
+                              {line.kind === "CHARGE" ? tSettle(`chargeTypes.${line.chargeType}`) : null}
+                            </td>
+                            <td style={{ fontWeight: 560 }}>
+                              <bdi>{line.label}</bdi>
+                            </td>
+                            <td className="numeric" style={{ whiteSpace: "nowrap" }}>
+                              {Money.format(line.grossFils, { currency: null })}
+                            </td>
+                            <td>
+                              {contract.settlement?.status === "OPEN" ? (
+                                <ActionButton
+                                  action={removeSettlementLineAction.bind(null, contract.id, line.id)}
+                                  label={tSettle("remove")}
+                                  pendingLabel={tSettle("removing")}
+                                />
+                              ) : null}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="card-body">
+                    <p className="muted">{tSettle("noLines")}</p>
+                  </div>
+                )}
+
+                {contract.settlement.status === "OPEN" ? (
+                  <div className="card-body" style={{ borderTop: "1px solid var(--border)" }}>
+                    <SettlementLineForm
+                      action={addSettlementLineAction.bind(null, contract.id, contract.settlement.id)}
+                    />
+                    <p className="muted" style={{ marginBlockStart: 12 }}>{tSettle("settleHint")}</p>
+                    <ActionButton
+                      action={settleSettlementAction.bind(null, contract.id, contract.settlement.id)}
+                      label={tSettle("settle")}
+                      pendingLabel={tSettle("settling")}
+                      variant="primary"
+                    />
+                  </div>
+                ) : live ? (
+                  <div className="card-body" style={{ borderTop: "1px solid var(--border)" }}>
+                    <h3 className="form-section" style={{ marginTop: 0 }}>{tSettle("endTitle")}</h3>
+                    <p className="muted">{tSettle("endHint")}</p>
+                    <TerminateForm
+                      action={terminateContractAction.bind(null, contract.id)}
+                      canSell={contract.vehicle.status === "LEASE_TO_OWN"}
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         ) : null}
 

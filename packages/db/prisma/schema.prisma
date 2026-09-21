@@ -75,6 +75,9 @@ model User {
   leadStatusChanges     LeadStatusChange[]
   leadQuotes            LeadQuote[]
   insurancePolicies     InsurancePolicy[]
+  settlementsOpened     Settlement[]           @relation("SettlementOpenedBy")
+  settlementsSettled    Settlement[]           @relation("SettlementSettledBy")
+  settlementLines       SettlementLine[]
   contractStatusChanges ContractStatusChange[]
   recordedPayments      Payment[]
   supplierPayments      SupplierPayment[]
@@ -619,6 +622,8 @@ enum InstallmentStatus {
   PAID
   OVERDUE
   WAIVED
+  /// The contract ended before this month fell due, so it was never invoiced.
+  CANCELLED
 
   @@map("installment_status")
 }
@@ -684,6 +689,7 @@ model Contract {
   payments         Payment[]
   statusChanges    ContractStatusChange[]
   supplierInvoices SupplierInvoice[]
+  settlement       Settlement?
 
   /// The lead it was converted from, if any, and who is credited with the sale (P1F-04).
   /// Set from the lead on conversion; a contract written directly credits its author.
@@ -759,6 +765,7 @@ model Installment {
   waivedBy    User?     @relation(fields: [waivedById], references: [id], onDelete: SetNull)
 
   allocations PaymentAllocation[]
+  settlement  Settlement?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1108,4 +1115,104 @@ model InsurancePolicy {
   @@index([vehicleId, expiryDate])
   @@index([expiryDate])
   @@map("insurance_policies")
+}
+
+// ===========================================================================
+// Settlement (client 2026-09-20; P2-12)
+// ===========================================================================
+
+enum SettlementReason {
+  /// The customer stopped early. Settled case by case (client, 2026-09-20).
+  EARLY_TERMINATION
+  /// The term ran out and the car came back.
+  END_OF_TERM
+  /// Returned mid-term by agreement.
+  RETURN
+
+  @@map("settlement_reason")
+}
+
+enum SettlementStatus {
+  OPEN
+  SETTLED
+  VOID
+
+  @@map("settlement_status")
+}
+
+enum SettlementLineKind {
+  /// Something more to pay: excess mileage, damage, a fee.
+  CHARGE
+  /// Something taken off: goodwill, a discount agreed on the day.
+  CREDIT
+
+  @@map("settlement_line_kind")
+}
+
+enum SettlementChargeType {
+  EXCESS_MILEAGE
+  DAMAGE
+  FEE
+  OTHER
+
+  @@map("settlement_charge_type")
+}
+
+/// The reckoning when a contract ends (client, 2026-09-20; P2-12).
+///
+/// Arrears are not lines here: instalments already invoiced are already revenue and
+/// already owed, and charging them again would count them twice. They are shown beside
+/// the settlement, live. What this holds is what is new — excess mileage, damage, fees —
+/// and what is taken off, which together become one final invoice when it is settled.
+model Settlement {
+  id         String           @id @default(cuid())
+  contractId String           @unique @map("contract_id")
+  contract   Contract         @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  reason     SettlementReason
+  status     SettlementStatus @default(OPEN)
+
+  /// Mileage on the day the car came back, for the excess-mileage line staff work out.
+  returnedMileageKm Int?    @map("returned_mileage_km")
+  notes             String?
+
+  /// The instalment the settled total was invoiced as, when there was anything to pay.
+  installmentId String?      @unique @map("installment_id")
+  installment   Installment? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
+
+  lines SettlementLine[]
+
+  openedById  String?   @map("opened_by_id")
+  openedBy    User?     @relation("SettlementOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
+  openedAt    DateTime  @default(now()) @map("opened_at")
+  settledById String?   @map("settled_by_id")
+  settledBy   User?     @relation("SettlementSettledBy", fields: [settledById], references: [id], onDelete: SetNull)
+  settledOn   DateTime? @map("settled_on") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("settlements")
+}
+
+model SettlementLine {
+  id           String               @id @default(cuid())
+  settlementId String               @map("settlement_id")
+  settlement   Settlement           @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  kind         SettlementLineKind
+  chargeType   SettlementChargeType @default(OTHER) @map("charge_type")
+  label        String
+
+  /// Net, like every contract amount; VAT is added at the rate stored here.
+  netFils        BigInt @map("net_fils")
+  vatBasisPoints Int    @default(500) @map("vat_basis_points")
+  vatFils        BigInt @map("vat_fils")
+  grossFils      BigInt @map("gross_fils")
+
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([settlementId])
+  @@map("settlement_lines")
 }

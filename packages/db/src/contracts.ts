@@ -254,7 +254,8 @@ async function issueInstallment(
   });
 }
 
-async function issueDueForContract(
+/** Issue every instalment of one contract that has fallen due. Callers hold its lock. */
+export async function issueDueForContract(
   tx: Tx,
   contract: ContractDimensions,
   today: IsoDate,

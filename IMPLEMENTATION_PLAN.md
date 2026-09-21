@@ -373,7 +373,7 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |
 | P2-10 | Insurance claim tracking with recovery posting |
 | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |
-| P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance |
+| P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance — **Built 2026-09-21** for contract endings: arrears shown live and never re-charged, staff add excess mileage, damage and fees (or credits), and settling raises one ordinary invoice. Handover/return records (P2-01–P2-04) still to come |
 | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |
 | P2-14 | Vehicle lifetime P&L view |
 

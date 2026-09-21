@@ -154,7 +154,8 @@
       "PARTIALLY_PAID": "Part paid",
       "PAID": "Paid",
       "OVERDUE": "Overdue",
-      "WAIVED": "Waived"
+      "WAIVED": "Waived",
+      "CANCELLED": "Cancelled"
     },
     "charges": {
       "MONTHLY_RENTAL": "Rental",
@@ -1455,5 +1456,78 @@
       "dates": "Enter the dates cover runs from and to."
     },
     "noneInForce": "No cover in force"
+  },
+  "settlements": {
+    "title": "Ending this contract",
+    "openHint": "Open the reckoning when the car comes back or the customer stops early. What is already invoiced stays owed; add here only what is new.",
+    "reason": "Why is it ending?",
+    "reasons": {
+      "EARLY_TERMINATION": "Customer stopped early",
+      "END_OF_TERM": "Term finished",
+      "RETURN": "Car returned by agreement"
+    },
+    "returnedMileage": "Mileage on return (km)",
+    "open": "Open settlement",
+    "opening": "Opening…",
+    "openTitle": "Settlement",
+    "arrears": "Already invoiced and unpaid",
+    "charges": "New charges",
+    "credits": "Taken off",
+    "finalInvoice": "Final invoice",
+    "totalDue": "Total to settle",
+    "linesTitle": "Lines",
+    "noLines": "Nothing added yet.",
+    "addLine": "Add",
+    "adding": "Adding…",
+    "kind": "Kind",
+    "kinds": {
+      "CHARGE": "Charge",
+      "CREDIT": "Credit"
+    },
+    "chargeType": "Type",
+    "chargeTypes": {
+      "EXCESS_MILEAGE": "Excess mileage",
+      "DAMAGE": "Damage",
+      "FEE": "Fee",
+      "OTHER": "Other"
+    },
+    "label": "Description",
+    "amount": "Amount (AED, excluding VAT)",
+    "remove": "Remove",
+    "removing": "Removing…",
+    "settle": "Settle and invoice",
+    "settling": "Settling…",
+    "settled": "Settled on {date}.",
+    "settleHint": "Raises one invoice for the new charges less the credits, due today. Nothing already invoiced is charged again.",
+    "nothingToInvoice": "Nothing new to invoice.",
+    "endTitle": "End the contract",
+    "endHint": "Releases the car and cancels the months that never fell due. What is owed stays owed.",
+    "outcome": "Outcome",
+    "outcomes": {
+      "EARLY_TERMINATION": "Ended early",
+      "END_OF_TERM": "Ran its term"
+    },
+    "vehicleTo": "The car",
+    "vehicleTargets": {
+      "RETURNED": "Comes back to the fleet",
+      "SOLD": "Goes to the customer (buyout)"
+    },
+    "end": "End contract",
+    "ending": "Ending…",
+    "ended": "Contract ended.",
+    "errors": {
+      "contractNotFound": "That contract no longer exists.",
+      "contractNotLive": "Only a live contract can be ended.",
+      "settlementExists": "This contract already has a settlement.",
+      "settlementNotFound": "That settlement no longer exists.",
+      "settlementClosed": "This settlement is already settled.",
+      "invalidLine": "Enter a description and an amount above zero.",
+      "lineNotFound": "That line no longer exists.",
+      "creditsExceedCharges": "The credits come to more than the charges. Waive an instalment instead.",
+      "settlementNotSettled": "Settle the settlement before ending the contract.",
+      "mileageBelowStart": "The mileage on return is below the car's last reading.",
+      "money": "Enter amounts in AED, for example 2,000 or 1,450.50.",
+      "mileage": "Enter the mileage as a whole number of kilometres."
+    }
   }
 }

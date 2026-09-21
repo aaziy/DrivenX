@@ -128,6 +128,19 @@ export {
   type NewPolicy,
   type PolicyState,
 } from "./insurance";
+export {
+  addSettlementLine,
+  openSettlement,
+  removeSettlementLine,
+  settlementTotals,
+  settleSettlement,
+  SettlementRuleError,
+  terminateContract,
+  type NewSettlementLine,
+  type SettlementRuleCode,
+  type SettlementTotals,
+  type TerminationOptions,
+} from "./settlements";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

@@ -15,7 +15,13 @@ import {
 } from "@drivenx/core";
 import {
   activateContract,
+  addSettlementLine,
   ContractRuleError,
+  openSettlement,
+  removeSettlementLine,
+  settleSettlement,
+  SettlementRuleError,
+  terminateContract,
   createContract,
   prisma,
   recordPayment,
@@ -264,4 +270,146 @@ export async function recordSupplierPaymentAction(
   } catch (error) {
     return { error: await explain(error, "recordSupplierPayment") };
   }
+}
+
+/** Every refusal the settlement service can give, worded for the reader. */
+async function explainSettlement(error: unknown, operation: string): Promise<string> {
+  const t = await getTranslations("settlements.errors");
+  if (error instanceof SettlementRuleError) return t(error.code);
+  if (error instanceof IllegalVehicleTransitionError) {
+    const ts = await getTranslations("vehicles.status");
+    const tc = await getTranslations("contracts.errors");
+    return tc("vehicleNotAvailable", { status: ts(error.from) });
+  }
+  if (error instanceof IllegalContractTransitionError) {
+    const ts = await getTranslations("contracts.status");
+    const tc = await getTranslations("contracts.errors");
+    return tc("illegalTransition", { from: ts(error.from), to: ts(error.to) });
+  }
+  return toUserMessage(operation, error);
+}
+
+const SETTLEMENT_REASONS = ["EARLY_TERMINATION", "END_OF_TERM", "RETURN"] as const;
+const SETTLEMENT_CHARGE_TYPES = ["EXCESS_MILEAGE", "DAMAGE", "FEE", "OTHER"] as const;
+
+export async function openSettlementAction(
+  contractId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("contract.cancel");
+  const te = await getTranslations("settlements.errors");
+
+  const reason = text(formData, "reason");
+  const mileageText = text(formData, "returnedMileageKm");
+  const mileage = mileageText === "" ? null : Number(mileageText);
+  if (mileage !== null && (!Number.isInteger(mileage) || mileage < 0)) return { error: te("mileage") };
+
+  try {
+    await asActor(principal, () =>
+      openSettlement(contractId, {
+        reason: (SETTLEMENT_REASONS as readonly string[]).includes(reason)
+          ? (reason as (typeof SETTLEMENT_REASONS)[number])
+          : "RETURN",
+        returnedMileageKm: mileage,
+        actorId: principal.id,
+      }),
+    );
+  } catch (error) {
+    return { error: await explainSettlement(error, "openSettlement") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function addSettlementLineAction(
+  contractId: string,
+  settlementId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("contract.cancel");
+  const te = await getTranslations("settlements.errors");
+
+  const amount = money(text(formData, "amount"));
+  if (amount === "invalid" || amount === null || amount === 0n) return { error: te("invalidLine") };
+  const chargeType = text(formData, "chargeType");
+
+  try {
+    await asActor(principal, () =>
+      addSettlementLine(
+        settlementId,
+        {
+          kind: text(formData, "kind") === "CREDIT" ? "CREDIT" : "CHARGE",
+          chargeType: (SETTLEMENT_CHARGE_TYPES as readonly string[]).includes(chargeType)
+            ? (chargeType as (typeof SETTLEMENT_CHARGE_TYPES)[number])
+            : "OTHER",
+          label: text(formData, "label"),
+          netFils: amount,
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainSettlement(error, "addSettlementLine") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function removeSettlementLineAction(
+  contractId: string,
+  lineId: string,
+  _previous: ContractFormState,
+  _formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("contract.cancel");
+  try {
+    await asActor(principal, () => removeSettlementLine(lineId));
+  } catch (error) {
+    return { error: await explainSettlement(error, "removeSettlementLine") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function settleSettlementAction(
+  contractId: string,
+  settlementId: string,
+  _previous: ContractFormState,
+  _formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("contract.cancel");
+  try {
+    await asActor(principal, () =>
+      settleSettlement(settlementId, { actorId: principal.id, today: businessDate(new Date()) }),
+    );
+  } catch (error) {
+    return { error: await explainSettlement(error, "settleSettlement") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function terminateContractAction(
+  contractId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("contract.cancel");
+  const t = await getTranslations("settlements");
+
+  const outcome = text(formData, "outcome") === "END_OF_TERM" ? "END_OF_TERM" : "EARLY_TERMINATION";
+  const vehicleTo = text(formData, "vehicleTo") === "SOLD" ? "SOLD" : "RETURNED";
+
+  try {
+    await asActor(principal, () =>
+      terminateContract(contractId, { outcome, vehicleTo, actorId: principal.id, today: businessDate(new Date()) }),
+    );
+  } catch (error) {
+    return { error: await explainSettlement(error, "terminateContract") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  revalidatePath("/contracts");
+  return { success: t("ended") };
 }

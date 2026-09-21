@@ -246,6 +246,54 @@ test.describe("contracts", () => {
     if (process.env.SHOT_DIR) writeFileSync(`${process.env.SHOT_DIR}/statement-en.pdf`, body);
   });
 
+  test("ends a contract: settle what is owed, then release the car", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    const { vehicleUrl } = await draftAndActivate(page);
+    const contractUrl = page.url();
+
+    // 3,570 invoiced for the first month and unpaid; the settlement adds to it.
+    const card = page.locator(".card", { has: page.getByRole("heading", { name: "Ending this contract" }) });
+    await card.getByLabel("Mileage on return (km)").fill("30000");
+    await card.getByRole("button", { name: "Open settlement" }).click();
+
+    const settlement = page.locator(".card", { has: page.getByRole("heading", { name: "Settlement", exact: true }) });
+    await expect(settlement).toContainText("AED 3,570.00");
+
+    await settlement.getByLabel("Description").fill("2,000 km over");
+    await settlement.getByLabel("Amount (AED, excluding VAT)").fill("1,000");
+    await settlement.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(settlement.locator("tbody tr", { hasText: "2,000 km over" })).toContainText("1,050.00");
+
+    // A credit worth more than the charges is refused rather than quietly owed back.
+    await settlement.getByLabel("Kind").selectOption({ label: "Credit" });
+    await settlement.getByLabel("Description").fill("Too generous");
+    await settlement.getByLabel("Amount (AED, excluding VAT)").fill("5,000");
+    await settlement.getByRole("button", { name: "Add", exact: true }).click();
+    await settlement.getByRole("button", { name: "Settle and invoice" }).click();
+    await expect(settlement.getByText("The credits come to more than the charges.")).toBeVisible();
+
+    await settlement.locator("tbody tr", { hasText: "Too generous" }).getByRole("button", { name: "Remove" }).click();
+    await settlement.getByRole("button", { name: "Settle and invoice" }).click();
+
+    // The settlement is now an ordinary invoice on the schedule, due today.
+    await expect(schedule(page).locator("tbody tr", { hasText: "Final settlement" })).toContainText("1,050.00");
+    await expect(settlement).toContainText("Settled on");
+
+    await pay(page, "4,620");
+    await page.goto(contractUrl);
+    await expect(schedule(page).locator("tbody tr", { hasText: "Final settlement" })).toContainText("Paid");
+
+    // Ending it releases the car and cancels the months that never fell due.
+    await page.locator(".card", { has: page.getByRole("heading", { name: "Settlement", exact: true }) })
+      .getByRole("button", { name: "End contract" })
+      .click();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Cancelled");
+    await expect(schedule(page).locator("tbody tr", { hasText: "Cancelled" }).first()).toBeVisible();
+
+    await page.goto(vehicleUrl);
+    await expect(page.getByText("Returned", { exact: true }).first()).toBeVisible();
+  });
+
   test("sales can draft a contract but not activate one", async ({ page }) => {
     // Sales holds contract.create, not contract.activate: a salesperson writes the deal,
     // someone else commits the car and the schedule.

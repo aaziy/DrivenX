@@ -146,3 +146,140 @@ export function SupplierPaymentForm({
     </form>
   );
 }
+
+const SETTLEMENT_REASONS = ["EARLY_TERMINATION", "END_OF_TERM", "RETURN"] as const;
+const SETTLEMENT_CHARGE_TYPES = ["EXCESS_MILEAGE", "DAMAGE", "FEE", "OTHER"] as const;
+
+/** Opens the reckoning: why it is ending, and what the odometer read on return. */
+export function OpenSettlementForm({ action }: { action: Action }) {
+  const [state, formAction] = useActionState<ContractFormState, FormData>(action, {});
+  const t = useTranslations("settlements");
+
+  return (
+    <form action={formAction} className="row" style={{ gap: 12, alignItems: "end", flexWrap: "wrap" }}>
+      {state.error ? (
+        <div style={{ flexBasis: "100%" }}>
+          <Alert tone="error">{state.error}</Alert>
+        </div>
+      ) : null}
+      <div className="field" style={{ marginBottom: 0 }}>
+        <label htmlFor="reason">{t("reason")}</label>
+        <select id="reason" name="reason" defaultValue="EARLY_TERMINATION">
+          {SETTLEMENT_REASONS.map((reason) => (
+            <option key={reason} value={reason}>
+              {t(`reasons.${reason}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <Field label={t("returnedMileage")} name="returnedMileageKm" type="number" dir="ltr" />
+      <SubmitButton pendingLabel={t("opening")}>{t("open")}</SubmitButton>
+    </form>
+  );
+}
+
+/** One more thing owed, or one thing taken off. */
+export function SettlementLineForm({ action }: { action: Action }) {
+  const [state, formAction] = useActionState<ContractFormState, FormData>(action, {});
+  const [kind, setKind] = useState<"CHARGE" | "CREDIT">("CHARGE");
+  const t = useTranslations("settlements");
+
+  return (
+    <form action={formAction} className="row" style={{ gap: 12, alignItems: "end", flexWrap: "wrap" }}>
+      {state.error ? (
+        <div style={{ flexBasis: "100%" }}>
+          <Alert tone="error">{state.error}</Alert>
+        </div>
+      ) : null}
+      <div className="field" style={{ marginBottom: 0 }}>
+        <label htmlFor="kind">{t("kind")}</label>
+        <select id="kind" name="kind" value={kind} onChange={(e) => setKind(e.target.value as "CHARGE" | "CREDIT")}>
+          {(["CHARGE", "CREDIT"] as const).map((value) => (
+            <option key={value} value={value}>
+              {t(`kinds.${value}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      {kind === "CHARGE" ? (
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="chargeType">{t("chargeType")}</label>
+          <select id="chargeType" name="chargeType" defaultValue="EXCESS_MILEAGE">
+            {SETTLEMENT_CHARGE_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t(`chargeTypes.${type}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      <div className="field" style={{ marginBottom: 0, flex: "1 1 200px" }}>
+        <label htmlFor="label">{t("label")}</label>
+        <input id="label" name="label" required />
+      </div>
+      {/* Its own id: the payment form on this page also has an "amount" field. */}
+      <Field label={t("amount")} name="amount" id="settlementAmount" required dir="ltr" />
+      <SubmitButton variant="secondary" pendingLabel={t("adding")}>
+        {t("addLine")}
+      </SubmitButton>
+    </form>
+  );
+}
+
+/** A one-button form: removing a line, settling, and other acts with nothing to fill in. */
+export function ActionButton({
+  action,
+  label,
+  pendingLabel,
+  variant = "secondary",
+}: {
+  action: Action;
+  label: string;
+  pendingLabel: string;
+  variant?: "primary" | "secondary";
+}) {
+  const [state, formAction] = useActionState<ContractFormState, FormData>(action, {});
+  return (
+    <form action={formAction} className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <SubmitButton variant={variant} pendingLabel={pendingLabel}>
+        {label}
+      </SubmitButton>
+      {state.error ? <span className="field-error">{state.error}</span> : null}
+    </form>
+  );
+}
+
+/** Ends the contract: how it ended, and where the car goes. */
+export function TerminateForm({ action, canSell }: { action: Action; canSell: boolean }) {
+  const [state, formAction] = useActionState<ContractFormState, FormData>(action, {});
+  const t = useTranslations("settlements");
+
+  return (
+    <form action={formAction} className="row" style={{ gap: 12, alignItems: "end", flexWrap: "wrap" }}>
+      {state.error ? (
+        <div style={{ flexBasis: "100%" }}>
+          <Alert tone="error">{state.error}</Alert>
+        </div>
+      ) : null}
+      <div className="field" style={{ marginBottom: 0 }}>
+        <label htmlFor="outcome">{t("outcome")}</label>
+        <select id="outcome" name="outcome" defaultValue="EARLY_TERMINATION">
+          {(["EARLY_TERMINATION", "END_OF_TERM"] as const).map((outcome) => (
+            <option key={outcome} value={outcome}>
+              {t(`outcomes.${outcome}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field" style={{ marginBottom: 0 }}>
+        <label htmlFor="vehicleTo">{t("vehicleTo")}</label>
+        <select id="vehicleTo" name="vehicleTo" defaultValue="RETURNED">
+          <option value="RETURNED">{t("vehicleTargets.RETURNED")}</option>
+          {/* Ownership transfers only on a lease-to-own, and only from that status. */}
+          {canSell ? <option value="SOLD">{t("vehicleTargets.SOLD")}</option> : null}
+        </select>
+      </div>
+      <SubmitButton pendingLabel={t("ending")}>{t("end")}</SubmitButton>
+    </form>
+  );
+}
