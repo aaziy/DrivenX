@@ -76,6 +76,8 @@ model User {
   leadQuotes            LeadQuote[]
   insurancePolicies     InsurancePolicy[]
   maintenanceRecords    MaintenanceRecord[]
+  handovers             Handover[]
+  damagePoints          DamagePoint[]
   settlementsOpened     Settlement[]           @relation("SettlementOpenedBy")
   settlementsSettled    Settlement[]           @relation("SettlementSettledBy")
   settlementLines       SettlementLine[]
@@ -302,6 +304,8 @@ enum DocumentOwnerType {
   CONTRACT
   INSURANCE_POLICY
   MAINTENANCE
+  HANDOVER
+  DAMAGE_POINT
 
   @@map("document_owner_type")
 }
@@ -524,6 +528,7 @@ model Vehicle {
   leadQuotes        LeadQuote[]
   insurancePolicies InsurancePolicy[]
   maintenance       MaintenanceRecord[]
+  handovers         Handover[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -692,6 +697,7 @@ model Contract {
   payments         Payment[]
   statusChanges    ContractStatusChange[]
   supplierInvoices SupplierInvoice[]
+  handovers        Handover[]
   settlement       Settlement?
   maintenance      MaintenanceRecord[]
 
@@ -1283,4 +1289,146 @@ model MaintenanceRecord {
   @@index([nextServiceOn])
   @@index([nextServiceKm])
   @@map("maintenance_records")
+}
+
+// ===========================================================================
+// Handover & return (P2-01 – P2-04, SOW §12)
+// ===========================================================================
+
+enum HandoverType {
+  /// The car going out to the customer.
+  HANDOVER
+  /// The car coming back.
+  RETURN
+
+  @@map("handover_type")
+}
+
+enum HandoverStatus {
+  /// Being filled in at the counter, with the car and the customer present.
+  DRAFT
+  /// Both signatures taken. The readings are evidence now, so they stop being editable.
+  SIGNED
+
+  @@map("handover_status")
+}
+
+enum VehiclePanel {
+  FRONT_BUMPER
+  BONNET
+  WINDSCREEN
+  ROOF
+  REAR_SCREEN
+  BOOT
+  REAR_BUMPER
+  FRONT_LEFT_WING
+  FRONT_LEFT_DOOR
+  REAR_LEFT_DOOR
+  REAR_LEFT_WING
+  FRONT_RIGHT_WING
+  FRONT_RIGHT_DOOR
+  REAR_RIGHT_DOOR
+  REAR_RIGHT_WING
+  WHEELS
+  INTERIOR
+  MECHANICAL
+  OTHER
+
+  @@map("vehicle_panel")
+}
+
+enum DamageSeverity {
+  MINOR
+  MODERATE
+  SEVERE
+
+  @@map("damage_severity")
+}
+
+/// The condition of a car as it changed hands (P2-01, SOW §12).
+///
+/// Handing a car over and taking it back are the same form read in two directions, so
+/// they are one model with a direction rather than two. That is what lets the return be
+/// laid against the handover field for field — and the difference between them is exactly
+/// what the final settlement charges for, so it has to be demonstrable rather than
+/// asserted.
+///
+/// One of each per contract. A car swapped mid-term is a change of vehicle the system
+/// does not model, and quietly allowing a second handover would hide that rather than
+/// surface it.
+model Handover {
+  id         String       @id @default(cuid())
+  contractId String       @map("contract_id")
+  contract   Contract     @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  /// Denormalised from the contract so fleet queries need no join, and so the record
+  /// still names the right car if the contract is ever pointed at another one.
+  vehicleId  String       @map("vehicle_id")
+  vehicle    Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  type       HandoverType
+
+  status HandoverStatus @default(DRAFT)
+
+  /// A timestamp, not a date: which of two cars went out first on a busy morning is a
+  /// question the handover form is expected to answer.
+  occurredAt DateTime @map("occurred_at")
+
+  /// Also recorded as a mileage reading, like the odometer at a garage.
+  odometerKm  Int @map("odometer_km")
+  /// Off the gauge, in eighths of a tank. See core/fleet/handover.ts.
+  fuelEighths Int @map("fuel_eighths")
+
+  /// Everything that is not a mark on the diagram: a warning light, a missing spare.
+  conditionNotes String? @map("condition_notes")
+
+  /// Signatures live in object storage like any other file, and the name is captured
+  /// beside them: a signature is a scrawl, and the name is what makes it legible.
+  customerSignatureKey  String?   @map("customer_signature_key")
+  customerSignatureName String?   @map("customer_signature_name")
+  customerSignedAt      DateTime? @map("customer_signed_at")
+  staffSignatureKey     String?   @map("staff_signature_key")
+  staffSignatureName    String?   @map("staff_signature_name")
+  staffSignedAt         DateTime? @map("staff_signed_at")
+
+  damagePoints DamagePoint[]
+
+  recordedById String?   @map("recorded_by_id")
+  recordedBy   User?     @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  /// One of each per contract, but only among the forms that still stand: a draft that
+  /// was thrown away must free its slot, and a plain unique index would hold it for ever.
+  /// Enforced by a partial unique index in the migration, which Prisma cannot express.
+  @@index([contractId, type])
+  @@index([vehicleId, occurredAt])
+  @@index([status])
+  @@map("handovers")
+}
+
+/// One mark on the car (P2-02).
+///
+/// The position is a fraction of the diagram box rather than a pixel, so the same mark
+/// draws correctly on a phone at the kerbside and on the A4 report afterwards. Panels the
+/// diagram cannot show — interior, wheels, mechanical — carry no position at all, because
+/// putting them somewhere on the outline would make the picture lie.
+model DamagePoint {
+  id         String         @id @default(cuid())
+  handoverId String         @map("handover_id")
+  handover   Handover       @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  panel      VehiclePanel
+  severity   DamageSeverity @default(MINOR)
+
+  positionX Float? @map("position_x")
+  positionY Float? @map("position_y")
+
+  note String?
+
+  /// Photographs hang off this row through the document engine, owner type DAMAGE_POINT.
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([handoverId])
+  @@map("damage_points")
 }

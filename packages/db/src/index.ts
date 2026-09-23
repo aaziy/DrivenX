@@ -150,15 +150,27 @@ export {
   type NewMaintenance,
   type ServiceStatus,
 } from "./maintenance";
+export {
+  addDamagePoint,
+  discardHandover,
+  excessMileageForContract,
+  handoverById,
+  handoversForContract,
+  HandoverRuleError,
+  recordHandover,
+  removeDamagePoint,
+  signHandover,
+  updateHandover,
+  type ContractExcessMileage,
+  type HandoverRuleCode,
+  type HandoverSignatures,
+  type NewDamagePoint,
+  type NewHandover,
+} from "./handovers";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";
-export {
-  globalSearch,
-  type SearchHit,
-  type SearchKind,
-  type SearchOptions,
-} from "./search";
+export { globalSearch, type SearchHit, type SearchKind, type SearchOptions } from "./search";
 export {
   withAuditContext,
   withoutAudit,

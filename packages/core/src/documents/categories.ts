@@ -12,7 +12,15 @@
  */
 
 /** Mirrors the `DocumentOwnerType` enum in the Prisma schema. */
-export type DocumentOwner = "CUSTOMER" | "SUPPLIER" | "VEHICLE" | "CONTRACT" | "INSURANCE_POLICY";
+export type DocumentOwner =
+  | "CUSTOMER"
+  | "SUPPLIER"
+  | "VEHICLE"
+  | "CONTRACT"
+  | "INSURANCE_POLICY"
+  | "MAINTENANCE"
+  | "HANDOVER"
+  | "DAMAGE_POINT";
 
 export interface DocumentCategoryDefinition {
   key: string;
@@ -121,6 +129,22 @@ export const DOCUMENT_CATEGORIES = [
     defaultReminderOffsets: [30, 15, 7],
   },
 
+  // -- Handover and return (§12) — photographs taken at the counter --
+  {
+    key: "handover_photo",
+    label: "Handover photo",
+    appliesTo: ["HANDOVER"],
+    requiresExpiry: false,
+    defaultReminderOffsets: [],
+  },
+  {
+    key: "damage_photo",
+    label: "Damage photo",
+    appliesTo: ["DAMAGE_POINT"],
+    requiresExpiry: false,
+    defaultReminderOffsets: [],
+  },
+
   // -- Contract (§9, §12) --
   {
     key: "signed_contract",
@@ -132,7 +156,7 @@ export const DOCUMENT_CATEGORIES = [
   {
     key: "handover_report",
     label: "Handover or return report",
-    appliesTo: ["CONTRACT"],
+    appliesTo: ["CONTRACT", "HANDOVER"],
     requiresExpiry: false,
     defaultReminderOffsets: [],
   },

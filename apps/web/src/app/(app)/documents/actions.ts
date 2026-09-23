@@ -26,6 +26,9 @@ const OWNER_PATH: Record<DocumentOwnerType, string> = {
   // A policy and a service record are both shown on their car's page.
   INSURANCE_POLICY: "vehicles",
   MAINTENANCE: "vehicles",
+  // A handover form and the marks on it are both read from the contract they belong to.
+  HANDOVER: "contracts",
+  DAMAGE_POINT: "contracts",
 };
 
 /** The owner must exist before a document is hung off it — see the schema's note on
@@ -46,7 +49,13 @@ async function ownerExists(ownerType: DocumentOwnerType, ownerId: string): Promi
   if (ownerType === "INSURANCE_POLICY") {
     return (await prisma.insurancePolicy.count({ where: { id: ownerId, deletedAt: null } })) > 0;
   }
-  return (await prisma.maintenanceRecord.count({ where: { id: ownerId, deletedAt: null } })) > 0;
+  if (ownerType === "MAINTENANCE") {
+    return (await prisma.maintenanceRecord.count({ where: { id: ownerId, deletedAt: null } })) > 0;
+  }
+  if (ownerType === "HANDOVER") {
+    return (await prisma.handover.count({ where: { id: ownerId, deletedAt: null } })) > 0;
+  }
+  return (await prisma.damagePoint.count({ where: { id: ownerId } })) > 0;
 }
 
 function toDocumentStatus(expiryDate: Date | null, offsets: number[], now: Date): DocumentStatus {

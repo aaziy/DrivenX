@@ -21,3 +21,5 @@ export * from "./pricing/deal";
 export * from "./contracts";
 export * from "./leads/status";
 export * from "./fleet/maintenance";
+export * from "./fleet/handover";
+export * from "./fleet/damage";
