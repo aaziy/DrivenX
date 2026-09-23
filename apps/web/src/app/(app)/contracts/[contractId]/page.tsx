@@ -10,6 +10,7 @@ import { currentLocale } from "@/i18n/locale";
 import { requirePermission } from "@/lib/auth";
 
 import { DocumentsCard } from "../../documents/documents-card";
+import { HandoverCard } from "./handover-card";
 import {
   activateContractAction,
   addSettlementLineAction,
@@ -38,7 +39,7 @@ async function loadContract(contractId: string) {
     where: { id: contractId, deletedAt: null },
     include: {
       customer: { select: { id: true, code: true, fullName: true, mobile: true } },
-      vehicle: { select: { id: true, code: true, make: true, model: true, plateCode: true, plateNumber: true, status: true } },
+      vehicle: { select: { id: true, code: true, make: true, model: true, plateCode: true, plateNumber: true, status: true, currentMileageKm: true } },
       supplier: { select: { id: true, companyName: true } },
       installments: {
         orderBy: [{ dueDate: "asc" }, { sequence: "asc" }],
@@ -477,6 +478,21 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
               </table>
             </div>
           </div>
+        ) : null}
+
+        {can("handover.view") ? (
+          <HandoverCard
+            contractId={contract.id}
+            customerName={contract.customer.fullName}
+            staffName={principal.fullName}
+            odometerKm={contract.vehicle.currentMileageKm}
+            mileageAllowanceKm={contract.mileageAllowanceKm}
+            excessMileageRateFils={contract.excessMileageRateFils}
+            canManage={can("handover.manage")}
+            canSeeDocuments={can("document.view")}
+            canUpload={can("document.upload")}
+            canDelete={can("document.delete")}
+          />
         ) : null}
 
         {can("document.view") ? (

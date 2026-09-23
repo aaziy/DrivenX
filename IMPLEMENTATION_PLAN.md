@@ -362,10 +362,10 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 
 | ID | Task |
 |---|---|
-| P2-01 | `Handover` model: type (handover/return), date/time, mileage, fuel level, condition |
-| P2-02 | Damage marking on a vehicle diagram, per-point photos |
-| P2-03 | Signature capture — customer and staff |
-| P2-04 | Handover / return PDF report |
+| P2-01 | `Handover` model: type (handover/return), date/time, mileage, fuel level, condition — **Built 2026-09-23.** One record with a direction, one of each per contract, so the return reads against the handover field for field. A draft at the counter, evidence once signed: only signing posts the odometer to the fleet |
+| P2-02 | Damage marking on a vehicle diagram, per-point photos — **Built 2026-09-23.** The panel is derived from where the mark was put, against one region table in `core/fleet/damage.ts` that the screen and the PDF both draw. Interior, wheels and mechanical carry no position. Photos hang off each mark through the 1A document engine |
+| P2-03 | Signature capture — customer and staff — **Built 2026-09-23.** Drawn on a canvas, stored as PNGs through the same upload validation as a passport scan. Both signatures together or neither, enforced in the database as well as the service |
+| P2-04 | Handover / return PDF report — **Built 2026-09-23.** English and Arabic, signatures embedded rather than linked, the same diagram as the screen. Excess mileage is computed from the two signed readings against the contract's allowance and offered to the settlement (P2-12) instead of being typed in |
 | P2-05 | `MaintenanceRecord`: service date, mileage, garage/vendor, type, description, cost, invoice, next service date/mileage → `cost.maintenance` — **Built 2026-09-21.** Bill held net (input VAT recoverable), costed against the car and the contract it was out on that day |
 | P2-06 | Maintenance due alerts by date and mileage — **Built 2026-09-21.** Date and distance markers, 14 days / 500 km of warning, one alert per state; nightly `maintenance-due` job |
 | P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered |

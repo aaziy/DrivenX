@@ -593,7 +593,9 @@
       "vehicle_other": "Other vehicle document",
       "insurance_policy": "Insurance policy",
       "signed_contract": "Signed contract",
-      "handover_report": "Handover or return report"
+      "handover_report": "Handover or return report",
+      "handover_photo": "Handover photo",
+      "damage_photo": "Damage photo"
     }
   },
   "search": {
@@ -1584,5 +1586,134 @@
       "mileage": "Enter the odometer as a whole number of kilometres.",
       "date": "Enter the date of the work."
     }
+  },
+  "handovers": {
+    "cardTitle": "Handover and return",
+    "hint": "The condition of the car as it changed hands. The return is read against the handover: the difference is what the final settlement charges for.",
+    "handoverTitle": "Handover",
+    "returnTitle": "Return",
+    "returnNeedsHandover": "Record the handover first. Without it there is nothing to measure the return against.",
+    "none": "Not recorded.",
+    "km": "{km, number} km",
+    "fuelReading": "{eighths}/{max} of a tank",
+    "recordHandover": "Record handover",
+    "recordReturn": "Record return",
+    "saving": "Saving…",
+    "signing": "Signing…",
+    "discard": "Discard this draft",
+    "printReport": "Print the report",
+    "status": {
+      "DRAFT": "Draft",
+      "SIGNED": "Signed"
+    },
+    "form": {
+      "occurredAt": "Date and time",
+      "odometer": "Odometer",
+      "fuel": "Fuel",
+      "condition": "Condition",
+      "conditionHint": "Warning lights, missing spare, anything not marked on the diagram"
+    },
+    "damage": {
+      "title": "Damage",
+      "addTitle": "Add a mark",
+      "hint": "Click the car where the damage is. The panel is taken from where you click, so it still means something six months from now.",
+      "diagramLabel": "The car seen from above; click to mark damage",
+      "severity": "Severity",
+      "elsewhere": "Not on the body",
+      "onDiagram": "On the diagram",
+      "note": "Note",
+      "add": "Add",
+      "remove": "Remove",
+      "none": "No damage marked.",
+      "recordLabel": "The car seen from above, with the damage marked"
+    },
+    "severity": {
+      "MINOR": "Minor",
+      "MODERATE": "Moderate",
+      "SEVERE": "Severe"
+    },
+    "panels": {
+      "BONNET": "Bonnet",
+      "BOOT": "Boot",
+      "FRONT_BUMPER": "Front bumper",
+      "FRONT_LEFT_DOOR": "Front left door",
+      "FRONT_LEFT_WING": "Front left wing",
+      "FRONT_RIGHT_DOOR": "Front right door",
+      "FRONT_RIGHT_WING": "Front right wing",
+      "INTERIOR": "Interior",
+      "MECHANICAL": "Mechanical",
+      "OTHER": "Other",
+      "REAR_BUMPER": "Rear bumper",
+      "REAR_LEFT_DOOR": "Rear left door",
+      "REAR_LEFT_WING": "Rear left wing",
+      "REAR_RIGHT_DOOR": "Rear right door",
+      "REAR_RIGHT_WING": "Rear right wing",
+      "REAR_SCREEN": "Rear screen",
+      "ROOF": "Roof",
+      "WHEELS": "Wheels and tyres",
+      "WINDSCREEN": "Windscreen"
+    },
+    "sign": {
+      "title": "Signatures",
+      "hint": "Both signatures are taken together. A form with one is not evidence, and the readings can no longer be changed once it is signed.",
+      "customerName": "Customer's name",
+      "customerSignature": "Customer's signature",
+      "staffName": "Staff name",
+      "staffSignature": "Staff signature",
+      "clear": "Clear",
+      "submit": "Sign and close the form",
+      "signedBy": "Signed by"
+    },
+    "excess": {
+      "travelled": "Distance travelled",
+      "allowance": "Allowance",
+      "unlimited": "Unlimited",
+      "over": "Over the allowance",
+      "charge": "Excess mileage",
+      "hint": "Add this to the settlement as an excess mileage line if it is being charged.",
+      "fuelShort": "The car came back {eighths}/8 of a tank lighter than it went out."
+    },
+    "errors": {
+      "contractNotFound": "This contract no longer exists.",
+      "contractNotOpen": "This contract is not open for a handover or a return.",
+      "handoverExists": "That form has already been recorded for this contract.",
+      "handoverNotFound": "That form no longer exists.",
+      "handoverSigned": "This form has been signed and can no longer be changed.",
+      "handoverNotSigned": "This form has not been signed yet.",
+      "noHandoverYet": "Record the handover before the return.",
+      "returnBeforeHandover": "The car cannot come back on a lower odometer than it went out on.",
+      "fuelOutOfRange": "The fuel reading must be between empty and full.",
+      "odometerImplausible": "That odometer reading is not a plausible one.",
+      "odometerBackwards": "The car has been read higher since. An odometer does not run backwards.",
+      "invalidDamagePoint": "Mark the damage on the car, or choose where it is from the list.",
+      "damagePointNotFound": "That mark no longer exists.",
+      "signatureIncomplete": "Both names are needed.",
+      "signatureMissing": "Both signatures are needed.",
+      "occurredAt": "Enter the date and time the car changed hands.",
+      "odometer": "Enter the odometer reading."
+    }
+  },
+  "handoverPdf": {
+    "contract": "Contract",
+    "customer": "Customer",
+    "vehicle": "Vehicle",
+    "customerCode": "Customer no.",
+    "mobile": "Mobile",
+    "vehicleCode": "Fleet no.",
+    "plate": "Plate",
+    "vin": "Chassis (VIN)",
+    "occurredAt": "Date and time",
+    "odometer": "Odometer",
+    "fuel": "Fuel",
+    "condition": "Condition",
+    "damage": "Damage recorded",
+    "noDamage": "No damage was marked on this car.",
+    "diagramNote": "Seen from above, nose at the top. Left and right are the driver's.",
+    "signatures": "Signatures",
+    "customerSignature": "Customer's signature",
+    "staffSignature": "For DrivenX",
+    "unsigned": "Not signed",
+    "generated": "Generated",
+    "page": "Page {current} of {total}"
   }
 }

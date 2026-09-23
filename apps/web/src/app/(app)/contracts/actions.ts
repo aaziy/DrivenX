@@ -11,12 +11,20 @@ import {
   InvalidPaymentError,
   isIsoDate,
   Money,
+  type DamageSeverity,
   type Fils,
+  type VehiclePanel,
 } from "@drivenx/core";
 import {
   activateContract,
+  addDamagePoint,
   addSettlementLine,
   ContractRuleError,
+  discardHandover,
+  HandoverRuleError,
+  recordHandover,
+  removeDamagePoint,
+  signHandover,
   openSettlement,
   removeSettlementLine,
   settleSettlement,
@@ -29,10 +37,14 @@ import {
   SupplierInvoiceRuleError,
   waiveInstallment,
   type NewContract,
+  type NewDamagePoint,
 } from "@drivenx/db";
+
+import { buildObjectKey, validateUpload } from "@drivenx/storage";
 
 import { asActor, requirePermission } from "@/lib/auth";
 import { toUserMessage } from "@/lib/log";
+import { maxUploadBytes, storage } from "@/lib/storage";
 
 export interface ContractFormState {
   error?: string;
@@ -412,4 +424,238 @@ export async function terminateContractAction(
   revalidatePath(`/contracts/${contractId}`);
   revalidatePath("/contracts");
   return { success: t("ended") };
+}
+
+// ---------------------------------------------------------------------------
+// Handover and return (P2-01 – P2-03, SOW §12)
+// ---------------------------------------------------------------------------
+
+async function explainHandover(error: unknown, operation: string): Promise<string> {
+  const t = await getTranslations("handovers.errors");
+  if (error instanceof HandoverRuleError) return t(error.code);
+  return toUserMessage(operation, error);
+}
+
+const SEVERITIES = ["MINOR", "MODERATE", "SEVERE"] as const;
+
+function severityFrom(value: string): DamageSeverity {
+  return (SEVERITIES as readonly string[]).includes(value) ? (value as DamageSeverity) : "MINOR";
+}
+
+/** A coordinate the diagram sent back: a fraction of the picture, or nothing at all. */
+function fraction(value: string): number | null {
+  if (value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : null;
+}
+
+/**
+ * The marks made while the form was being filled in, as the client sent them.
+ *
+ * Nothing here is trusted: the panel is re-derived from the position by the domain layer,
+ * and anything that is not a mark is dropped rather than half-read.
+ */
+function parseDamagePoints(raw: string): NewDamagePoint[] {
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.flatMap((entry): NewDamagePoint[] => {
+    if (typeof entry !== "object" || entry === null) return [];
+    const record = entry as Record<string, unknown>;
+    const x = typeof record["positionX"] === "number" ? record["positionX"] : null;
+    const y = typeof record["positionY"] === "number" ? record["positionY"] : null;
+    return [
+      {
+        panel: typeof record["panel"] === "string" ? (record["panel"] as VehiclePanel) : undefined,
+        severity: severityFrom(typeof record["severity"] === "string" ? record["severity"] : ""),
+        positionX: x,
+        positionY: y,
+        note: typeof record["note"] === "string" ? record["note"] : null,
+      },
+    ];
+  });
+}
+
+export async function recordHandoverAction(
+  contractId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("handover.manage");
+  const te = await getTranslations("handovers.errors");
+
+  const type = text(formData, "type") === "RETURN" ? "RETURN" : "HANDOVER";
+  const occurredAt = new Date(text(formData, "occurredAt"));
+  if (Number.isNaN(occurredAt.getTime())) return { error: te("occurredAt") };
+
+  const odometerKm = Number(text(formData, "odometerKm"));
+  if (!Number.isInteger(odometerKm) || odometerKm < 0) return { error: te("odometer") };
+
+  const fuelEighths = Number(text(formData, "fuelEighths"));
+
+  try {
+    await asActor(principal, () =>
+      recordHandover(
+        {
+          contractId,
+          type,
+          occurredAt,
+          odometerKm,
+          fuelEighths,
+          conditionNotes: text(formData, "conditionNotes") || null,
+          damagePoints: parseDamagePoints(text(formData, "damagePoints")),
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainHandover(error, "recordHandover") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function addDamagePointAction(
+  contractId: string,
+  handoverId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("handover.manage");
+  const te = await getTranslations("handovers.errors");
+
+  const positionX = fraction(text(formData, "positionX"));
+  const positionY = fraction(text(formData, "positionY"));
+  const panel = text(formData, "panel");
+  if (!panel) return { error: te("invalidDamagePoint") };
+
+  try {
+    await asActor(principal, () =>
+      addDamagePoint(
+        handoverId,
+        {
+          panel: panel as VehiclePanel,
+          severity: severityFrom(text(formData, "severity")),
+          positionX,
+          positionY,
+          note: text(formData, "note") || null,
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainHandover(error, "addDamagePoint") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function removeDamagePointAction(
+  contractId: string,
+  damagePointId: string,
+  _previous: ContractFormState,
+  _formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("handover.manage");
+  try {
+    await asActor(principal, () => removeDamagePoint(damagePointId));
+  } catch (error) {
+    return { error: await explainHandover(error, "removeDamagePoint") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+export async function discardHandoverAction(
+  contractId: string,
+  handoverId: string,
+  _previous: ContractFormState,
+  _formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("handover.manage");
+  try {
+    await asActor(principal, () => discardHandover(handoverId));
+  } catch (error) {
+    return { error: await explainHandover(error, "discardHandover") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  return {};
+}
+
+/**
+ * A signature drawn in the browser, put in storage like any other upload.
+ *
+ * The data URL's own claim about its type is ignored: the bytes are sniffed, size-checked
+ * and stored under the same rules as a passport scan, because "it came from our own
+ * canvas" is an assumption about the browser rather than about the request.
+ */
+async function storeSignature(handoverId: string, dataUrl: string): Promise<string | null> {
+  const comma = dataUrl.indexOf(",");
+  if (!dataUrl.startsWith("data:") || comma < 0) return null;
+
+  const bytes = new Uint8Array(Buffer.from(dataUrl.slice(comma + 1), "base64"));
+  const validation = validateUpload(
+    { fileName: `signature-${handoverId}.png`, bytes },
+    { maxBytes: maxUploadBytes() },
+  );
+  if (!validation.valid) return null;
+
+  const key = buildObjectKey("signature", handoverId, validation.mimeType);
+  await storage().put({ key, bytes, mimeType: validation.mimeType, fileName: validation.fileName });
+  return key;
+}
+
+export async function signHandoverAction(
+  contractId: string,
+  handoverId: string,
+  _previous: ContractFormState,
+  formData: FormData,
+): Promise<ContractFormState> {
+  const principal = await requirePermission("handover.manage");
+  const te = await getTranslations("handovers.errors");
+
+  const customerSignatureName = text(formData, "customerSignatureName");
+  const staffSignatureName = text(formData, "staffSignatureName");
+  if (!customerSignatureName || !staffSignatureName) return { error: te("signatureIncomplete") };
+
+  const customerDrawing = text(formData, "customerSignature");
+  const staffDrawing = text(formData, "staffSignature");
+  if (!customerDrawing || !staffDrawing) return { error: te("signatureMissing") };
+
+  let customerSignatureKey: string | null;
+  let staffSignatureKey: string | null;
+  try {
+    // Both uploads before the write: a form that signed with one signature in storage and
+    // the other lost to a network error is exactly what the rule below forbids.
+    [customerSignatureKey, staffSignatureKey] = await Promise.all([
+      storeSignature(handoverId, customerDrawing),
+      storeSignature(handoverId, staffDrawing),
+    ]);
+  } catch (error) {
+    return { error: await toUserMessage("storeSignature", error) };
+  }
+  if (!customerSignatureKey || !staffSignatureKey) return { error: te("signatureMissing") };
+
+  try {
+    await asActor(principal, () =>
+      signHandover(
+        handoverId,
+        { customerSignatureKey, customerSignatureName, staffSignatureKey, staffSignatureName },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainHandover(error, "signHandover") };
+  }
+  revalidatePath(`/contracts/${contractId}`);
+  // No success message: signing replaces the form with the signed record, so a message
+  // returned here would be rendered by a form that no longer exists. The badge is the
+  // evidence, as it is for contract activation.
+  return {};
 }
