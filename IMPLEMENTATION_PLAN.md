@@ -5,8 +5,8 @@ this one decides *how, in what order, and how we know it works*.
 
 **Status:** Phases 0, 1 and 2 complete; Phase 3 started · **Last updated:** 2026-09-24
 
-**Progress:** 89 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ▓▓░░░░░ 3/12 · Phase 4 ☐
+**Progress:** 93 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ▓▓░░░░░ 3/12 · Phase 4 ▓▓▓░░░░ 4/12
 
 ---
 
@@ -436,10 +436,10 @@ Contractual deliverables. Not optional, not compressible.
 | ☐ | P4-02 | Security: rate limiting, upload validation, at-rest document encryption, dependency audit, session hardening, security headers |
 | ☐ | P4-03 | Penetration test pass on auth, RBAC, IDOR, file access |
 | ☐ | P4-04 | Load test at 3× projected fleet size |
-| ☐ | P4-05 | `docs/database.md` — schema, relationships, ERD |
-| ☐ | P4-06 | `docs/deployment.md` — runbook, env vars, migrations, rollback |
-| ☐ | P4-07 | `docs/architecture.md` — technical documentation |
-| ☐ | P4-08 | `docs/admin-manual.md` — end-user guide |
+| ✅ | P4-05 | `docs/database.md` — schema, relationships, ERD — **Written 2026-09-24.** The shape and the reasons, not a column listing: the schema file is that. Ends with what else to change when you change one thing |
+| ✅ | P4-06 | `docs/deployment.md` — runbook, env vars, migrations, rollback — **Written 2026-09-24.** Honest about the half that does not exist yet: no production deployment, no Dockerfiles, no backups, all waiting on the VPS (Q11). Written so that the day the server appears the work is mechanical |
+| ✅ | P4-07 | `docs/architecture.md` — technical documentation — **Written 2026-09-24.** For a developer who has just been handed the repository: the dependency direction, the patterns that recur, the testing layers, and the known debts stated plainly |
+| ✅ | P4-08 | `docs/admin-manual.md` — end-user guide — **Written 2026-09-24.** For the people who run the business on it. No technical knowledge assumed |
 | ☐ | P4-09 | Transfer source, DB, hosting, domain, API keys, Git repo to DrivenX ownership |
 | ☐ | P4-10 | **Audit for developer-personal dependencies — must be zero** |
 | ☐ | P4-11 | Admin credential handover |

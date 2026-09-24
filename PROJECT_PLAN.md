@@ -356,7 +356,7 @@ arrives, not by this order.*
 - [ ] Security pass: rate limiting, file upload validation, at-rest encryption for documents,
       dependency audit, session hardening
 - [ ] Load test at 3× projected fleet size
-- [ ] `docs/`: database documentation, deployment runbook, admin manual, technical architecture
+- [x] `docs/`: database documentation, deployment runbook, admin manual, technical architecture
 - [ ] Transfer of source, database, hosting, domain, API keys, Git repository to DrivenX ownership
 - [ ] **Verify zero dependencies on developer-personal accounts or credentials**
 - [ ] Admin credential handover + staff training session
