@@ -3,8 +3,9 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { businessDate, Money } from "@drivenx/core";
-import { profitReport, REPORT_DIMENSIONS, type ProfitFigures } from "@drivenx/db";
+import { categoryTotals, profitReport, REPORT_DIMENSIONS, type ProfitFigures } from "@drivenx/db";
 
+import { CategoryBreakdown } from "@/components/category-breakdown";
 import { requirePermission } from "@/lib/auth";
 import { salespeople } from "@/lib/leads";
 import { monthInput, profitabilityQuery } from "@/lib/reports/range";
@@ -30,11 +31,13 @@ export default async function ProfitabilityPage({
 
   const { view, from, to, valid: rangeValid, filters, search } = profitabilityQuery(params, businessDate(new Date()));
 
-  const [t, tTypes, format, report, people] = await Promise.all([
+  const [t, tTypes, format, report, breakdown, people] = await Promise.all([
     getTranslations("reports"),
     getTranslations("contracts.types"),
     getFormatter(),
     rangeValid ? profitReport(view, from, to, filters) : null,
+    // The same range grouped by what the money was, rather than by whose it was (P2-13).
+    rangeValid ? categoryTotals(from, to) : null,
     salespeople(),
   ]);
 
@@ -141,6 +144,18 @@ export default async function ProfitabilityPage({
             </button>
           </div>
         </form>
+
+        {breakdown && breakdown.length > 0 ? (
+          <div className="card">
+            <div className="card-header">
+              <h2>{t("breakdownTitle")}</h2>
+            </div>
+            <div className="card-body">
+              <p className="field-hint">{t("breakdownHint")}</p>
+              <CategoryBreakdown totals={breakdown} />
+            </div>
+          </div>
+        ) : null}
 
         <div className="card">
           <div className="card-header">

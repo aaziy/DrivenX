@@ -88,14 +88,18 @@ export {
   type Receivables,
 } from "./kpis";
 export {
+  categoryTotals,
   periodMonth,
   profitReport,
   REPORT_DIMENSIONS,
+  vehicleLifetime,
+  type CategoryTotal,
   type ProfitFigures,
   type ProfitReport,
   type ProfitRow,
   type ReportDimension,
   type ReportFilters,
+  type VehicleLifetime,
 } from "./reports";
 export {
   customerStatement,

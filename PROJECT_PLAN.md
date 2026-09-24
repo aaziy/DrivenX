@@ -3,7 +3,7 @@
 Internal working document. Source of truth for sequencing and architecture decisions.
 Derived from `DrivenX_Software_Scope_of_Work.pdf` (4 pages, 20 sections).
 
-**Status:** Phase 0 and Phase 1 shipped; Phase 2 in progress · **Last updated:** 2026-09-24
+**Status:** Phases 0, 1 and 2 shipped; Phase 3 next · **Last updated:** 2026-09-24
 
 ---
 
@@ -327,7 +327,7 @@ an automated reconciliation test.
 - [x] **Advanced expenses:** categorised, allocatable to vehicle / contract / company overhead
 - [x] **Final settlement on return:** excess mileage (settled here), damages, outstanding balance
 - [~] **PDF generation** for contracts, invoices, statements, handover and return reports — contracts, statements and handover/return ship; a tax invoice has no page of its own yet, and its layout waits on open question 13 (TRN, FTA numbering)
-- [ ] Advanced reporting and drill-down across all new cost categories
+- [x] Advanced reporting and drill-down across all new cost categories
 
 **Done when:** vehicle-level profitability reflects maintenance, fines and accident repairs without
 any change to the reporting layer built in 1E. *(That's the test of whether §3.2 was done right.)*

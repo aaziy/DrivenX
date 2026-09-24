@@ -3,10 +3,10 @@
 Executable companion to [PROJECT_PLAN.md](PROJECT_PLAN.md). That document decides *what and why*;
 this one decides *how, in what order, and how we know it works*.
 
-**Status:** Phase 0 and Phase 1 complete; Phase 2 in progress · **Last updated:** 2026-09-24
+**Status:** Phases 0, 1 and 2 complete; Phase 3 next · **Last updated:** 2026-09-24
 
-**Progress:** 84 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓▓▓▓░ 12/14 · Phase 3 ☐ · Phase 4 ☐
+**Progress:** 86 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ☐ · Phase 4 ☐
 
 ---
 
@@ -377,8 +377,8 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | ✅ | P2-10 | Insurance claim tracking with recovery posting — **Built 2026-09-24.** Approved is not paid: only money that genuinely arrives posts, to `revenue.insurance_claim` — its own category, kept clear of `revenue.insurance`, which is the premium §11 wants reportable on its own. The shortfall stays with DrivenX, which is what the policy excess is |
 | ✅ | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead — **Built 2026-09-24.** The allocation is enforced in the database, not merely offered: an overhead filed against a car is invisible once posted and would distort every per-vehicle figure after it. Each category is its own ledger category, and government charges default to no VAT, because there is none on them to reclaim |
 | ✅ | P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance — **Built 2026-09-21** for contract endings: arrears shown live and never re-charged, staff add excess mileage, damage and fees (or credits), and settling raises one ordinary invoice. Handover/return records (P2-01–P2-04) still to come |
-| ☐ | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |
-| ☐ | P2-14 | Vehicle lifetime P&L view |
+| ✅ | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports — **Built 2026-09-24.** They already flowed, which was the exit test; what was missing was being able to read them. The report now breaks the range down by what the money actually was, from the same ledger, and a test proves the breakdown adds up to the headline figures (INV-6) |
+| ✅ | P2-14 | Vehicle lifetime P&L view — **Built 2026-09-24.** Over a life rather than a period, because "was this car worth owning" is not a question a month can settle. Same ledger as the profitability report, so the two cannot disagree — proven by a test. A loss shows as a loss |
 
 **Tests**
 - Reconciliation: **INV-8** extended — a maintenance cost posted today changes vehicle profitability

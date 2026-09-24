@@ -11,6 +11,7 @@ import { requirePermission } from "@/lib/auth";
 import { DocumentsCard } from "../../documents/documents-card";
 import { InsuranceCard } from "../insurance-card";
 import { AccidentsCard } from "../accidents-card";
+import { LifetimeCard } from "../lifetime-card";
 import { FinesCard } from "../fines-card";
 import { MaintenanceCard } from "../maintenance-card";
 import {
@@ -196,6 +197,8 @@ export default async function VehicleDetailPage({
             canManage={can("maintenance.manage")}
           />
         ) : null}
+
+        {can("report.financial") ? <LifetimeCard vehicleId={vehicle.id} /> : null}
 
         {can("fine.view") ? <FinesCard vehicleId={vehicle.id} canManage={can("fine.manage")} /> : null}
 

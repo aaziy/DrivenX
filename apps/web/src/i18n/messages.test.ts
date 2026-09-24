@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_ROLES, PERMISSIONS } from "@drivenx/auth/permissions";
-import { CHARGE_TYPES } from "@drivenx/core";
+import { categoryLabelKey, CHARGE_TYPES, LEDGER_CATEGORIES } from "@drivenx/core";
 
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
@@ -85,6 +85,15 @@ describe("database text that is shown translated", () => {
     const missing = CHARGE_TYPES.map((type) => `contracts.charges.${type}`).filter(
       (key) => !english.has(key) || !arabic.has(key),
     );
+    expect(missing).toEqual([]);
+  });
+
+  it("has a message for every ledger category", () => {
+    // The ledger's category is a string, so nothing stops a new one reaching a report
+    // with no name. This is what stops it reaching a screen as a raw key.
+    const missing = LEDGER_CATEGORIES.map(
+      (category) => `reports.ledgerCategories.${categoryLabelKey(category)}`,
+    ).filter((key) => !english.has(key) || !arabic.has(key));
     expect(missing).toEqual([]);
   });
 

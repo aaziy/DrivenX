@@ -26,3 +26,4 @@ export * from "./fleet/damage";
 export * from "./fines/status";
 export * from "./accidents/status";
 export * from "./expenses/categories";
+export * from "./ledger/categories";

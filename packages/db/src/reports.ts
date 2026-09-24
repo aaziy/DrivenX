@@ -237,3 +237,114 @@ async function labelsFor(
   }
   return labels;
 }
+
+// ---------------------------------------------------------------------------
+// Extended profitability (P2-13) and the lifetime view (P2-14)
+// ---------------------------------------------------------------------------
+
+export interface CategoryTotal {
+  category: string;
+  direction: "REVENUE" | "COST";
+  amountFils: bigint;
+}
+
+/**
+ * The range broken down by category (P2-13).
+ *
+ * Phase 2 put maintenance, fines, repairs, claims and expenses into the ledger, and the
+ * headline columns fold them all into "other". That was deliberate — the reports needed
+ * no changes to carry them, which is what the phase's exit test proved — but "other cost:
+ * 46,000" is not an answer anybody can act on. This is the same ledger, grouped by what
+ * the money actually was, biggest first.
+ */
+export async function categoryTotals(
+  fromMonth: number,
+  toMonth: number,
+  scope: { vehicleId?: string } = {},
+): Promise<CategoryTotal[]> {
+  const rows = await prisma.ledgerEntry.groupBy({
+    by: ["direction", "category"],
+    where: {
+      periodMonth: { gte: fromMonth, lte: toMonth },
+      ...(scope.vehicleId ? { vehicleId: scope.vehicleId } : {}),
+    },
+    _sum: { amountFils: true },
+  });
+
+  return rows
+    .map((row) => ({
+      category: row.category,
+      direction: row.direction as "REVENUE" | "COST",
+      amountFils: row._sum.amountFils ?? 0n,
+    }))
+    .filter((row) => row.amountFils !== 0n)
+    .sort((a, b) => {
+      if (a.direction !== b.direction) return a.direction === "REVENUE" ? -1 : 1;
+      return b.amountFils > a.amountFils ? 1 : b.amountFils < a.amountFils ? -1 : 0;
+    });
+}
+
+export interface VehicleLifetime {
+  vehicleId: string;
+  /** Null when the car has never carried an entry. */
+  firstEntryOn: Date | null;
+  lastEntryOn: Date | null;
+  revenueFils: bigint;
+  costFils: bigint;
+  profitFils: bigint;
+  byCategory: CategoryTotal[];
+}
+
+/**
+ * Everything one car has earned and cost, for as long as DrivenX has had it (P2-14).
+ *
+ * Not a report over a period but over a life, because the question it answers — was this
+ * car worth owning — is not one a month can settle. A car can lose money every month of
+ * a repair and still have paid for itself twice over.
+ *
+ * It reads the same ledger as every other report, so it cannot disagree with them.
+ */
+export async function vehicleLifetime(vehicleId: string): Promise<VehicleLifetime> {
+  const [sums, range] = await Promise.all([
+    prisma.ledgerEntry.groupBy({
+      by: ["direction", "category"],
+      where: { vehicleId },
+      _sum: { amountFils: true },
+    }),
+    prisma.ledgerEntry.aggregate({
+      where: { vehicleId },
+      _min: { occurredOn: true },
+      _max: { occurredOn: true },
+    }),
+  ]);
+
+  const byCategory = sums
+    .map((row) => ({
+      category: row.category,
+      direction: row.direction as "REVENUE" | "COST",
+      amountFils: row._sum.amountFils ?? 0n,
+    }))
+    .filter((row) => row.amountFils !== 0n)
+    .sort((a, b) => {
+      if (a.direction !== b.direction) return a.direction === "REVENUE" ? -1 : 1;
+      return b.amountFils > a.amountFils ? 1 : b.amountFils < a.amountFils ? -1 : 0;
+    });
+
+  const side = (direction: "REVENUE" | "COST") =>
+    byCategory
+      .filter((row) => row.direction === direction)
+      .reduce((total, row) => total + row.amountFils, 0n);
+
+  const revenueFils = side("REVENUE");
+  const costFils = side("COST");
+
+  return {
+    vehicleId,
+    firstEntryOn: range._min.occurredOn ?? null,
+    lastEntryOn: range._max.occurredOn ?? null,
+    revenueFils,
+    costFils,
+    profitFils: revenueFils - costFils,
+    byCategory,
+  };
+}
