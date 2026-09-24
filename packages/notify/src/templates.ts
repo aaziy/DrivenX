@@ -143,3 +143,57 @@ export function renderNotification(input: TemplateInput): { subject: string; tex
     text: lines.join("\n"),
   };
 }
+
+export interface DigestItem {
+  type: NotificationType;
+  /** The notification's own English title, as the worker composed it. */
+  title: string;
+  body: string;
+  dueOn?: string | undefined;
+  url?: string | undefined;
+}
+
+const DIGEST: Record<Locale, { subject: (count: number) => string; lead: string; closing: string }> = {
+  en: {
+    subject: (count) =>
+      count === 1 ? "DrivenX: 1 thing needs attention" : `DrivenX: ${count} things need attention`,
+    lead: "These are waiting in DrivenX:",
+    closing: "They are also in the notifications list, where marking one read clears it for everyone.",
+  },
+  ar: {
+    subject: (count) =>
+      count === 1 ? "درِفن إكس: أمر واحد يحتاج انتباهك" : `درِفن إكس: ${count} أمور تحتاج انتباهك`,
+    lead: "هذه بانتظارك في درِفن إكس:",
+    closing: "وهي أيضاً في قائمة التنبيهات، وتحديد أحدها كمقروء يزيله عن الجميع.",
+  },
+};
+
+/**
+ * Everything one person is waiting on, as a single message (P3-04).
+ *
+ * One email per person per run rather than one per alert. A fleet with ten documents
+ * expiring in the same week would otherwise send ten separate emails to the same person
+ * on the same morning, and the reliable result of that is a filter rule — after which
+ * the eleventh, which mattered, is not read either.
+ *
+ * Each line stays specific. A digest that summarised ten alerts as "you have ten alerts"
+ * would force a trip to the screen to learn anything, which is the cost the email was
+ * supposed to save.
+ */
+export function renderDigest(input: {
+  locale: Locale;
+  items: readonly DigestItem[];
+}): { subject: string; text: string } {
+  const digest = DIGEST[input.locale];
+
+  const lines: string[] = [digest.lead, ""];
+  for (const item of input.items) {
+    lines.push(`• ${item.body}`);
+    if (item.dueOn) lines.push(`  ${item.dueOn}`);
+    if (item.url) lines.push(`  ${item.url}`);
+    lines.push("");
+  }
+  lines.push(digest.closing);
+
+  return { subject: digest.subject(input.items.length), text: lines.join("\n") };
+}

@@ -146,6 +146,10 @@ export async function undeliveredNotifications(
   return prisma.notification.findMany({
     where: {
       createdAt: { gte: options.since },
+      // Already dealt with on screen. Read marks a notification read for everybody (see
+      // the notifications action), so this one has been handled and emailing about it
+      // now is noise — which is what teaches people to ignore the next one.
+      readAt: null,
       OR: [
         { deliveries: { none: { channel } } },
         { deliveries: { some: { channel, status: "PENDING" } } },

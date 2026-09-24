@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { NOTIFICATION_TYPES } from "@drivenx/core";
 
-import { hasTemplate, renderNotification, templateCoverage } from "./templates";
+import { hasTemplate, renderDigest, renderNotification, templateCoverage } from "./templates";
 
 describe("email templates", () => {
   it("covers every notification type in both languages", () => {
@@ -75,5 +75,47 @@ describe("email templates", () => {
     });
 
     expect(rendered.text).toContain("2026-12-31");
+  });
+});
+
+describe("the daily digest (P3-04)", () => {
+  const item = (body: string) => ({ type: "DOCUMENT_EXPIRY" as const, title: "t", body });
+
+  it("counts what is waiting in the subject, so an inbox is triageable", () => {
+    const one = renderDigest({ locale: "en", items: [item("A expires.")] });
+    expect(one.subject).toBe("DrivenX: 1 thing needs attention");
+
+    const many = renderDigest({ locale: "en", items: [item("A expires."), item("B expires.")] });
+    expect(many.subject).toBe("DrivenX: 2 things need attention");
+  });
+
+  it("keeps every line specific instead of summarising them away", () => {
+    // "You have 3 alerts" forces a trip to the screen to learn anything, which is the
+    // cost the email existed to save.
+    const rendered = renderDigest({
+      locale: "en",
+      items: [item("Emirates ID for Fatima expires."), item("Mulkiya for VEH-00012 expires.")],
+    });
+
+    expect(rendered.text).toContain("Emirates ID for Fatima expires.");
+    expect(rendered.text).toContain("Mulkiya for VEH-00012 expires.");
+  });
+
+  it("carries each line's date and link when there are any", () => {
+    const rendered = renderDigest({
+      locale: "en",
+      items: [
+        { type: "CONTRACT_EXPIRY", title: "t", body: "CON-1 ends.", dueOn: "2026-12-31", url: "https://x/c/1" },
+      ],
+    });
+
+    expect(rendered.text).toContain("2026-12-31");
+    expect(rendered.text).toContain("https://x/c/1");
+  });
+
+  it("writes in the reader's language", () => {
+    const rendered = renderDigest({ locale: "ar", items: [item("شيء ما")] });
+    expect(rendered.subject).toContain("درِفن إكس");
+    expect(rendered.text).toContain("هذه بانتظارك");
   });
 });

@@ -342,7 +342,7 @@ arrives, not by this order.*
 - [ ] WhatsApp Business API (template approval is a multi-week lead time — start it during Phase 2)
 - [ ] Payment gateway for online installment collection
 - [ ] E-signature for contracts and handover forms
-- [ ] Automated reminder campaigns on the Phase 1 expiry engine
+- [x] Automated reminder campaigns on the Phase 1 expiry engine
 - [ ] Accounting software export/sync
 - [ ] Public REST API + OpenAPI docs (§18)
 - [ ] GPS / vehicle tracking, SMS, UAE RTA services *where APIs exist* (§18 — availability unverified)

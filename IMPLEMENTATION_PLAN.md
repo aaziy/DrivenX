@@ -5,8 +5,8 @@ this one decides *how, in what order, and how we know it works*.
 
 **Status:** Phases 0, 1 and 2 complete; Phase 3 started · **Last updated:** 2026-09-24
 
-**Progress:** 88 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ▓░░░░░░ 2/12 · Phase 4 ☐
+**Progress:** 89 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ▓▓░░░░░ 3/12 · Phase 4 ☐
 
 ---
 
@@ -404,7 +404,7 @@ Externally dependent. Sequence by when account access actually arrives, not by t
 | ✅ | P3-01 | Notification delivery abstraction: in-app → email → WhatsApp behind one interface — **Built 2026-09-24.** One port, one adapter per channel, and a delivery log whose unique key across notification, channel and recipient is what makes a retried job safe. Who to tell is the existing visibility rule, imported rather than restated. In-app is not a channel here: it is the notification row, and the only one that cannot fail or be switched off |
 | ✅ | P3-02 | Email (transactional provider), templates, delivery log — **Built 2026-09-24.** SMTP rather than one vendor's API, for the reason storage is S3-compatible: §20 wants DrivenX to own what they run, so changing provider is environment variables. Templates in both languages, rendered per recipient at send time. Unconfigured, it logs what it would have sent rather than silently doing nothing |
 | ☐ | P3-03 | **WhatsApp Business API** — *start template approval during Phase 2; lead time is weeks* |
-| ☐ | P3-04 | Automated reminder campaigns over the existing expiry engine |
+| ✅ | P3-04 | Automated reminder campaigns over the existing expiry engine — **Built 2026-09-24.** The engine already had the cadence (60/30/15/7); what it lacked was restraint. One message per person per run rather than one per alert, and nothing is sent about a notification already marked read, because read clears it for everybody. An alert system that sends ten emails on one morning earns a filter rule, after which the eleventh goes unread too |
 | ☐ | P3-05 | Payment gateway — online installment collection, webhook → payment + ledger |
 | ☐ | P3-06 | Payment reconciliation against gateway settlement reports |
 | ☐ | P3-07 | E-signature for contracts and handover forms |

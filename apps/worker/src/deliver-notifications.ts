@@ -22,12 +22,20 @@ import {
   type DeliveryRecipient,
 } from "@drivenx/db";
 import { logger } from "@drivenx/logger";
-import { emailAdapterFromEnv, renderNotification, type NotificationChannelAdapter } from "@drivenx/notify";
+import {
+  emailAdapterFromEnv,
+  renderDigest,
+  renderNotification,
+  type DigestItem,
+  type NotificationChannelAdapter,
+} from "@drivenx/notify";
 
 import { recipientsFor } from "./recipients";
 
 export interface DeliveryRunResult {
+  /** Notifications examined. */
   considered: number;
+  /** Messages sent — one per person, covering everything they were owed. */
   sent: number;
   failed: number;
   skipped: number;
@@ -73,6 +81,12 @@ export async function runDeliverNotifications(
   const notifications = await undeliveredNotifications("EMAIL", { since });
   result.considered = notifications.length;
 
+  /** What each person is owed this run, gathered before anything is sent. */
+  const pending = new Map<
+    string,
+    { recipient: DeliveryRecipient; deliveryIds: string[]; items: DigestItem[] }
+  >();
+
   for (const notification of notifications) {
     let recipients: DeliveryRecipient[] = [];
     try {
@@ -97,34 +111,60 @@ export async function runDeliverNotifications(
       const recipient = byEmail.get(delivery.recipient);
       if (!recipient) continue;
 
-      const message = renderNotification({
+      const forThisPerson = pending.get(delivery.recipient) ?? {
+        recipient,
+        deliveryIds: [],
+        items: [],
+      };
+      forThisPerson.deliveryIds.push(delivery.id);
+      forThisPerson.items.push({
         type: notification.type,
-        locale: recipient.locale,
         title: notification.title,
         body: notification.body,
         dueOn: notification.dueOn ? businessDate(notification.dueOn) : undefined,
         url: urlFor(baseUrl, notification.entityType, notification.entityId),
       });
+      pending.set(delivery.recipient, forThisPerson);
+    }
+  }
 
-      const outcome = await adapter.send({
-        recipient: delivery.recipient,
-        message,
-        locale: recipient.locale,
-      });
+  // One message per person, however many things are waiting for them (P3-04). Ten
+  // documents expiring in the same week would otherwise be ten emails on one morning,
+  // and the reliable answer to that is a filter rule — after which the eleventh, which
+  // mattered, goes unread too.
+  for (const [address, batch] of pending) {
+    const message =
+      batch.items.length === 1 && batch.items[0]
+        ? renderNotification({
+            type: batch.items[0].type,
+            locale: batch.recipient.locale,
+            title: batch.items[0].title,
+            body: batch.items[0].body,
+            dueOn: batch.items[0].dueOn,
+            url: batch.items[0].url,
+          })
+        : renderDigest({ locale: batch.recipient.locale, items: batch.items });
 
+    const outcome = await adapter.send({ recipient: address, message, locale: batch.recipient.locale });
+
+    for (const deliveryId of batch.deliveryIds) {
       if (outcome.ok) {
-        await markDelivered(delivery.id, outcome.detail);
-        result.sent += 1;
+        await markDelivered(deliveryId, outcome.detail);
       } else {
-        await markFailed(delivery.id, outcome.error, outcome.retryable);
-        result.failed += 1;
-        logger.warn("notification delivery failed", {
-          notificationId: notification.id,
-          recipient: delivery.recipient,
-          retryable: outcome.retryable,
-          error: outcome.error,
-        });
+        await markFailed(deliveryId, outcome.error, outcome.retryable);
       }
+    }
+
+    if (outcome.ok) {
+      result.sent += 1;
+    } else {
+      result.failed += 1;
+      logger.warn("notification delivery failed", {
+        recipient: address,
+        covering: batch.deliveryIds.length,
+        retryable: outcome.retryable,
+        error: outcome.error,
+      });
     }
   }
 
