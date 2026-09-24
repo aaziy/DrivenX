@@ -80,6 +80,10 @@ model User {
   damagePoints          DamagePoint[]
   fines                 Fine[]
   fineStatusChanges     FineStatusChange[]
+  accidents             Accident[]
+  accidentStatusChanges AccidentStatusChange[]
+  insuranceClaims       InsuranceClaim[]
+  claimStatusChanges    ClaimStatusChange[]
   settlementsOpened     Settlement[]           @relation("SettlementOpenedBy")
   settlementsSettled    Settlement[]           @relation("SettlementSettledBy")
   settlementLines       SettlementLine[]
@@ -247,6 +251,7 @@ model Customer {
   payments  Payment[]
   leads     Lead[]
   fines     Fine[]
+  accidents Accident[]
 
   // Global search (§16) hits name and mobile constantly. A trigram index for
   // partial matches arrives with P1A-09, as raw SQL Prisma cannot express.
@@ -309,6 +314,7 @@ enum DocumentOwnerType {
   MAINTENANCE
   HANDOVER
   DAMAGE_POINT
+  ACCIDENT
 
   @@map("document_owner_type")
 }
@@ -533,6 +539,7 @@ model Vehicle {
   maintenance       MaintenanceRecord[]
   handovers         Handover[]
   fines             Fine[]
+  accidents         Accident[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -705,6 +712,7 @@ model Contract {
   supplierInvoices SupplierInvoice[]
   handovers        Handover[]
   fines            Fine[]
+  accidents        Accident[]
   settlement       Settlement?
   maintenance      MaintenanceRecord[]
 
@@ -1129,6 +1137,8 @@ model InsurancePolicy {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
+  claims InsuranceClaim[]
+
   @@unique([provider, policyNumber])
   @@index([vehicleId, expiryDate])
   @@index([expiryDate])
@@ -1550,4 +1560,167 @@ model FineStatusChange {
 
   @@index([fineId, changedAt])
   @@map("fine_status_changes")
+}
+
+// ===========================================================================
+// Accidents and insurance claims (P2-09, P2-10, SOW §13)
+// ===========================================================================
+
+enum AccidentStatus {
+  REPORTED
+  UNDER_REPAIR
+  REPAIRED
+  WRITTEN_OFF
+  CLOSED
+
+  @@map("accident_status")
+}
+
+enum AccidentResponsibility {
+  CUSTOMER
+  THIRD_PARTY
+  SHARED
+  /// The honest default: the police report decides, and that takes weeks.
+  UNKNOWN
+
+  @@map("accident_responsibility")
+}
+
+enum ClaimStatus {
+  LODGED
+  APPROVED
+  SETTLED
+  REJECTED
+  WITHDRAWN
+
+  @@map("claim_status")
+}
+
+/// A crash (P2-09).
+///
+/// The repair is held net with its VAT beside it, like maintenance and for the same
+/// reason: a garage's bill carries input VAT and DrivenX reclaims it, so the net is what
+/// the car actually cost to put back on the road. It posts to `cost.repair` on the day
+/// the work is billed, not on the day of the crash — those can be months apart, and
+/// costing a month by when a car was hit rather than when the bill fell would move money
+/// between periods that have already been reported.
+model Accident {
+  id        String  @id @default(cuid())
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  /// Who had the car when it happened, taken from the date of the crash.
+  contractId String?   @map("contract_id")
+  contract   Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  occurredOn  DateTime @map("occurred_on") @db.Date
+  location    String
+  description String?
+
+  responsibility     AccidentResponsibility @default(UNKNOWN)
+  policeReportNumber String?                @map("police_report_number")
+
+  status AccidentStatus @default(REPORTED)
+
+  /// The garage's bill, once there is one. Net, with the VAT reclaimed beside it.
+  repairNetFils  BigInt?   @map("repair_net_fils")
+  vatBasisPoints Int       @default(500) @map("vat_basis_points")
+  repairVatFils  BigInt?   @map("repair_vat_fils")
+  repairFils     BigInt?   @map("repair_fils")
+  repairVendor   String?   @map("repair_vendor")
+  /// The day the repair was billed, which is the day it became a cost.
+  repairedOn     DateTime? @map("repaired_on") @db.Date
+
+  notes String?
+
+  claim         InsuranceClaim?
+  statusChanges AccidentStatusChange[]
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([vehicleId, occurredOn])
+  @@index([contractId])
+  @@index([status])
+  @@map("accidents")
+}
+
+model AccidentStatusChange {
+  id         String          @id @default(cuid())
+  accidentId String          @map("accident_id")
+  accident   Accident        @relation(fields: [accidentId], references: [id], onDelete: Cascade)
+  fromStatus AccidentStatus? @map("from_status")
+  toStatus   AccidentStatus  @map("to_status")
+  reason     String?
+
+  changedById String?  @map("changed_by_id")
+  changedBy   User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  @@index([accidentId, changedAt])
+  @@map("accident_status_changes")
+}
+
+/// What the insurer was asked for, and what they actually paid (P2-10).
+///
+/// Approved is not paid. Insurers reduce, delay and refuse, so only money that has
+/// genuinely arrived posts to `revenue.insurance_claim` — a category of its own, kept
+/// away from `revenue.insurance`, which is the premium charged to a customer and which
+/// §11 requires to be reportable on its own. A payout mixed into it would inflate the
+/// one figure the SOW asks to see separately.
+model InsuranceClaim {
+  id         String   @id @default(cuid())
+  accidentId String   @unique @map("accident_id")
+  accident   Accident @relation(fields: [accidentId], references: [id], onDelete: Cascade)
+
+  /// The policy it was claimed against, kept even if the policy later lapses.
+  policyId String?          @map("policy_id")
+  policy   InsurancePolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+
+  claimNumber String   @map("claim_number")
+  lodgedOn    DateTime @map("lodged_on") @db.Date
+
+  status ClaimStatus @default(LODGED)
+
+  /// What DrivenX asked for.
+  claimedFils  BigInt    @map("claimed_fils")
+  /// What the insurer agreed to, once they have said.
+  approvedFils BigInt?   @map("approved_fils")
+  /// What actually arrived. The only figure that reaches the ledger.
+  receivedFils BigInt?   @map("received_fils")
+  settledOn    DateTime? @map("settled_on") @db.Date
+
+  notes String?
+
+  statusChanges ClaimStatusChange[]
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([status])
+  @@map("insurance_claims")
+}
+
+model ClaimStatusChange {
+  id         String         @id @default(cuid())
+  claimId    String         @map("claim_id")
+  claim      InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fromStatus ClaimStatus?   @map("from_status")
+  toStatus   ClaimStatus    @map("to_status")
+  reason     String?
+
+  changedById String?  @map("changed_by_id")
+  changedBy   User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  @@index([claimId, changedAt])
+  @@map("claim_status_changes")
 }

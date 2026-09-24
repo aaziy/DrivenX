@@ -16,7 +16,11 @@ import {
   normalisePlate,
   ON_CONTRACT_STATUSES,
   type Fils,
+  IllegalAccidentTransitionError,
+  IllegalClaimTransitionError,
   IllegalFineTransitionError,
+  type AccidentStatus,
+  type ClaimStatus,
   type FineStatus,
 } from "@drivenx/core";
 import {
@@ -34,9 +38,15 @@ import {
   VehicleNotFoundError,
   VehicleStatusManagedByContractError,
   type NewVehicle,
+  AccidentRuleError,
   FineRuleError,
+  lodgeClaim,
+  recordAccident,
   recordFine,
+  recordRepair,
   recoverFine,
+  transitionAccident,
+  transitionClaim,
   transitionFine,
 } from "@drivenx/db";
 
@@ -571,5 +581,190 @@ export async function recoverFineAction(
   revalidatePath(`/vehicles/${vehicleId}`);
   // No success message: recharging moves the fine to Recovered, which replaces the
   // control that would have rendered one. The row's invoice number is the evidence.
+  return {};
+}
+
+// ---------------------------------------------------------------------------
+// Accidents and claims (P2-09, P2-10, SOW §13)
+// ---------------------------------------------------------------------------
+
+async function explainAccident(error: unknown, operation: string): Promise<string> {
+  const t = await getTranslations("accidents.errors");
+  if (error instanceof AccidentRuleError) return t(error.code);
+  if (error instanceof IllegalAccidentTransitionError) {
+    const ts = await getTranslations("accidents.status");
+    return t("illegalTransition", { from: ts(error.from), to: ts(error.to) });
+  }
+  if (error instanceof IllegalClaimTransitionError) {
+    const ts = await getTranslations("accidents.claimStatus");
+    return t("illegalTransition", { from: ts(error.from), to: ts(error.to) });
+  }
+  return toUserMessage(operation, error);
+}
+
+const RESPONSIBILITIES = ["CUSTOMER", "THIRD_PARTY", "SHARED", "UNKNOWN"] as const;
+
+export async function recordAccidentAction(
+  vehicleId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("accident.manage");
+  const [t, te] = await Promise.all([getTranslations("accidents"), getTranslations("accidents.errors")]);
+
+  const occurredOn = text(formData, "occurredOn");
+  if (!isIsoDate(occurredOn)) return { error: te("date") };
+
+  const responsibility = text(formData, "responsibility");
+
+  try {
+    await asActor(principal, () =>
+      recordAccident(
+        {
+          vehicleId,
+          occurredOn,
+          location: text(formData, "location"),
+          description: optional(formData, "description"),
+          responsibility: (RESPONSIBILITIES as readonly string[]).includes(responsibility)
+            ? (responsibility as (typeof RESPONSIBILITIES)[number])
+            : "UNKNOWN",
+          policeReportNumber: optional(formData, "policeReportNumber"),
+          notes: optional(formData, "notes"),
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainAccident(error, "recordAccident") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return { success: t("added") };
+}
+
+export async function transitionAccidentAction(
+  vehicleId: string,
+  accidentId: string,
+  to: AccidentStatus,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("accident.manage");
+
+  try {
+    await asActor(principal, () =>
+      transitionAccident(accidentId, { to, reason: optional(formData, "reason"), actorId: principal.id }),
+    );
+  } catch (error) {
+    return { error: await explainAccident(error, "transitionAccident") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return {};
+}
+
+export async function recordRepairAction(
+  vehicleId: string,
+  accidentId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("accident.manage");
+  const te = await getTranslations("accidents.errors");
+
+  const cost = money(text(formData, "repairCost"));
+  if (cost === "invalid" || cost === null) return { error: te("money") };
+
+  const repairedOn = text(formData, "repairedOn");
+  if (!isIsoDate(repairedOn)) return { error: te("date") };
+
+  try {
+    await asActor(principal, () =>
+      recordRepair(accidentId, {
+        repairNetFils: cost,
+        vendor: text(formData, "repairVendor"),
+        repairedOn,
+      }),
+    );
+  } catch (error) {
+    return { error: await explainAccident(error, "recordRepair") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  // No success message: a recorded bill replaces the form that would have shown one.
+  // The repair line and the cost to DrivenX are the evidence.
+  return {};
+}
+
+export async function lodgeClaimAction(
+  vehicleId: string,
+  accidentId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("accident.manage");
+  const te = await getTranslations("accidents.errors");
+
+  const claimed = money(text(formData, "claimedAmount"));
+  if (claimed === "invalid" || claimed === null || claimed === 0n) return { error: te("money") };
+
+  const lodgedOn = text(formData, "lodgedOn");
+  if (!isIsoDate(lodgedOn)) return { error: te("date") };
+
+  try {
+    await asActor(principal, () =>
+      lodgeClaim(
+        {
+          accidentId,
+          policyId: optional(formData, "policyId"),
+          claimNumber: text(formData, "claimNumber"),
+          lodgedOn,
+          claimedFils: claimed,
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainAccident(error, "lodgeClaim") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  // No success message: lodging replaces the form with the claim itself.
+  return {};
+}
+
+export async function transitionClaimAction(
+  vehicleId: string,
+  claimId: string,
+  to: ClaimStatus,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("accident.manage");
+  const te = await getTranslations("accidents.errors");
+
+  const approved = money(text(formData, "approvedAmount"));
+  if (approved === "invalid") return { error: te("money") };
+  const received = money(text(formData, "receivedAmount"));
+  if (received === "invalid") return { error: te("money") };
+
+  const settledOn = text(formData, "settledOn");
+
+  try {
+    await asActor(principal, () =>
+      transitionClaim(claimId, {
+        to,
+        ...(approved !== null ? { approvedFils: approved } : {}),
+        ...(received !== null ? { receivedFils: received } : {}),
+        ...(isIsoDate(settledOn) ? { settledOn } : {}),
+        reason: optional(formData, "reason"),
+        actorId: principal.id,
+      }),
+    );
+  } catch (error) {
+    return { error: await explainAccident(error, "transitionClaim") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
   return {};
 }

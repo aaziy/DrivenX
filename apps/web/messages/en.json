@@ -596,7 +596,9 @@
       "signed_contract": "Signed contract",
       "handover_report": "Handover or return report",
       "handover_photo": "Handover photo",
-      "damage_photo": "Damage photo"
+      "damage_photo": "Damage photo",
+      "accident_photo": "Accident photo",
+      "police_report": "Police report"
     }
   },
   "search": {
@@ -1781,6 +1783,91 @@
       "illegalTransition": "A fine cannot go from {from} to {to}.",
       "amount": "Enter the amount of the fine.",
       "date": "Enter the date of the offence."
+    }
+  },
+  "accidents": {
+    "cardTitle": "Accidents",
+    "hint": "What a crash has actually cost: the repair, less whatever the insurer has genuinely paid. An approved claim is not money — only what arrives is counted.",
+    "none": "No accidents recorded for this car.",
+    "addTitle": "Record an accident",
+    "add": "Record accident",
+    "adding": "Saving…",
+    "added": "Accident recorded.",
+    "working": "Working…",
+    "driver": "Driver that day",
+    "repair": "Repair",
+    "claim": "Claim",
+    "netCost": "Cost to DrivenX",
+    "claimedAmount": "claimed {amount}",
+    "approvedAmount": "approved {amount}",
+    "receivedAmount": "received {amount}",
+    "recordRepairTitle": "Record the repair bill",
+    "recordRepair": "Record repair",
+    "lodgeClaimTitle": "Lodge a claim",
+    "lodgeClaim": "Lodge claim",
+    "status": {
+      "REPORTED": "Reported",
+      "UNDER_REPAIR": "Under repair",
+      "REPAIRED": "Repaired",
+      "WRITTEN_OFF": "Written off",
+      "CLOSED": "Closed"
+    },
+    "claimStatus": {
+      "LODGED": "Lodged",
+      "APPROVED": "Approved",
+      "SETTLED": "Settled",
+      "REJECTED": "Rejected",
+      "WITHDRAWN": "Withdrawn"
+    },
+    "responsibilities": {
+      "CUSTOMER": "Our driver",
+      "THIRD_PARTY": "Third party",
+      "SHARED": "Shared",
+      "UNKNOWN": "Not yet known"
+    },
+    "actions": {
+      "sendToGarage": "Send to the garage",
+      "backOnTheRoad": "Back on the road",
+      "writeOff": "Write off",
+      "close": "Close",
+      "approve": "Insurer approved",
+      "reject": "Insurer rejected",
+      "settle": "Money received",
+      "appeal": "Appeal"
+    },
+    "form": {
+      "occurredOn": "Date",
+      "location": "Where",
+      "description": "What happened",
+      "responsibility": "At fault",
+      "policeReport": "Police report",
+      "repairVendor": "Garage",
+      "repairCost": "Repair cost (AED)",
+      "repairCostHint": "The garage's bill before VAT — that VAT is reclaimed and is not a cost",
+      "repairedOn": "Billed on",
+      "claimNumber": "Claim number",
+      "claimedAmount": "Claimed (AED)",
+      "lodgedOn": "Lodged on",
+      "policy": "Against policy",
+      "noPolicy": "No policy",
+      "approvedAmount": "Approved (AED)",
+      "receivedAmount": "Received (AED)",
+      "settledOn": "Received on",
+      "reason": "Reason"
+    },
+    "errors": {
+      "vehicleNotFound": "That vehicle no longer exists.",
+      "accidentNotFound": "That accident no longer exists.",
+      "invalidAccident": "Say where it happened.",
+      "alreadyRepaired": "A repair bill has already been recorded for this accident.",
+      "claimExists": "This accident already has a claim.",
+      "claimNotFound": "That claim no longer exists.",
+      "invalidClaim": "Check the claim's details.",
+      "policyNotFound": "That policy no longer exists.",
+      "nothingReceived": "Enter what was received and the day it arrived.",
+      "illegalTransition": "This cannot go from {from} to {to}.",
+      "money": "Enter a valid amount in AED.",
+      "date": "Enter a valid date."
     }
   }
 }

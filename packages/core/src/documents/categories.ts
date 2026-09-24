@@ -20,7 +20,8 @@ export type DocumentOwner =
   | "INSURANCE_POLICY"
   | "MAINTENANCE"
   | "HANDOVER"
-  | "DAMAGE_POINT";
+  | "DAMAGE_POINT"
+  | "ACCIDENT";
 
 export interface DocumentCategoryDefinition {
   key: string;
@@ -141,6 +142,22 @@ export const DOCUMENT_CATEGORIES = [
     key: "damage_photo",
     label: "Damage photo",
     appliesTo: ["DAMAGE_POINT"],
+    requiresExpiry: false,
+    defaultReminderOffsets: [],
+  },
+
+  // -- Accidents (§13) --
+  {
+    key: "accident_photo",
+    label: "Accident photo",
+    appliesTo: ["ACCIDENT"],
+    requiresExpiry: false,
+    defaultReminderOffsets: [],
+  },
+  {
+    key: "police_report",
+    label: "Police report",
+    appliesTo: ["ACCIDENT"],
     requiresExpiry: false,
     defaultReminderOffsets: [],
   },

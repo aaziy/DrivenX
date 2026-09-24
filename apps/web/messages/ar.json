@@ -596,7 +596,9 @@
       "signed_contract": "العقد الموقّع",
       "handover_report": "تقرير التسليم أو الاستلام",
       "handover_photo": "صورة التسليم",
-      "damage_photo": "صورة الضرر"
+      "damage_photo": "صورة الضرر",
+      "accident_photo": "صورة الحادث",
+      "police_report": "تقرير الشرطة"
     }
   },
   "search": {
@@ -1781,6 +1783,91 @@
       "illegalTransition": "لا يمكن نقل المخالفة من {from} إلى {to}.",
       "amount": "أدخل مبلغ المخالفة.",
       "date": "أدخل تاريخ المخالفة."
+    }
+  },
+  "accidents": {
+    "cardTitle": "الحوادث",
+    "hint": "ما كلّفه الحادث فعلاً: قيمة الإصلاح ناقص ما دفعته شركة التأمين حقيقةً. الموافقة على المطالبة ليست مالاً — لا يُحتسب إلا ما وصل.",
+    "none": "لا حوادث مسجّلة على هذه السيارة.",
+    "addTitle": "تسجيل حادث",
+    "add": "تسجيل الحادث",
+    "adding": "جارٍ الحفظ…",
+    "added": "تم تسجيل الحادث.",
+    "working": "جارٍ التنفيذ…",
+    "driver": "السائق يومها",
+    "repair": "الإصلاح",
+    "claim": "المطالبة",
+    "netCost": "التكلفة على درِفن إكس",
+    "claimedAmount": "مطالَب بـ {amount}",
+    "approvedAmount": "معتمد {amount}",
+    "receivedAmount": "مستلم {amount}",
+    "recordRepairTitle": "تسجيل فاتورة الإصلاح",
+    "recordRepair": "تسجيل الإصلاح",
+    "lodgeClaimTitle": "تقديم مطالبة",
+    "lodgeClaim": "تقديم المطالبة",
+    "status": {
+      "REPORTED": "مُبلَّغ عنه",
+      "UNDER_REPAIR": "قيد الإصلاح",
+      "REPAIRED": "تم الإصلاح",
+      "WRITTEN_OFF": "خسارة كلية",
+      "CLOSED": "مغلق"
+    },
+    "claimStatus": {
+      "LODGED": "مقدَّمة",
+      "APPROVED": "معتمدة",
+      "SETTLED": "مسدَّدة",
+      "REJECTED": "مرفوضة",
+      "WITHDRAWN": "مسحوبة"
+    },
+    "responsibilities": {
+      "CUSTOMER": "سائقنا",
+      "THIRD_PARTY": "طرف ثالث",
+      "SHARED": "مشتركة",
+      "UNKNOWN": "غير محدّدة بعد"
+    },
+    "actions": {
+      "sendToGarage": "إرسال إلى الورشة",
+      "backOnTheRoad": "عادت إلى الطريق",
+      "writeOff": "خسارة كلية",
+      "close": "إغلاق",
+      "approve": "وافقت شركة التأمين",
+      "reject": "رفضت شركة التأمين",
+      "settle": "وصل المبلغ",
+      "appeal": "اعتراض"
+    },
+    "form": {
+      "occurredOn": "التاريخ",
+      "location": "المكان",
+      "description": "ما الذي حدث",
+      "responsibility": "المسؤولية",
+      "policeReport": "تقرير الشرطة",
+      "repairVendor": "الورشة",
+      "repairCost": "تكلفة الإصلاح (درهم)",
+      "repairCostHint": "فاتورة الورشة قبل الضريبة — تُسترد تلك الضريبة وليست تكلفة",
+      "repairedOn": "تاريخ الفاتورة",
+      "claimNumber": "رقم المطالبة",
+      "claimedAmount": "المبلغ المطالَب به (درهم)",
+      "lodgedOn": "تاريخ التقديم",
+      "policy": "على وثيقة",
+      "noPolicy": "بدون وثيقة",
+      "approvedAmount": "المبلغ المعتمد (درهم)",
+      "receivedAmount": "المبلغ المستلم (درهم)",
+      "settledOn": "تاريخ الاستلام",
+      "reason": "السبب"
+    },
+    "errors": {
+      "vehicleNotFound": "لم تعد هذه المركبة موجودة.",
+      "accidentNotFound": "لم يعد هذا الحادث موجوداً.",
+      "invalidAccident": "حدّد مكان وقوع الحادث.",
+      "alreadyRepaired": "سبق تسجيل فاتورة إصلاح لهذا الحادث.",
+      "claimExists": "لهذا الحادث مطالبة بالفعل.",
+      "claimNotFound": "لم تعد هذه المطالبة موجودة.",
+      "invalidClaim": "راجع بيانات المطالبة.",
+      "policyNotFound": "لم تعد هذه الوثيقة موجودة.",
+      "nothingReceived": "أدخل المبلغ المستلم وتاريخ وصوله.",
+      "illegalTransition": "لا يمكن الانتقال من {from} إلى {to}.",
+      "money": "أدخل مبلغاً صحيحاً بالدرهم.",
+      "date": "أدخل تاريخاً صحيحاً."
     }
   }
 }

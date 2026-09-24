@@ -29,6 +29,8 @@ const OWNER_PATH: Record<DocumentOwnerType, string> = {
   // A handover form and the marks on it are both read from the contract they belong to.
   HANDOVER: "contracts",
   DAMAGE_POINT: "contracts",
+  // Photographs and the police report live with the car.
+  ACCIDENT: "vehicles",
 };
 
 /** The owner must exist before a document is hung off it — see the schema's note on
@@ -54,6 +56,9 @@ async function ownerExists(ownerType: DocumentOwnerType, ownerId: string): Promi
   }
   if (ownerType === "HANDOVER") {
     return (await prisma.handover.count({ where: { id: ownerId, deletedAt: null } })) > 0;
+  }
+  if (ownerType === "ACCIDENT") {
+    return (await prisma.accident.count({ where: { id: ownerId, deletedAt: null } })) > 0;
   }
   return (await prisma.damagePoint.count({ where: { id: ownerId } })) > 0;
 }

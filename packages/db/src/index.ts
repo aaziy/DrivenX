@@ -180,6 +180,22 @@ export {
   type FineTransition,
   type NewFine,
 } from "./fines";
+export {
+  accidentCosts,
+  accidentsForVehicle,
+  AccidentRuleError,
+  lodgeClaim,
+  recordAccident,
+  recordRepair,
+  transitionAccident,
+  transitionClaim,
+  type AccidentCost,
+  type AccidentRuleCode,
+  type ClaimMove,
+  type NewAccident,
+  type NewClaim,
+  type RepairBill,
+} from "./accidents";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

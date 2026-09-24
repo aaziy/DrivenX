@@ -5,8 +5,8 @@ this one decides *how, in what order, and how we know it works*.
 
 **Status:** Phase 0 and Phase 1 complete; Phase 2 in progress · **Last updated:** 2026-09-24
 
-**Progress:** 81 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓▓░░░ 9/14 · Phase 3 ☐ · Phase 4 ☐
+**Progress:** 83 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓▓▓░░ 11/14 · Phase 3 ☐ · Phase 4 ☐
 
 ---
 
@@ -373,8 +373,8 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | ✅ | P2-06 | Maintenance due alerts by date and mileage — **Built 2026-09-21.** Date and distance markers, 14 days / 500 km of warning, one alert per state; nightly `maintenance-due` job |
 | ✅ | P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered — **Built 2026-09-24.** Held gross with no VAT split: a penalty is not a supply, so there is no input tax to reclaim. The ledger follows the money, not the blame — nothing posts until DrivenX actually pays the authority, and a fine the customer settles direct never touches the books |
 | ✅ | P2-08 | Fine recovery flow — attach to the customer's next installment — **Built 2026-09-24.** Raises one ordinary instalment, numbered and recognised by the same path as every other invoice, so it lands on the statement and settles through the existing payment machinery. Recharged at cost with no VAT added, as a disbursement — **needs the client's accountant to confirm** |
-| ☐ | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |
-| ☐ | P2-10 | Insurance claim tracking with recovery posting |
+| ✅ | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` — **Built 2026-09-24.** The repair costs the month it was *billed*, not the month of the crash, which can be months earlier and already reported on. Held net, like maintenance. Fault defaults to unknown, because the police report decides and that takes weeks |
+| ✅ | P2-10 | Insurance claim tracking with recovery posting — **Built 2026-09-24.** Approved is not paid: only money that genuinely arrives posts, to `revenue.insurance_claim` — its own category, kept clear of `revenue.insurance`, which is the premium §11 wants reportable on its own. The shortfall stays with DrivenX, which is what the policy excess is |
 | ☐ | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |
 | ✅ | P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance — **Built 2026-09-21** for contract endings: arrears shown live and never re-charged, staff add excess mileage, damage and fees (or credits), and settling raises one ordinary invoice. Handover/return records (P2-01–P2-04) still to come |
 | ☐ | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |

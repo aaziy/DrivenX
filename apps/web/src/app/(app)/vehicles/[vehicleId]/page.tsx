@@ -10,6 +10,7 @@ import { requirePermission } from "@/lib/auth";
 
 import { DocumentsCard } from "../../documents/documents-card";
 import { InsuranceCard } from "../insurance-card";
+import { AccidentsCard } from "../accidents-card";
 import { FinesCard } from "../fines-card";
 import { MaintenanceCard } from "../maintenance-card";
 import {
@@ -197,6 +198,16 @@ export default async function VehicleDetailPage({
         ) : null}
 
         {can("fine.view") ? <FinesCard vehicleId={vehicle.id} canManage={can("fine.manage")} /> : null}
+
+        {can("accident.view") ? (
+          <AccidentsCard
+            vehicleId={vehicle.id}
+            canManage={can("accident.manage")}
+            canSeeDocuments={can("document.view")}
+            canUpload={can("document.upload")}
+            canDelete={can("document.delete")}
+          />
+        ) : null}
 
         {can("insurance.view") ? (
           <InsuranceCard vehicleId={vehicle.id} canManage={can("insurance.manage")} />

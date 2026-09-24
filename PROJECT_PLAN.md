@@ -76,7 +76,8 @@ ledger_entries
   id, occurred_on, period_month
   direction        revenue | cost
   category         revenue.rental | revenue.insurance | revenue.excess_mileage
-                   revenue.fine_recovery | revenue.salvage | revenue.other
+                   revenue.fine_recovery | revenue.insurance_claim | revenue.salvage
+                   revenue.other
                    cost.supplier | cost.insurance | cost.maintenance | cost.repair
                    cost.registration | cost.fine | cost.other
   amount_fils
@@ -320,7 +321,7 @@ an automated reconciliation test.
       next service date/mileage → posts `cost.maintenance`
 - [x] **Fines (§13):** fine number, date, amount, authority, payer, status, documents → posts
       `cost.fine` and, when recovered, `revenue.fine_recovery`
-- [ ] **Accidents (§13):** location, description, photos, police report, insurance claim, repair
+- [x] **Accidents (§13):** location, description, photos, police report, insurance claim, repair
       cost, responsibility, status → posts `cost.repair`
 - [ ] **Advanced expenses:** categorised, allocatable to vehicle / contract / company overhead
 - [x] **Final settlement on return:** excess mileage (settled here), damages, outstanding balance
