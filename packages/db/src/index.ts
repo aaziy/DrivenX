@@ -167,6 +167,19 @@ export {
   type NewDamagePoint,
   type NewHandover,
 } from "./handovers";
+export {
+  FineRuleError,
+  finesForContract,
+  finesForVehicle,
+  outstandingFines,
+  recordFine,
+  recoverFine,
+  setFinePayer,
+  transitionFine,
+  type FineRuleCode,
+  type FineTransition,
+  type NewFine,
+} from "./fines";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

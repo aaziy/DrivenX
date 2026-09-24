@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_ROLES, PERMISSIONS } from "@drivenx/auth/permissions";
+import { CHARGE_TYPES } from "@drivenx/core";
 
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
@@ -73,6 +74,15 @@ describe("message catalogues", () => {
 describe("database text that is shown translated", () => {
   it("has a message for every permission in the catalogue", () => {
     const missing = PERMISSIONS.map((permission) => permissionMessageKey(permission.key)).filter(
+      (key) => !english.has(key) || !arabic.has(key),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("has a message for every charge type", () => {
+    // A charge type added to the enum without a label renders as a raw key path in the
+    // middle of a payment schedule, which is how FINE_RECOVERY first shipped.
+    const missing = CHARGE_TYPES.map((type) => `contracts.charges.${type}`).filter(
       (key) => !english.has(key) || !arabic.has(key),
     );
     expect(missing).toEqual([]);

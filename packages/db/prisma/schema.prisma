@@ -78,6 +78,8 @@ model User {
   maintenanceRecords    MaintenanceRecord[]
   handovers             Handover[]
   damagePoints          DamagePoint[]
+  fines                 Fine[]
+  fineStatusChanges     FineStatusChange[]
   settlementsOpened     Settlement[]           @relation("SettlementOpenedBy")
   settlementsSettled    Settlement[]           @relation("SettlementSettledBy")
   settlementLines       SettlementLine[]
@@ -244,6 +246,7 @@ model Customer {
   contracts Contract[]
   payments  Payment[]
   leads     Lead[]
+  fines     Fine[]
 
   // Global search (§16) hits name and mobile constantly. A trigram index for
   // partial matches arrives with P1A-09, as raw SQL Prisma cannot express.
@@ -529,6 +532,7 @@ model Vehicle {
   insurancePolicies InsurancePolicy[]
   maintenance       MaintenanceRecord[]
   handovers         Handover[]
+  fines             Fine[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -610,6 +614,8 @@ enum ChargeType {
   DOWN_PAYMENT
   ADMIN_FEE
   BUYOUT
+  /// Recharging a traffic fine DrivenX paid on the customer's behalf.
+  FINE_RECOVERY
   OTHER
 
   @@map("charge_type")
@@ -698,6 +704,7 @@ model Contract {
   statusChanges    ContractStatusChange[]
   supplierInvoices SupplierInvoice[]
   handovers        Handover[]
+  fines            Fine[]
   settlement       Settlement?
   maintenance      MaintenanceRecord[]
 
@@ -776,6 +783,7 @@ model Installment {
 
   allocations PaymentAllocation[]
   settlement  Settlement?
+  fine        Fine?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1431,4 +1439,115 @@ model DamagePoint {
 
   @@index([handoverId])
   @@map("damage_points")
+}
+
+// ===========================================================================
+// Traffic fines (P2-07, P2-08, SOW §13)
+// ===========================================================================
+
+enum FinePayer {
+  /// The driver at the time, recharged if DrivenX settles it first.
+  CUSTOMER
+  /// DrivenX's own: a lapsed registration, a fine while the car sat in the yard.
+  COMPANY
+
+  @@map("fine_payer")
+}
+
+enum FineStatus {
+  OPEN
+  DISPUTED
+  CANCELLED
+  PAID_BY_CUSTOMER
+  PAID
+  RECOVERED
+  WAIVED
+
+  @@map("fine_status")
+}
+
+/// A traffic fine against a car (P2-07).
+///
+/// The amount carries no VAT and no net/gross split, unlike every other figure in this
+/// schema. A fine is a penalty imposed by an authority, not a supply of anything, so
+/// there is no input VAT on it to reclaim — and holding it net with a VAT column beside
+/// it, as maintenance and supplier invoices are held, would invent 5% that nobody paid
+/// and that nobody can claim back.
+///
+/// The ledger follows the money rather than the blame. `payer` records who the fine
+/// falls to, but nothing is posted until someone actually pays: a fine the customer
+/// settles with the authority never appears in DrivenX's books at all, while one DrivenX
+/// pays is a cost from that day and stays one until it is genuinely recharged.
+model Fine {
+  id        String  @id @default(cuid())
+  vehicleId String  @map("vehicle_id")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  /// The contract the car was out on when the offence happened, when it was out on one.
+  /// This is what decides who was driving, so it is taken from the offence date and not
+  /// from today — a notice often arrives weeks later, after the car has moved on.
+  contractId String?   @map("contract_id")
+  contract   Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  fineNumber String @map("fine_number")
+  /// Free text: Dubai Police, RTA, Abu Dhabi Police, Salik. An enum here would need a
+  /// release every time an emirate renames a department.
+  authority  String
+
+  /// When the offence happened — the date that decides who was driving.
+  occurredOn DateTime  @map("occurred_on") @db.Date
+  /// When the notice reached DrivenX, which is usually much later.
+  issuedOn   DateTime? @map("issued_on") @db.Date
+
+  /// The whole penalty. No VAT: see the note above.
+  amountFils BigInt @map("amount_fils")
+
+  payer  FinePayer
+  status FineStatus @default(OPEN)
+
+  /// The day DrivenX paid the authority, which is the day it became a cost.
+  paidOn DateTime? @map("paid_on") @db.Date
+
+  /// The invoice raised to recharge the customer, when one has been.
+  recoveryInstallmentId String?      @unique @map("recovery_installment_id")
+  recoveryInstallment   Installment? @relation(fields: [recoveryInstallmentId], references: [id], onDelete: SetNull)
+  recoveredOn           DateTime?    @map("recovered_on") @db.Date
+
+  notes String?
+
+  statusChanges FineStatusChange[]
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  /// One record per fine number per authority, among the fines that still stand —
+  /// a partial unique index in the migration, as the handover forms use.
+  @@index([authority, fineNumber])
+  @@index([vehicleId, occurredOn])
+  @@index([contractId])
+  @@index([status])
+  @@map("fines")
+}
+
+/// Every status a fine has held, for the same reason contracts and vehicles keep one:
+/// who decided a customer would not be charged, and when, is a question that gets asked.
+model FineStatusChange {
+  id         String      @id @default(cuid())
+  fineId     String      @map("fine_id")
+  fine       Fine        @relation(fields: [fineId], references: [id], onDelete: Cascade)
+  fromStatus FineStatus? @map("from_status")
+  toStatus   FineStatus  @map("to_status")
+  reason     String?
+
+  changedById String?  @map("changed_by_id")
+  changedBy   User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  @@index([fineId, changedAt])
+  @@map("fine_status_changes")
 }

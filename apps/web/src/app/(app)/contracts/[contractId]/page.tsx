@@ -227,9 +227,10 @@ export default async function ContractPage({ params }: { params: Promise<{ contr
                     <tr key={item.id}>
                       <td style={{ whiteSpace: "nowrap" }}>{day(item.dueDate)}</td>
                       {/* A one-off carries its own wording — "Final settlement" says more
-                          than "Other". The standing charges are named by their type. */}
+                          than "Other", and which fine was recharged is the whole point of
+                          the line. The standing charges are named by their type. */}
                       <td>
-                        {item.charge.chargeType === "OTHER" ? (
+                        {item.charge.chargeType === "OTHER" || item.charge.chargeType === "FINE_RECOVERY" ? (
                           <bdi>{item.charge.label}</bdi>
                         ) : (
                           tCharges(item.charge.chargeType)

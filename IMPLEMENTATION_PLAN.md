@@ -5,8 +5,8 @@ this one decides *how, in what order, and how we know it works*.
 
 **Status:** Phase 0 and Phase 1 complete; Phase 2 in progress · **Last updated:** 2026-09-24
 
-**Progress:** 79 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓░░░░ 7/14 · Phase 3 ☐ · Phase 4 ☐
+**Progress:** 81 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓▓░░░ 9/14 · Phase 3 ☐ · Phase 4 ☐
 
 ---
 
@@ -371,8 +371,8 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | ✅ | P2-04 | Handover / return PDF report — **Built 2026-09-23.** English and Arabic, signatures embedded rather than linked, the same diagram as the screen. Excess mileage is computed from the two signed readings against the contract's allowance and offered to the settlement (P2-12) instead of being typed in |
 | ✅ | P2-05 | `MaintenanceRecord`: service date, mileage, garage/vendor, type, description, cost, invoice, next service date/mileage → `cost.maintenance` — **Built 2026-09-21.** Bill held net (input VAT recoverable), costed against the car and the contract it was out on that day |
 | ✅ | P2-06 | Maintenance due alerts by date and mileage — **Built 2026-09-21.** Date and distance markers, 14 days / 500 km of warning, one alert per state; nightly `maintenance-due` job |
-| ☐ | P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered |
-| ☐ | P2-08 | Fine recovery flow — attach to the customer's next installment |
+| ✅ | P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered — **Built 2026-09-24.** Held gross with no VAT split: a penalty is not a supply, so there is no input tax to reclaim. The ledger follows the money, not the blame — nothing posts until DrivenX actually pays the authority, and a fine the customer settles direct never touches the books |
+| ✅ | P2-08 | Fine recovery flow — attach to the customer's next installment — **Built 2026-09-24.** Raises one ordinary instalment, numbered and recognised by the same path as every other invoice, so it lands on the statement and settles through the existing payment machinery. Recharged at cost with no VAT added, as a disbursement — **needs the client's accountant to confirm** |
 | ☐ | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |
 | ☐ | P2-10 | Insurance claim tracking with recovery posting |
 | ☐ | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |

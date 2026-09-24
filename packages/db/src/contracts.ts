@@ -87,6 +87,9 @@ const REVENUE_CATEGORY: Record<ChargeType, string> = {
   ANNUAL_INSURANCE: "revenue.insurance",
   BUYOUT: "revenue.other",
   ADMIN_FEE: "revenue.other",
+  // Recharging a fine DrivenX paid on the customer's behalf. Its own category, so a
+  // month's rental revenue is not inflated by money that only repays a penalty.
+  FINE_RECOVERY: "revenue.fine_recovery",
   OTHER: "revenue.other",
 };
 

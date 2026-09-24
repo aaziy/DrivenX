@@ -19,13 +19,23 @@ import { divideRound, RoundingMode } from "../money/rounding";
 import { annualOverMonths } from "../pricing/deal";
 import { addDays, addMonths, type IsoDate } from "./calendar";
 
-export type ChargeType =
-  | "MONTHLY_RENTAL"
-  | "ANNUAL_INSURANCE"
-  | "DOWN_PAYMENT"
-  | "ADMIN_FEE"
-  | "BUYOUT"
-  | "OTHER";
+/**
+ * Mirrors the `ChargeType` enum in the Prisma schema.
+ *
+ * A list rather than a bare union, so anything that has to cover every type — the label
+ * catalogue, a filter, a report — can iterate it and be checked for gaps.
+ */
+export const CHARGE_TYPES = [
+  "MONTHLY_RENTAL",
+  "ANNUAL_INSURANCE",
+  "DOWN_PAYMENT",
+  "ADMIN_FEE",
+  "BUYOUT",
+  "FINE_RECOVERY",
+  "OTHER",
+] as const;
+
+export type ChargeType = (typeof CHARGE_TYPES)[number];
 
 export type Recurrence = "ONCE" | "MONTHLY" | "ANNUAL";
 
@@ -239,8 +249,11 @@ const TYPE_ORDER: Record<ChargeType, number> = {
   ADMIN_FEE: 1,
   MONTHLY_RENTAL: 2,
   ANNUAL_INSURANCE: 3,
-  OTHER: 4,
-  BUYOUT: 5,
+  // Raised one at a time against a live contract rather than scheduled with the rest,
+  // so its place in the order only matters when one falls due on the same day.
+  FINE_RECOVERY: 4,
+  OTHER: 5,
+  BUYOUT: 6,
 };
 
 /** Every instalment of every charge, in the order they fall due. */

@@ -23,3 +23,4 @@ export * from "./leads/status";
 export * from "./fleet/maintenance";
 export * from "./fleet/handover";
 export * from "./fleet/damage";
+export * from "./fines/status";

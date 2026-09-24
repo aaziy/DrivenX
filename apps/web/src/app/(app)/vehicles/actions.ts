@@ -16,6 +16,8 @@ import {
   normalisePlate,
   ON_CONTRACT_STATUSES,
   type Fils,
+  IllegalFineTransitionError,
+  type FineStatus,
 } from "@drivenx/core";
 import {
   cancelPolicy,
@@ -32,6 +34,10 @@ import {
   VehicleNotFoundError,
   VehicleStatusManagedByContractError,
   type NewVehicle,
+  FineRuleError,
+  recordFine,
+  recoverFine,
+  transitionFine,
 } from "@drivenx/db";
 
 import { asActor, requirePermission } from "@/lib/auth";
@@ -463,4 +469,107 @@ export async function recordMaintenanceAction(
 
   revalidatePath(`/vehicles/${vehicleId}`);
   return { success: t("added") };
+}
+
+// ---------------------------------------------------------------------------
+// Traffic fines (P2-07, P2-08, SOW §13)
+// ---------------------------------------------------------------------------
+
+async function explainFine(error: unknown, operation: string): Promise<string> {
+  const t = await getTranslations("fines.errors");
+  if (error instanceof FineRuleError) return t(error.code);
+  if (error instanceof IllegalFineTransitionError) {
+    const ts = await getTranslations("fines.status");
+    return t("illegalTransition", { from: ts(error.from), to: ts(error.to) });
+  }
+  return toUserMessage(operation, error);
+}
+
+export async function recordFineAction(
+  vehicleId: string,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("fine.manage");
+  const [t, te] = await Promise.all([getTranslations("fines"), getTranslations("fines.errors")]);
+
+  const amount = money(text(formData, "amount"));
+  if (amount === "invalid" || amount === null || amount === 0n) return { error: te("amount") };
+
+  const occurredOn = text(formData, "occurredOn");
+  if (!isIsoDate(occurredOn)) return { error: te("date") };
+  const issuedOn = text(formData, "issuedOn");
+
+  const payer = text(formData, "payer");
+
+  try {
+    await asActor(principal, () =>
+      recordFine(
+        {
+          vehicleId,
+          fineNumber: text(formData, "fineNumber"),
+          authority: text(formData, "authority"),
+          occurredOn,
+          issuedOn: isIsoDate(issuedOn) ? issuedOn : null,
+          amountFils: amount,
+          // Blank means "whatever the offence date implies", which the service works out.
+          ...(payer === "CUSTOMER" || payer === "COMPANY" ? { payer } : {}),
+          notes: optional(formData, "notes"),
+        },
+        principal.id,
+      ),
+    );
+  } catch (error) {
+    return { error: await explainFine(error, "recordFine") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return { success: t("added") };
+}
+
+export async function transitionFineAction(
+  vehicleId: string,
+  fineId: string,
+  to: FineStatus,
+  _previous: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("fine.manage");
+
+  // Paying needs the day the money left; the rest is today's decision.
+  const paidOnField = text(formData, "paidOn");
+  const paidOn = isIsoDate(paidOnField) ? paidOnField : businessDate(new Date());
+
+  try {
+    await asActor(principal, () =>
+      transitionFine(fineId, { to, paidOn, reason: optional(formData, "reason"), actorId: principal.id }),
+    );
+  } catch (error) {
+    return { error: await explainFine(error, "transitionFine") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  return {};
+}
+
+export async function recoverFineAction(
+  vehicleId: string,
+  fineId: string,
+  _previous: VehicleFormState,
+  _formData: FormData,
+): Promise<VehicleFormState> {
+  const principal = await requirePermission("fine.manage");
+
+  try {
+    await asActor(principal, () =>
+      recoverFine(fineId, { actorId: principal.id, today: businessDate(new Date()) }),
+    );
+  } catch (error) {
+    return { error: await explainFine(error, "recoverFine") };
+  }
+
+  revalidatePath(`/vehicles/${vehicleId}`);
+  // No success message: recharging moves the fine to Recovered, which replaces the
+  // control that would have rendered one. The row's invoice number is the evidence.
+  return {};
 }

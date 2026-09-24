@@ -165,6 +165,7 @@
       "DOWN_PAYMENT": "Down payment",
       "ADMIN_FEE": "Admin fee",
       "BUYOUT": "Buyout",
+      "FINE_RECOVERY": "Fine recovery",
       "OTHER": "Other"
     },
     "methods": {
@@ -1715,5 +1716,71 @@
     "unsigned": "Not signed",
     "generated": "Generated",
     "page": "Page {current} of {total}"
+  },
+  "fines": {
+    "cardTitle": "Traffic fines",
+    "hint": "A fine is recorded against the car whoever was driving. Nothing reaches the books until money actually moves: a fine the customer settles with the authority never touches them at all.",
+    "none": "No fines recorded for this car.",
+    "outOfPocket": "{amount} paid and not recovered",
+    "addTitle": "Record a fine",
+    "add": "Record fine",
+    "adding": "Saving…",
+    "added": "Fine recorded.",
+    "working": "Working…",
+    "columns": {
+      "occurredOn": "Offence",
+      "fine": "Authority and number",
+      "driver": "Driver that day",
+      "amount": "Amount",
+      "status": "Status",
+      "next": "Next step"
+    },
+    "status": {
+      "OPEN": "Open",
+      "DISPUTED": "Disputed",
+      "CANCELLED": "Cancelled",
+      "PAID_BY_CUSTOMER": "Paid by customer",
+      "PAID": "Paid by DrivenX",
+      "RECOVERED": "Recovered",
+      "WAIVED": "Absorbed"
+    },
+    "payers": {
+      "CUSTOMER": "Customer",
+      "COMPANY": "DrivenX"
+    },
+    "actions": {
+      "pay": "DrivenX paid it",
+      "paidByCustomer": "Customer paid it",
+      "dispute": "Dispute",
+      "cancel": "Cancelled",
+      "recover": "Recharge the customer",
+      "waive": "Absorb the cost"
+    },
+    "form": {
+      "fineNumber": "Fine number",
+      "authority": "Authority",
+      "occurredOn": "Date of the offence",
+      "occurredOnHint": "Decides who was driving, so use the offence date and not the day the notice arrived",
+      "issuedOn": "Notice received",
+      "amount": "Amount (AED)",
+      "amountHint": "The whole penalty. There is no VAT on a fine.",
+      "payer": "Falls to",
+      "payerAuto": "Whoever had the car that day",
+      "paidOn": "Paid on",
+      "reason": "Reason",
+      "notes": "Notes"
+    },
+    "errors": {
+      "vehicleNotFound": "That vehicle no longer exists.",
+      "fineNotFound": "That fine no longer exists.",
+      "invalidFine": "Check the fine's details.",
+      "duplicateFine": "That fine number is already recorded for this authority.",
+      "noCustomerToRecharge": "There is nobody to recharge: the car was not out on a contract that day.",
+      "alreadyRecovered": "This fine has already been recharged.",
+      "recoveryNotFound": "That recharge no longer exists.",
+      "illegalTransition": "A fine cannot go from {from} to {to}.",
+      "amount": "Enter the amount of the fine.",
+      "date": "Enter the date of the offence."
+    }
   }
 }
