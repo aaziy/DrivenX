@@ -3,7 +3,10 @@
 Executable companion to [PROJECT_PLAN.md](PROJECT_PLAN.md). That document decides *what and why*;
 this one decides *how, in what order, and how we know it works*.
 
-**Status:** Ready to execute · **Last updated:** 2026-09-03
+**Status:** Phase 0 and Phase 1 complete; Phase 2 in progress · **Last updated:** 2026-09-24
+
+**Progress:** 79 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓░░░░ 7/14 · Phase 3 ☐ · Phase 4 ☐
 
 ---
 
@@ -174,22 +177,22 @@ Any bug touching money or permissions is **minimum P1**, regardless of how it lo
 **Goal:** every load-bearing decision implemented and tested before any feature exists.
 **Duration:** ~1 week.
 
-| ID | Task | Tests |
-|---|---|---|
-| P0-01 | Monorepo: pnpm workspaces, `apps/web`, `apps/worker`, `packages/{core,db,auth,ui}`, strict TS | — |
-| P0-02 | CI: lint, typecheck, test, build. Branch protection on `main` | Pipeline runs green on empty repo |
-| P0-03 | `docker-compose.yml`: Postgres 16 + MinIO + healthchecks. `.env.example` | `docker compose up` reaches healthy |
-| P0-04 | Prisma init, connection, migration workflow, base model conventions | Migrate up/down clean |
-| P0-05 | **`Money` type**: BigInt fils, `add`/`sub`/`mul`/`allocate`/`format`, largest-remainder split | Unit: 3400 over 36mo sums exactly; 1 fils over 3 ways; negative; zero |
-| P0-06 | Auth.js credentials, argon2 hashing, session cookie, password policy, lockout after 5 failures | Integration: login, bad password, lockout, session expiry |
-| P0-07 | **RBAC**: permission catalogue, `role_permissions`, `can()`, `requirePermission()` middleware | Integration: permission grant/revoke takes effect without re-login |
-| P0-08 | Seed the six SOW roles (§2) as editable defaults | Seed idempotent |
-| P0-09 | **Audit log**: Prisma middleware capturing before/after on every mutation | Integration: every write produces exactly one audit row with correct diff |
-| P0-10 | Storage interface + MinIO adapter; upload, signed URL, delete, MIME allowlist, 10MB cap | Integration: upload/retrieve round-trip; oversized rejected; `.exe` rejected |
-| P0-11 | App shell: layout, nav, auth guard, `DataTable` (sort/filter/paginate/export), `Form` primitive, toasts | E2E: login → dashboard → logout |
-| P0-12 | Golden dataset seed script (§2.4) | Seed runs deterministically twice with identical output |
-| P0-13 | Error handling: boundaries, structured logging, request IDs | — |
-| P0-14 | Playwright setup + first journey | E2E green in CI |
+| ✓ | ID | Task | Tests |
+|---|---|---|---|
+| ✅ | P0-01 | Monorepo: pnpm workspaces, `apps/web`, `apps/worker`, `packages/{core,db,auth,ui}`, strict TS | — |
+| ✅ | P0-02 | CI: lint, typecheck, test, build. Branch protection on `main` | Pipeline runs green on empty repo |
+| ✅ | P0-03 | `docker-compose.yml`: Postgres 16 + MinIO + healthchecks. `.env.example` | `docker compose up` reaches healthy |
+| ✅ | P0-04 | Prisma init, connection, migration workflow, base model conventions | Migrate up/down clean |
+| ✅ | P0-05 | **`Money` type**: BigInt fils, `add`/`sub`/`mul`/`allocate`/`format`, largest-remainder split | Unit: 3400 over 36mo sums exactly; 1 fils over 3 ways; negative; zero |
+| ✅ | P0-06 | Auth.js credentials, argon2 hashing, session cookie, password policy, lockout after 5 failures | Integration: login, bad password, lockout, session expiry |
+| ✅ | P0-07 | **RBAC**: permission catalogue, `role_permissions`, `can()`, `requirePermission()` middleware | Integration: permission grant/revoke takes effect without re-login |
+| ✅ | P0-08 | Seed the six SOW roles (§2) as editable defaults | Seed idempotent |
+| ✅ | P0-09 | **Audit log**: Prisma middleware capturing before/after on every mutation | Integration: every write produces exactly one audit row with correct diff |
+| ✅ | P0-10 | Storage interface + MinIO adapter; upload, signed URL, delete, MIME allowlist, 10MB cap | Integration: upload/retrieve round-trip; oversized rejected; `.exe` rejected |
+| ✅ | P0-11 | App shell: layout, nav, auth guard, `DataTable` (sort/filter/paginate/export), `Form` primitive, toasts | E2E: login → dashboard → logout |
+| ✅ | P0-12 | Golden dataset seed script (§2.4) | Seed runs deterministically twice with identical output |
+| ✅ | P0-13 | Error handling: boundaries, structured logging, request IDs | — |
+| ✅ | P0-14 | Playwright setup + first journey | E2E green in CI |
 
 **Exit:** Super Admin logs in, creates an Operations user, edits that role's permissions, sees the
 change take effect immediately, and finds both actions in the audit log. Full pipeline green.
@@ -202,18 +205,18 @@ change take effect immediately, and finds both actions in the audit log. Full pi
 
 ### 6.1 Milestone 1A — Parties & Documents (~1 wk) · SOW §5, §6, §16
 
-| ID | Task |
-|---|---|
-| P1A-01 | `Customer` model + migration: code, name, mobile, email, DOB, nationality, address, emergency contact, status |
-| P1A-02 | Customer CRUD: list (search/filter/paginate), create, edit, detail, soft delete |
-| P1A-03 | `Supplier` model + CRUD: company, contact, phone, email, address, trade licence, TRN, bank details, notes |
-| P1A-04 | `DocumentCategory` model, seed defaults, Super Admin management UI (§17) |
-| P1A-05 | **`Document` model** — polymorphic `ownerType`/`ownerId`, number, issue, expiry, file, status, reminder offsets |
-| P1A-06 | Document upload component: drag-drop, preview, replace, version history |
-| P1A-07 | **Expiry scan job** — nightly, all owner types, `dedupeKey` to guarantee one notification per document per offset |
-| P1A-08 | `Notification` model + in-app centre: unread badge, mark read, deep-link to entity |
-| P1A-09 | **Global search** (§16): name, mobile, Emirates ID, licence, plate, VIN, contract no., invoice no. — Postgres trigram index |
-| P1A-10 | Customer/supplier detail pages with document tab and expiry status chips |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P1A-01 | `Customer` model + migration: code, name, mobile, email, DOB, nationality, address, emergency contact, status |
+| ✅ | P1A-02 | Customer CRUD: list (search/filter/paginate), create, edit, detail, soft delete |
+| ✅ | P1A-03 | `Supplier` model + CRUD: company, contact, phone, email, address, trade licence, TRN, bank details, notes |
+| ✅ | P1A-04 | `DocumentCategory` model, seed defaults, Super Admin management UI (§17) |
+| ✅ | P1A-05 | **`Document` model** — polymorphic `ownerType`/`ownerId`, number, issue, expiry, file, status, reminder offsets |
+| ✅ | P1A-06 | Document upload component: drag-drop, preview, replace, version history |
+| ✅ | P1A-07 | **Expiry scan job** — nightly, all owner types, `dedupeKey` to guarantee one notification per document per offset |
+| ✅ | P1A-08 | `Notification` model + in-app centre: unread badge, mark read, deep-link to entity |
+| ✅ | P1A-09 | **Global search** (§16): name, mobile, Emirates ID, licence, plate, VIN, contract no., invoice no. — Postgres trigram index |
+| ✅ | P1A-10 | Customer/supplier detail pages with document tab and expiry status chips |
 
 **Tests**
 - Unit: expiry-offset calculation across 60/30/15/7, DST and leap-year boundaries
@@ -227,16 +230,16 @@ change take effect immediately, and finds both actions in the audit log. Full pi
 
 ### 6.2 Milestone 1B — Fleet (~1 wk) · SOW §4
 
-| ID | Task |
-|---|---|
-| P1B-01 | `Vehicle` model: code, make, model, year, variant, colour, plate, VIN, mileage, ownership, supplier, source date, status |
-| P1B-02 | **Vehicle status state machine** — 9 states, explicit transition table, illegal transitions throw |
-| P1B-03 | Vehicle CRUD + list with §3 filters |
-| P1B-04 | Ownership: Company Owned vs B2B/Supplier; supplier required when B2B (DB constraint, not just UI) |
-| P1B-05 | Financial fields: purchase price / supplier monthly cost |
-| P1B-06 | Photo gallery + vehicle documents (mulkiya, insurance) via the 1A engine |
-| P1B-07 | Vehicle detail: overview, documents, contract history, status timeline |
-| P1B-08 | Mileage log with monotonic-increase validation |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P1B-01 | `Vehicle` model: code, make, model, year, variant, colour, plate, VIN, mileage, ownership, supplier, source date, status |
+| ✅ | P1B-02 | **Vehicle status state machine** — 9 states, explicit transition table, illegal transitions throw |
+| ✅ | P1B-03 | Vehicle CRUD + list with §3 filters |
+| ✅ | P1B-04 | Ownership: Company Owned vs B2B/Supplier; supplier required when B2B (DB constraint, not just UI) |
+| ✅ | P1B-05 | Financial fields: purchase price / supplier monthly cost |
+| ✅ | P1B-06 | Photo gallery + vehicle documents (mulkiya, insurance) via the 1A engine |
+| ✅ | P1B-07 | Vehicle detail: overview, documents, contract history, status timeline |
+| ✅ | P1B-08 | Mileage log with monotonic-increase validation |
 
 **Tests**
 - Unit: every legal transition passes, every illegal one throws (full 9×9 matrix)
@@ -248,13 +251,13 @@ change take effect immediately, and finds both actions in the audit log. Full pi
 
 ### 6.3 Milestone 1C — Pricing Engine (~3 days) · SOW §8
 
-| ID | Task |
-|---|---|
-| P1C-01 | **`calculateDeal()`** — pure, in `packages/core/pricing`, zero I/O |
-| P1C-02 | Inputs: vehicle, supplier, supplier monthly cost, customer monthly rental, duration, down payment, annual insurance charge, insurance cost, expected maintenance, other costs |
-| P1C-03 | Outputs: monthly revenue, monthly cost, monthly gross profit, total contract revenue, total cost, expected total profit, margin %, first-year revenue incl. insurance |
-| P1C-04 | Deal Calculator UI — thin form over the pure function, live recalculation |
-| P1C-05 | Save calculation as a quote, attach to a lead, convert to contract |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P1C-01 | **`calculateDeal()`** — pure, in `packages/core/pricing`, zero I/O |
+| ✅ | P1C-02 | Inputs: vehicle, supplier, supplier monthly cost, customer monthly rental, duration, down payment, annual insurance charge, insurance cost, expected maintenance, other costs |
+| ✅ | P1C-03 | Outputs: monthly revenue, monthly cost, monthly gross profit, total contract revenue, total cost, expected total profit, margin %, first-year revenue incl. insurance |
+| ✅ | P1C-04 | Deal Calculator UI — thin form over the pure function, live recalculation |
+| ✅ | P1C-05 | Save calculation as a quote, attach to a lead, convert to contract |
 
 **Tests — the SOW's own numbers, pinned as assertions:**
 - §8: supplier 2,400 · customer 3,500 · 36mo → **1,100/mo gross, 39,600 total** ✓
@@ -273,26 +276,26 @@ change take effect immediately, and finds both actions in the audit log. Full pi
 
 The highest-risk milestone. Everything financial converges here.
 
-| ID | Task |
-|---|---|
-| P1D-01 | Contract CRUD: number, customer, vehicle, supplier, type, dates, duration, monthly rental, down payment, mileage allowance, excess mileage rate, payment day, terms |
-| P1D-02 | **Contract status machine**: Draft → Pending → Active → Completed / Overdue / Cancelled |
-| P1D-03 | **`ContractCharge` model** — composable charges (§3.4 of the plan), *not* fixed columns |
-| P1D-04 | **Charge expansion → `Installment` generation** across the full duration, using largest-remainder allocation |
-| P1D-05 | Invoice numbering: sequential, gapless, collision-safe under concurrency |
-| P1D-06 | `Installment` model + status machine: Upcoming, Due, Partially Paid, Paid, Overdue, Waived |
-| P1D-07 | `Payment` + `PaymentAllocation` — one payment settles across multiple installments |
-| P1D-08 | Partial payment handling, over-payment → credit, waive with mandatory reason |
-| P1D-09 | Nightly job: Upcoming → Due → Overdue transitions |
-| P1D-10 | **`InsurancePolicy`** (§11): provider, policy no., type, charge amount, **cost amount** (open Q2), dates, document, status |
-| P1D-11 | Insurance as its own recurring charge → own installments → `revenue.insurance` ledger category |
-| P1D-12 | Insurance renewal alerts at 30/15/7 days |
-| P1D-13 | `SupplierInvoice` — payable schedule mirroring the customer schedule, `cost.supplier` |
-| P1D-14 | **`LedgerEntry` model + posting service.** Only domain events write here. Append-only enforced by DB trigger |
-| P1D-15 | Wire every event to the ledger: contract activated, installment posted, payment received, supplier invoice raised, insurance charged |
-| P1D-16 | Down payment posts to revenue on its charge date. There is no refundable deposit to track |
-| P1D-17 | Contract detail: schedule, payment history, documents, ledger view |
-| P1D-18 | Contract PDF generation |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P1D-01 | Contract CRUD: number, customer, vehicle, supplier, type, dates, duration, monthly rental, down payment, mileage allowance, excess mileage rate, payment day, terms |
+| ✅ | P1D-02 | **Contract status machine**: Draft → Pending → Active → Completed / Overdue / Cancelled |
+| ✅ | P1D-03 | **`ContractCharge` model** — composable charges (§3.4 of the plan), *not* fixed columns |
+| ✅ | P1D-04 | **Charge expansion → `Installment` generation** across the full duration, using largest-remainder allocation |
+| ✅ | P1D-05 | Invoice numbering: sequential, gapless, collision-safe under concurrency |
+| ✅ | P1D-06 | `Installment` model + status machine: Upcoming, Due, Partially Paid, Paid, Overdue, Waived |
+| ✅ | P1D-07 | `Payment` + `PaymentAllocation` — one payment settles across multiple installments |
+| ✅ | P1D-08 | Partial payment handling, over-payment → credit, waive with mandatory reason |
+| ✅ | P1D-09 | Nightly job: Upcoming → Due → Overdue transitions |
+| ✅ | P1D-10 | **`InsurancePolicy`** (§11): provider, policy no., type, charge amount, **cost amount** (open Q2), dates, document, status |
+| ✅ | P1D-11 | Insurance as its own recurring charge → own installments → `revenue.insurance` ledger category |
+| ✅ | P1D-12 | Insurance renewal alerts at 30/15/7 days |
+| ✅ | P1D-13 | `SupplierInvoice` — payable schedule mirroring the customer schedule, `cost.supplier` |
+| ✅ | P1D-14 | **`LedgerEntry` model + posting service.** Only domain events write here. Append-only enforced by DB trigger |
+| ✅ | P1D-15 | Wire every event to the ledger: contract activated, installment posted, payment received, supplier invoice raised, insurance charged |
+| ✅ | P1D-16 | Down payment posts to revenue on its charge date. There is no refundable deposit to track |
+| ✅ | P1D-17 | Contract detail: schedule, payment history, documents, ledger view |
+| ✅ | P1D-18 | Contract PDF generation |
 
 **Tests** — all nine invariants (§2.3) go live here and run on every commit from now on.
 - Unit: charge expansion for 12/24/36/60 months; annual insurance across a 36-month term → exactly 3
@@ -314,19 +317,19 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 
 ### 6.5 Milestone 1E — Dashboard & Reporting (~1 wk) · SOW §3, §14, §15
 
-| ID | Task |
-|---|---|
-| P1E-01 | KPI service — every tile a ledger aggregate, never a stored field |
-| P1E-02 | Dashboard tiles: total/owned/B2B/available/rented vehicles, active customers, active contracts, monthly revenue, monthly cost, monthly profit, customer outstanding, supplier payables, insurance renewals, expiring documents |
-| P1E-03 | Alert panel: overdue payments, expiring Emirates IDs / licences / registration / insurance / contracts / maintenance |
-| P1E-04 | Global filters: date range, vehicle, supplier, customer, salesperson, contract type — **Built 2026-09-19** on profitability: date range, view by vehicle/customer/supplier/contract/month, contract type and salesperson |
-| P1E-05 | Profitability reports — by vehicle, customer, supplier, contract, month, year |
-| P1E-06 | Revenue breakdown with **insurance separated from rental** (§11 requirement) |
-| P1E-07 | Customer statement: paid, outstanding, full transaction history |
-| P1E-08 | Supplier statement |
-| P1E-09 | Excel export (SheetJS) on every report |
-| P1E-10 | PDF export (React-PDF) on every report |
-| P1E-11 | Query performance pass — indexes, materialised view for the dashboard if p95 > 500ms — **Measured 2026-09-19** (`pnpm bench:dashboard`): at 1,000 contracts (39k instalments) the worst p95 is 27 ms; at 5,000 (195k instalments, 60k ledger entries) it is 107 ms (profitability by contract). Well under 500 ms, so no materialised view |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P1E-01 | KPI service — every tile a ledger aggregate, never a stored field |
+| ✅ | P1E-02 | Dashboard tiles: total/owned/B2B/available/rented vehicles, active customers, active contracts, monthly revenue, monthly cost, monthly profit, customer outstanding, supplier payables, insurance renewals, expiring documents |
+| ✅ | P1E-03 | Alert panel: overdue payments, expiring Emirates IDs / licences / registration / insurance / contracts / maintenance |
+| ✅ | P1E-04 | Global filters: date range, vehicle, supplier, customer, salesperson, contract type — **Built 2026-09-19** on profitability: date range, view by vehicle/customer/supplier/contract/month, contract type and salesperson |
+| ✅ | P1E-05 | Profitability reports — by vehicle, customer, supplier, contract, month, year |
+| ✅ | P1E-06 | Revenue breakdown with **insurance separated from rental** (§11 requirement) |
+| ✅ | P1E-07 | Customer statement: paid, outstanding, full transaction history |
+| ✅ | P1E-08 | Supplier statement |
+| ✅ | P1E-09 | Excel export (SheetJS) on every report |
+| ✅ | P1E-10 | PDF export (React-PDF) on every report |
+| ✅ | P1E-11 | Query performance pass — indexes, materialised view for the dashboard if p95 > 500ms — **Measured 2026-09-19** (`pnpm bench:dashboard`): at 1,000 contracts (39k instalments) the worst p95 is 27 ms; at 5,000 (195k instalments, 60k ledger entries) it is 107 ms (profitability by contract). Well under 500 ms, so no materialised view |
 
 **Tests**
 - Reconciliation: **INV-6** — every KPI equals its ledger aggregate; every report cross-foots to the
@@ -339,14 +342,14 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 
 ### 6.6 Milestone 1F — Lead & Sales CRM (~3 days) · SOW §7
 
-| ID | Task |
-|---|---|
-| P1F-01 | `Lead` model: name, phone, email, source, interested vehicle, budget, duration, salesperson, notes |
-| P1F-02 | Pipeline: New → Contacted → Qualified → Deal Created → Contracted → Lost, with lost reason |
-| P1F-03 | Kanban + list views |
-| P1F-04 | Lead → deal calculation → contract conversion, preserving salesperson attribution |
-| P1F-05 | Sales Staff role scoped to own leads (§2) |
-| P1F-06 | Conversion funnel report — **Built 2026-09-19:** reached counts come from each lead's history, so the funnel only narrows |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P1F-01 | `Lead` model: name, phone, email, source, interested vehicle, budget, duration, salesperson, notes |
+| ✅ | P1F-02 | Pipeline: New → Contacted → Qualified → Deal Created → Contracted → Lost, with lost reason |
+| ✅ | P1F-03 | Kanban + list views |
+| ✅ | P1F-04 | Lead → deal calculation → contract conversion, preserving salesperson attribution |
+| ✅ | P1F-05 | Sales Staff role scoped to own leads (§2) |
+| ✅ | P1F-06 | Conversion funnel report — **Built 2026-09-19:** reached counts come from each lead's history, so the funnel only narrows |
 
 **Tests**
 - Integration: conversion carries attribution through to the contract; Sales Staff cannot read
@@ -360,22 +363,22 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 
 ## 7. Phase 2 — Operations (~4–5 wks) · SOW §12, §13
 
-| ID | Task |
-|---|---|
-| P2-01 | `Handover` model: type (handover/return), date/time, mileage, fuel level, condition — **Built 2026-09-23.** One record with a direction, one of each per contract, so the return reads against the handover field for field. A draft at the counter, evidence once signed: only signing posts the odometer to the fleet |
-| P2-02 | Damage marking on a vehicle diagram, per-point photos — **Built 2026-09-23.** The panel is derived from where the mark was put, against one region table in `core/fleet/damage.ts` that the screen and the PDF both draw. Interior, wheels and mechanical carry no position. Photos hang off each mark through the 1A document engine |
-| P2-03 | Signature capture — customer and staff — **Built 2026-09-23.** Drawn on a canvas, stored as PNGs through the same upload validation as a passport scan. Both signatures together or neither, enforced in the database as well as the service |
-| P2-04 | Handover / return PDF report — **Built 2026-09-23.** English and Arabic, signatures embedded rather than linked, the same diagram as the screen. Excess mileage is computed from the two signed readings against the contract's allowance and offered to the settlement (P2-12) instead of being typed in |
-| P2-05 | `MaintenanceRecord`: service date, mileage, garage/vendor, type, description, cost, invoice, next service date/mileage → `cost.maintenance` — **Built 2026-09-21.** Bill held net (input VAT recoverable), costed against the car and the contract it was out on that day |
-| P2-06 | Maintenance due alerts by date and mileage — **Built 2026-09-21.** Date and distance markers, 14 days / 500 km of warning, one alert per state; nightly `maintenance-due` job |
-| P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered |
-| P2-08 | Fine recovery flow — attach to the customer's next installment |
-| P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |
-| P2-10 | Insurance claim tracking with recovery posting |
-| P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |
-| P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance — **Built 2026-09-21** for contract endings: arrears shown live and never re-charged, staff add excess mileage, damage and fees (or credits), and settling raises one ordinary invoice. Handover/return records (P2-01–P2-04) still to come |
-| P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |
-| P2-14 | Vehicle lifetime P&L view |
+| ✓ | ID | Task |
+|---|---|---|
+| ✅ | P2-01 | `Handover` model: type (handover/return), date/time, mileage, fuel level, condition — **Built 2026-09-23.** One record with a direction, one of each per contract, so the return reads against the handover field for field. A draft at the counter, evidence once signed: only signing posts the odometer to the fleet |
+| ✅ | P2-02 | Damage marking on a vehicle diagram, per-point photos — **Built 2026-09-23.** The panel is derived from where the mark was put, against one region table in `core/fleet/damage.ts` that the screen and the PDF both draw. Interior, wheels and mechanical carry no position. Photos hang off each mark through the 1A document engine |
+| ✅ | P2-03 | Signature capture — customer and staff — **Built 2026-09-23.** Drawn on a canvas, stored as PNGs through the same upload validation as a passport scan. Both signatures together or neither, enforced in the database as well as the service |
+| ✅ | P2-04 | Handover / return PDF report — **Built 2026-09-23.** English and Arabic, signatures embedded rather than linked, the same diagram as the screen. Excess mileage is computed from the two signed readings against the contract's allowance and offered to the settlement (P2-12) instead of being typed in |
+| ✅ | P2-05 | `MaintenanceRecord`: service date, mileage, garage/vendor, type, description, cost, invoice, next service date/mileage → `cost.maintenance` — **Built 2026-09-21.** Bill held net (input VAT recoverable), costed against the car and the contract it was out on that day |
+| ✅ | P2-06 | Maintenance due alerts by date and mileage — **Built 2026-09-21.** Date and distance markers, 14 days / 500 km of warning, one alert per state; nightly `maintenance-due` job |
+| ☐ | P2-07 | `Fine`: number, date, amount, authority, payer, status, documents → `cost.fine`, and `revenue.fine_recovery` when recovered |
+| ☐ | P2-08 | Fine recovery flow — attach to the customer's next installment |
+| ☐ | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` |
+| ☐ | P2-10 | Insurance claim tracking with recovery posting |
+| ☐ | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |
+| ✅ | P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance — **Built 2026-09-21** for contract endings: arrears shown live and never re-charged, staff add excess mileage, damage and fees (or credits), and settling raises one ordinary invoice. Handover/return records (P2-01–P2-04) still to come |
+| ☐ | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |
+| ☐ | P2-14 | Vehicle lifetime P&L view |
 
 **Tests**
 - Reconciliation: **INV-8** extended — a maintenance cost posted today changes vehicle profitability
@@ -396,20 +399,20 @@ we fix it here, before Phase 3 builds on top.
 
 Externally dependent. Sequence by when account access actually arrives, not by this order.
 
-| ID | Task |
-|---|---|
-| P3-01 | Notification delivery abstraction: in-app → email → WhatsApp behind one interface |
-| P3-02 | Email (transactional provider), templates, delivery log |
-| P3-03 | **WhatsApp Business API** — *start template approval during Phase 2; lead time is weeks* |
-| P3-04 | Automated reminder campaigns over the existing expiry engine |
-| P3-05 | Payment gateway — online installment collection, webhook → payment + ledger |
-| P3-06 | Payment reconciliation against gateway settlement reports |
-| P3-07 | E-signature for contracts and handover forms |
-| P3-08 | Accounting export / sync |
-| P3-09 | Public REST API + OpenAPI, API key management, rate limiting (§18) |
-| P3-10 | GPS / vehicle tracking — **feasibility spike first** |
-| P3-11 | SMS fallback |
-| P3-12 | UAE RTA services — **feasibility spike; API availability unverified in the SOW** |
+| ✓ | ID | Task |
+|---|---|---|
+| ☐ | P3-01 | Notification delivery abstraction: in-app → email → WhatsApp behind one interface |
+| ☐ | P3-02 | Email (transactional provider), templates, delivery log |
+| ☐ | P3-03 | **WhatsApp Business API** — *start template approval during Phase 2; lead time is weeks* |
+| ☐ | P3-04 | Automated reminder campaigns over the existing expiry engine |
+| ☐ | P3-05 | Payment gateway — online installment collection, webhook → payment + ledger |
+| ☐ | P3-06 | Payment reconciliation against gateway settlement reports |
+| ☐ | P3-07 | E-signature for contracts and handover forms |
+| ☐ | P3-08 | Accounting export / sync |
+| ☐ | P3-09 | Public REST API + OpenAPI, API key management, rate limiting (§18) |
+| ☐ | P3-10 | GPS / vehicle tracking — **feasibility spike first** |
+| ☐ | P3-11 | SMS fallback |
+| ☐ | P3-12 | UAE RTA services — **feasibility spike; API availability unverified in the SOW** |
 
 **Tests**
 - Integration: every external call mocked at the boundary; retry, timeout and idempotency paths
@@ -427,20 +430,20 @@ Externally dependent. Sequence by when account access actually arrives, not by t
 
 Contractual deliverables. Not optional, not compressible.
 
-| ID | Task |
-|---|---|
-| P4-01 | Automated encrypted backups + **a restore actually performed and timed** |
-| P4-02 | Security: rate limiting, upload validation, at-rest document encryption, dependency audit, session hardening, security headers |
-| P4-03 | Penetration test pass on auth, RBAC, IDOR, file access |
-| P4-04 | Load test at 3× projected fleet size |
-| P4-05 | `docs/database.md` — schema, relationships, ERD |
-| P4-06 | `docs/deployment.md` — runbook, env vars, migrations, rollback |
-| P4-07 | `docs/architecture.md` — technical documentation |
-| P4-08 | `docs/admin-manual.md` — end-user guide |
-| P4-09 | Transfer source, DB, hosting, domain, API keys, Git repo to DrivenX ownership |
-| P4-10 | **Audit for developer-personal dependencies — must be zero** |
-| P4-11 | Admin credential handover |
-| P4-12 | Staff training session + recording |
+| ✓ | ID | Task |
+|---|---|---|
+| ☐ | P4-01 | Automated encrypted backups + **a restore actually performed and timed** |
+| ☐ | P4-02 | Security: rate limiting, upload validation, at-rest document encryption, dependency audit, session hardening, security headers |
+| ☐ | P4-03 | Penetration test pass on auth, RBAC, IDOR, file access |
+| ☐ | P4-04 | Load test at 3× projected fleet size |
+| ☐ | P4-05 | `docs/database.md` — schema, relationships, ERD |
+| ☐ | P4-06 | `docs/deployment.md` — runbook, env vars, migrations, rollback |
+| ☐ | P4-07 | `docs/architecture.md` — technical documentation |
+| ☐ | P4-08 | `docs/admin-manual.md` — end-user guide |
+| ☐ | P4-09 | Transfer source, DB, hosting, domain, API keys, Git repo to DrivenX ownership |
+| ☐ | P4-10 | **Audit for developer-personal dependencies — must be zero** |
+| ☐ | P4-11 | Admin credential handover |
+| ☐ | P4-12 | Staff training session + recording |
 
 **P4-01 note:** a backup that has never been restored is not a backup. The deliverable is a
 *completed restore*, with the elapsed time written down.

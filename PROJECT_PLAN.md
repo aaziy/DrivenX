@@ -3,7 +3,7 @@
 Internal working document. Source of truth for sequencing and architecture decisions.
 Derived from `DrivenX_Software_Scope_of_Work.pdf` (4 pages, 20 sections).
 
-**Status:** Planning · **Last updated:** 2026-09-02
+**Status:** Phase 0 and Phase 1 shipped; Phase 2 in progress · **Last updated:** 2026-09-24
 
 ---
 
@@ -220,15 +220,15 @@ Estimates assume **one full-time developer**. Scale accordingly.
 ### Phase 0 — Foundations · ~1 week
 *Nothing here is visible to the client. All of it is load-bearing.*
 
-- [ ] Monorepo, TypeScript config, lint, format, CI
-- [ ] `docker-compose.yml`: Postgres + MinIO
-- [ ] Prisma init, `Money` type + allocation tests, base model conventions
-- [ ] Auth.js credentials login, session, password policy, lockout
-- [ ] RBAC: permission catalogue, `can()` helper, six seeded roles (§2)
-- [ ] Audit log: automatic before/after capture on every mutation (§17)
-- [ ] Storage interface + MinIO adapter, virus-scan hook stub
-- [ ] App shell: layout, nav, table primitive, form primitive, toast
-- [ ] Seed script with realistic UAE test data
+- [x] Monorepo, TypeScript config, lint, format, CI
+- [x] `docker-compose.yml`: Postgres + MinIO
+- [x] Prisma init, `Money` type + allocation tests, base model conventions
+- [x] Auth.js credentials login, session, password policy, lockout
+- [x] RBAC: permission catalogue, `can()` helper, six seeded roles (§2)
+- [x] Audit log: automatic before/after capture on every mutation (§17)
+- [x] Storage interface + MinIO adapter, virus-scan hook stub
+- [x] App shell: layout, nav, table primitive, form primitive, toast
+- [x] Seed script with realistic UAE test data
 
 **Done when:** a Super Admin can log in, create an Operations user, edit that role's permissions,
 see the change take effect immediately, and find both actions in the audit log.
@@ -239,60 +239,60 @@ see the change take effect immediately, and find both actions in the audit log.
 *Maps to SOW §19 "Phase 1 — Core". Ships in five internal milestones.*
 
 #### 1A · Parties & Documents (~1 wk) — §6, §5, §16
-- [ ] Customer CRUD: customer no., name, mobile, email, DOB, nationality, address, emergency contact
-- [ ] Supplier CRUD: company, contact, trade licence, TRN/VAT, bank details, agreements, notes
-- [ ] Polymorphic document upload with number / issue / expiry / file / status
-- [ ] Configurable document categories (§17)
-- [ ] Nightly expiry scan → notifications at 60/30/15/7 days
-- [ ] Global search across name, mobile, Emirates ID, licence (§16)
+- [x] Customer CRUD: customer no., name, mobile, email, DOB, nationality, address, emergency contact
+- [x] Supplier CRUD: company, contact, trade licence, TRN/VAT, bank details, agreements, notes
+- [x] Polymorphic document upload with number / issue / expiry / file / status
+- [x] Configurable document categories (§17)
+- [x] Nightly expiry scan → notifications at 60/30/15/7 days
+- [x] Global search across name, mobile, Emirates ID, licence (§16)
 
 **Done when:** an Emirates ID expiring in 29 days produces exactly one notification, and the
 dashboard alert links straight to the customer.
 
 #### 1B · Fleet (~1 wk) — §4
-- [ ] Vehicle CRUD: make, model, year, variant, colour, plate, VIN/chassis, mileage
-- [ ] Ownership type: Company Owned | B2B/Supplier, with supplier link and source date
-- [ ] Status state machine: Available, Reserved, Rented, Lease-to-Own, Maintenance, Accident,
+- [x] Vehicle CRUD: make, model, year, variant, colour, plate, VIN/chassis, mileage
+- [x] Ownership type: Company Owned | B2B/Supplier, with supplier link and source date
+- [x] Status state machine: Available, Reserved, Rented, Lease-to-Own, Maintenance, Accident,
       Returned, Sold, Inactive
-- [ ] Photos and vehicle documents via the 1A engine
-- [ ] Fleet list with the §3 filters
+- [x] Photos and vehicle documents via the 1A engine
+- [x] Fleet list with the §3 filters
 
 **Done when:** a B2B vehicle cannot be saved without a supplier, and status transitions are enforced.
 
 #### 1C · Pricing engine (~3 days) — §8
-- [ ] Pure `calculateDeal()` in `packages/core/pricing`
-- [ ] Outputs: monthly revenue, monthly vehicle cost, monthly gross profit, total contract revenue,
+- [x] Pure `calculateDeal()` in `packages/core/pricing`
+- [x] Outputs: monthly revenue, monthly vehicle cost, monthly gross profit, total contract revenue,
       total cost, expected total profit, margin %
-- [ ] Test suite pinned to **both** SOW worked examples (§3.5 above)
-- [ ] Deal Calculator UI — a thin form over the pure function
+- [x] Test suite pinned to **both** SOW worked examples (§3.5 above)
+- [x] Deal Calculator UI — a thin form over the pure function
 
 **Done when:** the two SOW examples pass as automated tests, not as a manual check.
 
 #### 1D · Contracts, Payments & Insurance (~2 wks) — §9, §10, §11
-- [ ] Contract CRUD: number, customer, vehicle, supplier, type, dates, duration, monthly rental,
+- [x] Contract CRUD: number, customer, vehicle, supplier, type, dates, duration, monthly rental,
       down payment, mileage allowance, excess mileage rate, payment day, terms
-- [ ] Types: Long-Term Rental, Lease-to-Own, B2B Rental, Other
-- [ ] Status machine: Draft → Pending → Active → Completed / Overdue / Cancelled
-- [ ] Charge composition → automatic installment generation across the full duration
-- [ ] Installments: invoice no., due date, amount, paid, balance, method, reference
-- [ ] Statuses: Upcoming, Due, Partially Paid, Paid, Overdue, Waived
-- [ ] Partial payments with correct allocation across installments
-- [ ] Annual insurance as its own recurring charge + policy record + renewal alerts (30/15/7)
-- [ ] Supplier payable schedule mirroring the customer schedule
-- [ ] **Every one of the above posts to the ledger**
+- [x] Types: Long-Term Rental, Lease-to-Own, B2B Rental, Other
+- [x] Status machine: Draft → Pending → Active → Completed / Overdue / Cancelled
+- [x] Charge composition → automatic installment generation across the full duration
+- [x] Installments: invoice no., due date, amount, paid, balance, method, reference
+- [x] Statuses: Upcoming, Due, Partially Paid, Paid, Overdue, Waived
+- [x] Partial payments with correct allocation across installments
+- [x] Annual insurance as its own recurring charge + policy record + renewal alerts (30/15/7)
+- [x] Supplier payable schedule mirroring the customer schedule
+- [x] **Every one of the above posts to the ledger**
 
 **Done when:** activating a 36-month contract with annual insurance generates 36 rental installments
 plus 3 insurance installments, and the ledger balances against the contract total to the fils.
 
 #### 1E · Dashboard & Reporting (~1 wk) — §3, §14, §15
-- [ ] KPI tiles: total / owned / B2B / available / rented vehicles, active customers, active
+- [x] KPI tiles: total / owned / B2B / available / rented vehicles, active customers, active
       contracts, monthly revenue, monthly cost, monthly profit, customer outstanding, supplier
       payables, insurance renewals, expiring documents
-- [ ] Alert panel: overdue payments, expiring IDs / licences / registration / insurance / contracts
-- [ ] Filters: date, vehicle, supplier, customer, salesperson, contract type
-- [ ] Profitability reports by vehicle · customer · supplier · contract · month · year
-- [ ] Customer statement and supplier statement (paid / outstanding / history)
-- [ ] Excel + PDF export on every report (§15)
+- [x] Alert panel: overdue payments, expiring IDs / licences / registration / insurance / contracts
+- [x] Filters: date, vehicle, supplier, customer, salesperson, contract type
+- [x] Profitability reports by vehicle · customer · supplier · contract · month · year
+- [x] Customer statement and supplier statement (paid / outstanding / history)
+- [x] Excel + PDF export on every report (§15)
 
 **Done when:** the monthly profit KPI equals the sum of ledger entries for that period, verified by
 an automated reconciliation test.
@@ -302,9 +302,9 @@ an automated reconciliation test.
 > because it feeds the Deal Calculator and because the Sales Staff role (§2) has nothing to operate
 > without it. Flag this to the client.
 
-- [ ] Lead CRUD: name, phone, email, source, interested vehicle, budget, duration, salesperson, notes
-- [ ] Pipeline: New → Contacted → Qualified → Deal Created → Contracted → Lost
-- [ ] Convert lead → deal calculation → contract, preserving attribution
+- [x] Lead CRUD: name, phone, email, source, interested vehicle, budget, duration, salesperson, notes
+- [x] Pipeline: New → Contacted → Qualified → Deal Created → Contracted → Lost
+- [x] Convert lead → deal calculation → contract, preserving attribution
 
 **Phase 1 exit criteria:** DrivenX can run the entire core business flow end to end —
 `Supplier → Vehicle → Customer → Contract → Payments → Profit` — on real data, with no spreadsheets.
@@ -314,17 +314,17 @@ an automated reconciliation test.
 ### Phase 2 — Operations · ~4–5 weeks
 *Maps to SOW §19 "Phase 2".*
 
-- [ ] **Handover & Return (§12):** date/time, mileage, fuel, condition, damage marking, photos,
+- [x] **Handover & Return (§12):** date/time, mileage, fuel, condition, damage marking, photos,
       customer + staff signatures, PDF report generation
-- [ ] **Maintenance (§13):** service date, mileage, garage/vendor, type, description, cost, invoice,
+- [x] **Maintenance (§13):** service date, mileage, garage/vendor, type, description, cost, invoice,
       next service date/mileage → posts `cost.maintenance`
 - [ ] **Fines (§13):** fine number, date, amount, authority, payer, status, documents → posts
       `cost.fine` and, when recovered, `revenue.fine_recovery`
 - [ ] **Accidents (§13):** location, description, photos, police report, insurance claim, repair
       cost, responsibility, status → posts `cost.repair`
 - [ ] **Advanced expenses:** categorised, allocatable to vehicle / contract / company overhead
-- [ ] **Final settlement on return:** excess mileage (settled here), damages, outstanding balance
-- [ ] **PDF generation** for contracts, invoices, statements, handover and return reports
+- [x] **Final settlement on return:** excess mileage (settled here), damages, outstanding balance
+- [~] **PDF generation** for contracts, invoices, statements, handover and return reports — contracts, statements and handover/return ship; a tax invoice has no page of its own yet, and its layout waits on open question 13 (TRN, FTA numbering)
 - [ ] Advanced reporting and drill-down across all new cost categories
 
 **Done when:** vehicle-level profitability reflects maintenance, fines and accident repairs without
