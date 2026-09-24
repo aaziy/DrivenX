@@ -196,6 +196,15 @@ export {
   type NewClaim,
   type RepairBill,
 } from "./accidents";
+export {
+  expenseTotals,
+  ExpenseRuleError,
+  listExpenses,
+  recordExpense,
+  type ExpenseQuery,
+  type ExpenseRuleCode,
+  type NewExpense,
+} from "./expenses";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

@@ -43,7 +43,9 @@
     "users": "Users",
     "roles": "Roles & permissions",
     "documentTypes": "Document types",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "expensesGroup": "Costs",
+    "expenses": "Expenses"
   },
   "login": {
     "title": "Sign in",
@@ -1866,6 +1868,72 @@
       "policyNotFound": "That policy no longer exists.",
       "nothingReceived": "Enter what was received and the day it arrived.",
       "illegalTransition": "This cannot go from {from} to {to}.",
+      "money": "Enter a valid amount in AED.",
+      "date": "Enter a valid date."
+    }
+  },
+  "expenses": {
+    "title": "Expenses",
+    "subtitle": "What the fleet costs beyond its cars: registration, fuel, tolls, cleaning and the office.",
+    "breakdown": "Where the money went",
+    "listTitle": "Expenses",
+    "addTitle": "Record an expense",
+    "none": "Nothing recorded for this period.",
+    "total": "Total",
+    "netHint": "Shown before VAT. Reclaimable VAT belongs to the FTA and is not a cost.",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply",
+    "add": "Record expense",
+    "adding": "Saving…",
+    "added": "Expense recorded.",
+    "columns": {
+      "date": "Date",
+      "description": "What",
+      "category": "Kind",
+      "chargedTo": "Charged to",
+      "net": "Net",
+      "vat": "VAT"
+    },
+    "categories": {
+      "REGISTRATION": "Registration",
+      "FUEL": "Fuel",
+      "TOLL": "Tolls and Salik",
+      "CLEANING": "Cleaning",
+      "PARKING": "Parking",
+      "RECOVERY": "Recovery and towing",
+      "OVERHEAD": "Company overhead",
+      "OTHER": "Other"
+    },
+    "allocations": {
+      "VEHICLE": "A car",
+      "CONTRACT": "A contract",
+      "COMPANY": "The company"
+    },
+    "form": {
+      "category": "Kind",
+      "allocation": "Charged to",
+      "vehicle": "Car",
+      "chooseVehicle": "Choose a car…",
+      "contract": "Contract",
+      "chooseContract": "Choose a contract…",
+      "incurredOn": "Date",
+      "amount": "Amount (AED)",
+      "amountHint": "Before VAT",
+      "vat": "VAT",
+      "vatNone": "None — a government charge",
+      "vatStandard": "5%",
+      "supplier": "Paid to",
+      "reference": "Reference",
+      "description": "What it was for"
+    },
+    "errors": {
+      "invalidExpense": "Say what the expense was for.",
+      "vehicleRequired": "Choose the car this is charged to.",
+      "contractRequired": "Choose the contract this is charged to.",
+      "vehicleNotFound": "That vehicle no longer exists.",
+      "contractNotFound": "That contract no longer exists.",
+      "expenseNotFound": "That expense no longer exists.",
       "money": "Enter a valid amount in AED.",
       "date": "Enter a valid date."
     }

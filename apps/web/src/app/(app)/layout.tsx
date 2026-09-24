@@ -51,6 +51,10 @@ const NAV_DEFINITION: Array<{
     items: [{ href: "/vehicles", labelKey: "vehicles", permission: "vehicle.view" }],
   },
   {
+    labelKey: "expensesGroup",
+    items: [{ href: "/expenses", labelKey: "expenses", permission: "expense.view" }],
+  },
+  {
     labelKey: "reports",
     items: [
       { href: "/reports/profitability", labelKey: "profitability", permission: "report.financial" },

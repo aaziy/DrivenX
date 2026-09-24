@@ -5,8 +5,8 @@ this one decides *how, in what order, and how we know it works*.
 
 **Status:** Phase 0 and Phase 1 complete; Phase 2 in progress · **Last updated:** 2026-09-24
 
-**Progress:** 83 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓▓▓░░ 11/14 · Phase 3 ☐ · Phase 4 ☐
+**Progress:** 84 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ▓▓▓▓▓▓░ 12/14 · Phase 3 ☐ · Phase 4 ☐
 
 ---
 
@@ -375,7 +375,7 @@ installments, and the ledger reconciles to the contract total **to the fils**.
 | ✅ | P2-08 | Fine recovery flow — attach to the customer's next installment — **Built 2026-09-24.** Raises one ordinary instalment, numbered and recognised by the same path as every other invoice, so it lands on the statement and settles through the existing payment machinery. Recharged at cost with no VAT added, as a disbursement — **needs the client's accountant to confirm** |
 | ✅ | P2-09 | `Accident`: date, location, description, photos, police report, insurance claim, repair cost, responsibility, status → `cost.repair` — **Built 2026-09-24.** The repair costs the month it was *billed*, not the month of the crash, which can be months earlier and already reported on. Held net, like maintenance. Fault defaults to unknown, because the police report decides and that takes weeks |
 | ✅ | P2-10 | Insurance claim tracking with recovery posting — **Built 2026-09-24.** Approved is not paid: only money that genuinely arrives posts, to `revenue.insurance_claim` — its own category, kept clear of `revenue.insurance`, which is the premium §11 wants reportable on its own. The shortfall stays with DrivenX, which is what the policy excess is |
-| ☐ | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead |
+| ✅ | P2-11 | `Expense` — categorised, allocatable to vehicle / contract / company overhead — **Built 2026-09-24.** The allocation is enforced in the database, not merely offered: an overhead filed against a car is invisible once posted and would distort every per-vehicle figure after it. Each category is its own ledger category, and government charges default to no VAT, because there is none on them to reclaim |
 | ✅ | P2-12 | **Final settlement on return**: excess mileage (settled here, per the client), damages, and any outstanding balance — **Built 2026-09-21** for contract endings: arrears shown live and never re-charged, staff add excess mileage, damage and fees (or credits), and settling raises one ordinary invoice. Handover/return records (P2-01–P2-04) still to come |
 | ☐ | P2-13 | Extended profitability — all Phase 2 cost categories flow into existing reports |
 | ☐ | P2-14 | Vehicle lifetime P&L view |

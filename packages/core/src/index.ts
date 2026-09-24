@@ -25,3 +25,4 @@ export * from "./fleet/handover";
 export * from "./fleet/damage";
 export * from "./fines/status";
 export * from "./accidents/status";
+export * from "./expenses/categories";

@@ -79,7 +79,8 @@ ledger_entries
                    revenue.fine_recovery | revenue.insurance_claim | revenue.salvage
                    revenue.other
                    cost.supplier | cost.insurance | cost.maintenance | cost.repair
-                   cost.registration | cost.fine | cost.other
+                   cost.registration | cost.fine | cost.fuel | cost.toll | cost.cleaning
+                   cost.parking | cost.recovery | cost.overhead | cost.other
   amount_fils
   vehicle_id?  contract_id?  customer_id?  supplier_id?     -- nullable dimensions
   source_type, source_id                                    -- what produced this
@@ -323,7 +324,7 @@ an automated reconciliation test.
       `cost.fine` and, when recovered, `revenue.fine_recovery`
 - [x] **Accidents (§13):** location, description, photos, police report, insurance claim, repair
       cost, responsibility, status → posts `cost.repair`
-- [ ] **Advanced expenses:** categorised, allocatable to vehicle / contract / company overhead
+- [x] **Advanced expenses:** categorised, allocatable to vehicle / contract / company overhead
 - [x] **Final settlement on return:** excess mileage (settled here), damages, outstanding balance
 - [~] **PDF generation** for contracts, invoices, statements, handover and return reports — contracts, statements and handover/return ship; a tax invoice has no page of its own yet, and its layout waits on open question 13 (TRN, FTA numbering)
 - [ ] Advanced reporting and drill-down across all new cost categories

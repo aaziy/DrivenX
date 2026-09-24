@@ -84,6 +84,7 @@ model User {
   accidentStatusChanges AccidentStatusChange[]
   insuranceClaims       InsuranceClaim[]
   claimStatusChanges    ClaimStatusChange[]
+  expenses              Expense[]
   settlementsOpened     Settlement[]           @relation("SettlementOpenedBy")
   settlementsSettled    Settlement[]           @relation("SettlementSettledBy")
   settlementLines       SettlementLine[]
@@ -252,6 +253,7 @@ model Customer {
   leads     Lead[]
   fines     Fine[]
   accidents Accident[]
+  expenses  Expense[]
 
   // Global search (§16) hits name and mobile constantly. A trigram index for
   // partial matches arrives with P1A-09, as raw SQL Prisma cannot express.
@@ -540,6 +542,7 @@ model Vehicle {
   handovers         Handover[]
   fines             Fine[]
   accidents         Accident[]
+  expenses          Expense[]
 
   createdById String? @map("created_by_id")
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -713,6 +716,7 @@ model Contract {
   handovers        Handover[]
   fines            Fine[]
   accidents        Accident[]
+  expenses         Expense[]
   settlement       Settlement?
   maintenance      MaintenanceRecord[]
 
@@ -1723,4 +1727,81 @@ model ClaimStatusChange {
 
   @@index([claimId, changedAt])
   @@map("claim_status_changes")
+}
+
+// ===========================================================================
+// Expenses (P2-11, SOW §13)
+// ===========================================================================
+
+enum ExpenseCategory {
+  REGISTRATION
+  FUEL
+  TOLL
+  CLEANING
+  PARKING
+  RECOVERY
+  OVERHEAD
+  OTHER
+
+  @@map("expense_category")
+}
+
+enum ExpenseAllocation {
+  VEHICLE
+  CONTRACT
+  /// Belongs to no car: the office, software, salaries.
+  COMPANY
+
+  @@map("expense_allocation")
+}
+
+/// A cost that is not a supplier's monthly bill, a service, a fine or a crash (P2-11).
+///
+/// Held net with its VAT beside it, like every other bill DrivenX pays, but the rate is
+/// per expense rather than fixed: a government charge — registration, Salik, public
+/// parking — is not a supply by a taxable person, so there is no input VAT on it to
+/// reclaim, and assuming 5% would understate what the most frequent costs in the fleet
+/// actually are.
+///
+/// The allocation decides which dimensions the ledger entry carries, and a company-wide
+/// cost carries none. That is what keeps overhead out of any one car's profitability
+/// while still counting against the month.
+model Expense {
+  id         String            @id @default(cuid())
+  category   ExpenseCategory
+  allocation ExpenseAllocation
+
+  /// Set when the cost is charged to a car, or to a contract's car.
+  vehicleId  String?   @map("vehicle_id")
+  vehicle    Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  /// Set when the cost is charged to a contract.
+  contractId String?   @map("contract_id")
+  contract   Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  incurredOn      DateTime @map("incurred_on") @db.Date
+  description     String
+  supplierName    String?  @map("supplier_name")
+  referenceNumber String?  @map("reference_number")
+
+  netFils        BigInt @map("net_fils")
+  vatBasisPoints Int    @default(500) @map("vat_basis_points")
+  vatFils        BigInt @map("vat_fils")
+  /// What was actually paid.
+  grossFils      BigInt @map("gross_fils")
+
+  notes String?
+
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([incurredOn])
+  @@index([vehicleId, incurredOn])
+  @@index([contractId])
+  @@index([category])
+  @@map("expenses")
 }
