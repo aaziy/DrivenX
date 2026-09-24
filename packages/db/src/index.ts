@@ -209,6 +209,15 @@ export {
   type ExpenseRuleCode,
   type NewExpense,
 } from "./expenses";
+export {
+  claimDeliveries,
+  markDelivered,
+  markFailed,
+  markSkipped,
+  undeliveredNotifications,
+  type ClaimedDelivery,
+  type DeliveryRecipient,
+} from "./deliveries";
 export { reconcile, type Violation } from "./reconcile";
 export { fromDbDate, toDbDate } from "./dates";
 export { postToLedger, type LedgerPosting } from "./ledger";

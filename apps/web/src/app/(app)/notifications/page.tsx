@@ -9,7 +9,8 @@ import { seededCategoryKey } from "@/i18n/labels";
 import { requireUser } from "@/lib/auth";
 import { resolveDocumentEntities, visibilityWhere, visibleTypes } from "@/lib/notifications";
 
-import { markAllNotificationsRead, markNotificationRead } from "./actions";
+import { markAllNotificationsRead, markNotificationRead, setEmailNotificationsAction } from "./actions";
+import { NotificationPreferences } from "./preferences";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("notifications");
@@ -22,10 +23,11 @@ export default async function NotificationsPage() {
   const principal = await requireUser();
   const types = visibleTypes(principal);
 
-  const [t, tCat, format, notifications] = await Promise.all([
+  const [t, tCat, format, me, notifications] = await Promise.all([
     getTranslations("notifications"),
     getTranslations("documentCategories"),
     getFormatter(),
+    prisma.user.findUnique({ where: { id: principal.id }, select: { emailNotifications: true } }),
     types.length === 0
       ? []
       : prisma.notification.findMany({
@@ -55,6 +57,18 @@ export default async function NotificationsPage() {
       </header>
 
       <div className="page-body stack">
+        <div className="card">
+          <div className="card-header">
+            <h2>{t("preferences.title")}</h2>
+          </div>
+          <div className="card-body">
+            <NotificationPreferences
+              action={setEmailNotificationsAction}
+              emailNotifications={me?.emailNotifications ?? true}
+            />
+          </div>
+        </div>
+
         <div className="card">
           <div className="card-header">
             <h2>{t("allTitle")}</h2>

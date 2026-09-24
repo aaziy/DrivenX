@@ -3,10 +3,10 @@
 Executable companion to [PROJECT_PLAN.md](PROJECT_PLAN.md). That document decides *what and why*;
 this one decides *how, in what order, and how we know it works*.
 
-**Status:** Phases 0, 1 and 2 complete; Phase 3 next · **Last updated:** 2026-09-24
+**Status:** Phases 0, 1 and 2 complete; Phase 3 started · **Last updated:** 2026-09-24
 
-**Progress:** 86 of 110 tasks done. ✅ built and verified · ☐ not started.
-Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ☐ · Phase 4 ☐
+**Progress:** 88 of 110 tasks done. ✅ built and verified · ☐ not started.
+Phase 0 ✅ · 1A ✅ · 1B ✅ · 1C ✅ · 1D ✅ · 1E ✅ · 1F ✅ · Phase 2 ✅ · Phase 3 ▓░░░░░░ 2/12 · Phase 4 ☐
 
 ---
 
@@ -401,8 +401,8 @@ Externally dependent. Sequence by when account access actually arrives, not by t
 
 | ✓ | ID | Task |
 |---|---|---|
-| ☐ | P3-01 | Notification delivery abstraction: in-app → email → WhatsApp behind one interface |
-| ☐ | P3-02 | Email (transactional provider), templates, delivery log |
+| ✅ | P3-01 | Notification delivery abstraction: in-app → email → WhatsApp behind one interface — **Built 2026-09-24.** One port, one adapter per channel, and a delivery log whose unique key across notification, channel and recipient is what makes a retried job safe. Who to tell is the existing visibility rule, imported rather than restated. In-app is not a channel here: it is the notification row, and the only one that cannot fail or be switched off |
+| ✅ | P3-02 | Email (transactional provider), templates, delivery log — **Built 2026-09-24.** SMTP rather than one vendor's API, for the reason storage is S3-compatible: §20 wants DrivenX to own what they run, so changing provider is environment variables. Templates in both languages, rendered per recipient at send time. Unconfigured, it logs what it would have sent rather than silently doing nothing |
 | ☐ | P3-03 | **WhatsApp Business API** — *start template approval during Phase 2; lead time is weeks* |
 | ☐ | P3-04 | Automated reminder campaigns over the existing expiry engine |
 | ☐ | P3-05 | Payment gateway — online installment collection, webhook → payment + ledger |

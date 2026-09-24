@@ -338,7 +338,7 @@ any change to the reporting layer built in 1E. *(That's the test of whether §3.
 *Maps to SOW §19 "Phase 3". Every item is externally dependent — sequence by which account access
 arrives, not by this order.*
 
-- [ ] Notification delivery layer: in-app → email → WhatsApp, one interface (§16)
+- [x] Notification delivery layer: in-app → email → WhatsApp, one interface (§16)
 - [ ] WhatsApp Business API (template approval is a multi-week lead time — start it during Phase 2)
 - [ ] Payment gateway for online installment collection
 - [ ] E-signature for contracts and handover forms

@@ -24,6 +24,9 @@ catalogs:
     '@types/node':
       specifier: ^22.18.1
       version: 22.20.1
+    '@types/nodemailer':
+      specifier: ^6.4.17
+      version: 6.4.24
     '@types/react':
       specifier: ^19.2.0
       version: 19.2.18
@@ -42,6 +45,9 @@ catalogs:
     next-intl:
       specifier: ^4.14.5
       version: 4.14.5
+    nodemailer:
+      specifier: ^6.9.16
+      version: 6.10.1
     prettier:
       specifier: ^3.6.2
       version: 3.9.6
@@ -164,6 +170,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@drivenx/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@drivenx/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -173,6 +182,9 @@ importers:
       '@drivenx/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@drivenx/notify':
+        specifier: workspace:*
+        version: link:../../packages/notify
     devDependencies:
       tsx:
         specifier: ^4.20.6
@@ -183,6 +195,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@drivenx/core':
+        specifier: workspace:*
+        version: link:../core
       '@drivenx/db':
         specifier: workspace:*
         version: link:../db
@@ -228,6 +243,25 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/notify:
+    dependencies:
+      '@drivenx/core':
+        specifier: workspace:*
+        version: link:../core
+      '@drivenx/logger':
+        specifier: workspace:*
+        version: link:../logger
+      nodemailer:
+        specifier: 'catalog:'
+        version: 6.10.1
+    devDependencies:
+      '@types/nodemailer':
+        specifier: 'catalog:'
+        version: 6.4.24
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1381,6 +1415,9 @@ packages:
   '@types/node@22.20.1':
     resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
 
+  '@types/nodemailer@6.4.24':
+    resolution: {integrity: sha512-Ww4u0rT9wQNXh4JiQaIwx3QWdcOFXzOjQA2zc+jtFYNmQiT4mIUqcDin51bDFdkzKubFnQCZNK7FIHlPKQ/q9w==}
+
   '@types/react-dom@19.2.7':
     resolution: {integrity: sha512-I8bPpDLcHBv1qiIiXDCy71Rt8eQDKJP0sMSWJphDdAcdqiJ1sGpZamavoEIRZmYzjia9LuEb2HlYdDpmoENpvQ==}
     peerDependencies:
@@ -2055,6 +2092,10 @@ packages:
 
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
+
+  nodemailer@6.10.1:
+    resolution: {integrity: sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==}
+    engines: {node: '>=6.0.0'}
 
   normalize-svg-path@1.1.0:
     resolution: {integrity: sha512-r9KHKG2UUeB5LoTouwDzBy2VxXlHsiM6fyLQvnJa0S5hrhzqElH/CH7TUGhT1fVvIYBIKf3OpY4YJ4CK+iaqHg==}
@@ -3483,6 +3524,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/nodemailer@6.4.24':
+    dependencies:
+      '@types/node': 22.20.1
+
   '@types/react-dom@19.2.7(@types/react@19.2.18)':
     dependencies:
       '@types/react': 19.2.18
@@ -4223,6 +4268,8 @@ snapshots:
   node-addon-api@7.1.1: {}
 
   node-fetch-native@1.6.7: {}
+
+  nodemailer@6.10.1: {}
 
   normalize-svg-path@1.1.0:
     dependencies:

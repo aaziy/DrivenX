@@ -9,12 +9,14 @@
     "./permissions": "./src/permissions.ts",
     "./rbac": "./src/rbac.ts",
     "./password": "./src/password.ts",
-    "./session": "./src/session.ts"
+    "./session": "./src/session.ts",
+    "./notifications": "./src/notifications.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@drivenx/core": "workspace:*",
     "@drivenx/db": "workspace:*",
     "@node-rs/argon2": "catalog:"
   },

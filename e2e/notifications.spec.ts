@@ -108,3 +108,29 @@ test.describe("notifications", () => {
     expect(after).toBe(before);
   });
 });
+
+/**
+ * How a person is told (P3-01).
+ *
+ * The in-app list is not a setting and has no switch — it is the record that something
+ * was raised at all. Email is, and this is the screen where somebody turns it off.
+ */
+test.describe("notification preferences", () => {
+  test("email alerts can be turned off and on again", async ({ page }) => {
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await page.goto("/notifications");
+
+    const card = page.locator(".card", { has: page.getByRole("heading", { name: "How you are told" }) });
+
+    // On by default: somebody who has never opened this screen is still chased.
+    await expect(card).toContainText("You are emailed about the notifications you can see");
+
+    await card.getByRole("button", { name: "Stop emailing me" }).click();
+    await expect(card).toContainText("You are not emailed");
+    // And the in-app list is still there, because it is not a choice.
+    await expect(page.getByRole("heading", { name: "Everything waiting" })).toBeVisible();
+
+    await card.getByRole("button", { name: "Email me too" }).click();
+    await expect(card).toContainText("You are emailed about the notifications you can see");
+  });
+});

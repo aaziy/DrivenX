@@ -2,28 +2,20 @@
  * Who sees which notification, and what it says.
  *
  * A notification with a null `userId` is addressed to "everyone who holds the relevant
- * permission" (see the schema). That phrase has to be turned into an actual rule, or
- * finance would be shown fleet maintenance alerts and sales would be shown supplier
- * payables. The map below is that rule.
+ * permission" (see the schema). That rule now lives in `@drivenx/auth`, because delivery
+ * (P3-01) needs the same answer: the people to email about a notification are exactly the
+ * people entitled to see it.
  */
 
-import { can, type PermissionKey, type Principal } from "@drivenx/auth";
+import { visibleNotificationTypes, type Principal } from "@drivenx/auth";
 import { prisma, type NotificationType } from "@drivenx/db";
 
-const VISIBILITY: Record<NotificationType, PermissionKey> = {
-  DOCUMENT_EXPIRY: "document.view",
-  INSURANCE_EXPIRY: "insurance.view",
-  PAYMENT_DUE: "payment.view",
-  PAYMENT_OVERDUE: "payment.view",
-  CONTRACT_EXPIRY: "contract.view",
-  MAINTENANCE_DUE: "maintenance.view",
-  SUPPLIER_PAYMENT_DUE: "supplier_invoice.view",
-};
-
+/**
+ * Re-exported rather than defined here: delivery needs the same rule, so it lives in
+ * `@drivenx/auth` where both this app and the worker can reach it.
+ */
 export function visibleTypes(principal: Principal): NotificationType[] {
-  return (Object.keys(VISIBILITY) as NotificationType[]).filter((type) =>
-    can(principal, VISIBILITY[type]),
-  );
+  return visibleNotificationTypes(principal);
 }
 
 /** The `where` clause for everything this person is entitled to see. */

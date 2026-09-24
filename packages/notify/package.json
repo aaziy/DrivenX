@@ -1,0 +1,22 @@
+{
+  "name": "@drivenx/notify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Notification delivery: one interface, one adapter per channel",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@drivenx/core": "workspace:*",
+    "@drivenx/logger": "workspace:*",
+    "nodemailer": "catalog:"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "catalog:",
+    "typescript": "catalog:"
+  }
+}

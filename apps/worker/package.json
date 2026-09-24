@@ -8,12 +8,15 @@
     "expiry-scan": "tsx src/index.ts expiry-scan",
     "typecheck": "tsc --noEmit",
     "contracts-daily": "tsx src/index.ts contracts-daily",
-    "maintenance-due": "tsx src/index.ts maintenance-due"
+    "maintenance-due": "tsx src/index.ts maintenance-due",
+    "deliver-notifications": "tsx src/index.ts deliver-notifications"
   },
   "dependencies": {
+    "@drivenx/auth": "workspace:*",
     "@drivenx/core": "workspace:*",
     "@drivenx/db": "workspace:*",
-    "@drivenx/logger": "workspace:*"
+    "@drivenx/logger": "workspace:*",
+    "@drivenx/notify": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.20.6",

@@ -42,3 +42,29 @@ export async function markAllNotificationsRead(): Promise<void> {
 
   revalidatePath("/notifications");
 }
+
+export interface NotificationPreferenceState {
+  error?: string;
+}
+
+/**
+ * Turn email alerts on or off for the person asking (P3-01).
+ *
+ * Their own setting only: there is no user id in the form, because being able to change
+ * somebody else's notification settings is not something this screen should grant.
+ */
+export async function setEmailNotificationsAction(
+  _previous: NotificationPreferenceState,
+  formData: FormData,
+): Promise<NotificationPreferenceState> {
+  const principal = await requireUser();
+  const wanted = String(formData.get("emailNotifications") ?? "") === "on";
+
+  await prisma.user.update({
+    where: { id: principal.id },
+    data: { emailNotifications: wanted },
+  });
+
+  revalidatePath("/notifications");
+  return {};
+}

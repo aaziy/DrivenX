@@ -56,8 +56,13 @@ model User {
   /// Interface language: English, or Arabic with a right-to-left layout.
   locale Locale @default(en)
 
-  roles     UserRole[]
-  auditLogs AuditLog[]
+  /// Whether this person is emailed about the notifications they can see (P3-01).
+  /// In-app is not a setting: it is the record that something was raised at all.
+  emailNotifications Boolean @default(true) @map("email_notifications")
+
+  roles                  UserRole[]
+  auditLogs              AuditLog[]
+  notificationDeliveries NotificationDelivery[]
 
   createdCustomers  Customer[]
   createdSuppliers  Supplier[]
@@ -450,6 +455,8 @@ model Notification {
   /// every day. One key per document per reminder offset makes a repeat run a
   /// no-op, which is what keeps the notification list worth reading.
   dedupeKey String @unique @map("dedupe_key")
+
+  deliveries NotificationDelivery[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1804,4 +1811,64 @@ model Expense {
   @@index([contractId])
   @@index([category])
   @@map("expenses")
+}
+
+// ===========================================================================
+// Notification delivery (P3-01, P3-02, SOW §16)
+// ===========================================================================
+
+enum DeliveryChannel {
+  /// The notification row itself. Always happens, cannot fail, cannot be switched off.
+  IN_APP
+  EMAIL
+  WHATSAPP
+  SMS
+
+  @@map("delivery_channel")
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  /// Nothing to send to: no address, or the person has this channel switched off.
+  SKIPPED
+
+  @@map("delivery_status")
+}
+
+/// One attempt to reach one person about one notification, on one channel (P3-01).
+///
+/// The unique key across notification, channel and recipient is the whole point. A
+/// worker that is retried, or two workers running at once, must not mean two emails
+/// about the same expiring licence — the same rule the notification's own `dedupeKey`
+/// enforces one level up, applied to the sending rather than the raising.
+///
+/// It is also the delivery log §16 asks for: what was attempted, to whom, when, and what
+/// the provider said when it failed.
+model NotificationDelivery {
+  id             String       @id @default(cuid())
+  notificationId String       @map("notification_id")
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  channel DeliveryChannel
+  status  DeliveryStatus  @default(PENDING)
+
+  userId    String? @map("user_id")
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// The address actually used: an email address today, a phone number later. Kept as
+  /// written at the time, because a person's address changes and the log is a record of
+  /// where something was sent, not where it would be sent now.
+  recipient String
+
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error")
+  sentAt    DateTime? @map("sent_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([notificationId, channel, recipient])
+  @@index([status, channel])
+  @@map("notification_deliveries")
 }

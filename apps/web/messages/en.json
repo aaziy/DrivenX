@@ -646,6 +646,14 @@
           "body": "{what} for {who} expired on {date}."
         }
       }
+    },
+    "preferences": {
+      "title": "How you are told",
+      "emailOn": "You are emailed about the notifications you can see. In-app alerts always appear and cannot be switched off.",
+      "emailOff": "You are not emailed. Notifications still appear here.",
+      "turnOn": "Email me too",
+      "turnOff": "Stop emailing me",
+      "saving": "Saving…"
     }
   },
   "upload": {
