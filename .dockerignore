@@ -1,0 +1,20 @@
+# Keep the build context to source. Anything generated on this machine is wrong inside
+# the image: node_modules and the Prisma client are built for macOS, the image is Linux.
+**/node_modules
+packages/db/generated
+**/.next
+.git
+.github
+coverage
+test-results
+playwright-report
+blob-report
+e2e
+docs
+*.pdf
+.DS_Store
+
+# Never bake credentials into an image layer.
+.env
+.env.*
+!.env.example

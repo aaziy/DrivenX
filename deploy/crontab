@@ -1,0 +1,22 @@
+# DrivenX scheduled jobs. Install with:  crontab deploy/crontab
+#
+# Times are in the SERVER's timezone, which server-setup.sh sets to Asia/Dubai. If it is
+# not, every job runs at the wrong hour and an alert meant for the morning arrives at night.
+#
+# -T: no terminal under cron. Every job is safe to run twice.
+#
+# Each line is written out in full on purpose. Cron hands the line to a shell, and a
+# shared prefix kept in a variable does not survive that: the shell would not treat the
+# && inside it as an operator, and every job would fail the same way.
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0  2 * * *  cd /opt/drivenx && docker compose -f docker-compose.prod.yml run --rm -T worker expiry-scan          >> /var/log/drivenx/jobs.log 2>&1
+15 2 * * *  cd /opt/drivenx && docker compose -f docker-compose.prod.yml run --rm -T worker contracts-daily      >> /var/log/drivenx/jobs.log 2>&1
+30 2 * * *  cd /opt/drivenx && docker compose -f docker-compose.prod.yml run --rm -T worker maintenance-due      >> /var/log/drivenx/jobs.log 2>&1
+
+# Seven, not two: an alert that arrives at two in the morning is read at nine anyway,
+# having woken somebody's phone for nothing.
+0  7 * * *  cd /opt/drivenx && docker compose -f docker-compose.prod.yml run --rm -T worker deliver-notifications >> /var/log/drivenx/jobs.log 2>&1
+
+30 3 * * *  /opt/drivenx/deploy/backup.sh >> /var/log/drivenx/backup.log 2>&1

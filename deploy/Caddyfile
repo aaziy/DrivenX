@@ -1,0 +1,22 @@
+# The only public entrance. Caddy gets and renews the certificate for APP_DOMAIN itself.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# S3_MAX_UPLOAD_BYTES (10 MB) plus the rest of the form. Matches the limit in
+	# apps/web/next.config.ts; a request over it is refused here, before it reaches the app.
+	request_body {
+		max_size 14MB
+	}
+
+	header {
+		# Tell browsers never to use plain HTTP for this site again. No includeSubDomains
+		# and no preload: those are hard to take back, and nothing here needs them yet.
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	# Host and X-Forwarded-* are passed through by default, which is what Next needs to
+	# recognise that a server action's Origin matches the site it is being served from.
+	reverse_proxy web:3000
+}

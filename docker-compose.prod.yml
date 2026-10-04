@@ -1,0 +1,123 @@
+# Production: the whole stack on one server.
+#
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Only Caddy publishes ports (80 and 443). The database, the document store and the
+# application are reachable from each other and from nowhere else - there is no
+# "5433 on the public internet" to leave open by mistake, because nothing here publishes it.
+#
+# This is the production sibling of docker-compose.yml, which is development only.
+# Configuration is read from .env beside this file; see deploy/env.production.example.
+
+name: drivenx
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  TZ: Asia/Dubai
+  # Built here so the password is written once. It must be URL-safe (hex), which the
+  # example file's generation command guarantees.
+  DATABASE_URL: postgresql://drivenx:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/drivenx?schema=public
+  # Defaults to the bundled store. Set S3_ENDPOINT in .env to use an external one instead.
+  S3_ENDPOINT: ${S3_ENDPOINT:-http://s3:9000}
+  S3_REGION: ${S3_REGION:-me-central-1}
+  S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: drivenx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: drivenx
+      # Deterministic collation so ORDER BY matches development regardless of host locale.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drivenx -d drivenx"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # S3-compatible document store. See docs/deployment.md before relying on this one:
+  # the image is a release candidate, which is a reasonable thing to run for development
+  # and a judgement call for identity documents.
+  s3:
+    image: rustfs/rustfs:1.0.0-rc.6
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
+    volumes:
+      - s3data:/data
+
+  web:
+    build:
+      context: .
+    image: drivenx-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      s3:
+        condition: service_started
+    healthcheck:
+      # The sign-in page needs no session and touches no data, so it answers whether the
+      # server is up without depending on anything else being up.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # TLS, and the only door in. Certificates are requested and renewed automatically for
+  # APP_DOMAIN, which therefore has to point at this server before the first start.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # One-off commands. Not started by `up`; run explicitly:
+  #   docker compose -f docker-compose.prod.yml run --rm tools db:migrate:deploy
+  tools:
+    image: drivenx-app:latest
+    profiles: ["tools"]
+    env_file: .env
+    environment: *app-environment
+    entrypoint: ["pnpm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # The scheduled jobs, one at a time. Cron decides when:
+  #   docker compose -f docker-compose.prod.yml run --rm -T worker expiry-scan
+  worker:
+    image: drivenx-app:latest
+    profiles: ["jobs"]
+    env_file: .env
+    environment: *app-environment
+    entrypoint: ["pnpm", "--filter", "@drivenx/worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  s3data:
+  caddy_data:
+  caddy_config:

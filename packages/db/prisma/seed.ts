@@ -11,7 +11,7 @@
  */
 
 import { PERMISSIONS, DEFAULT_ROLES, resolveRolePermissions } from "@drivenx/auth/permissions";
-import { hashPassword } from "@drivenx/auth/password";
+import { hashPassword, validatePassword } from "@drivenx/auth/password";
 import { DOCUMENT_CATEGORIES } from "@drivenx/core";
 
 import { prisma, withoutAudit } from "../src/index";
@@ -120,6 +120,26 @@ export async function seedDocumentCategories(): Promise<void> {
 }
 
 async function seedSuperAdmin(): Promise<void> {
+  const production = process.env.NODE_ENV === "production";
+
+  // The default exists so a developer can sign in after `pnpm db:seed`. It is printed in
+  // this file, which makes it known to anyone who has ever read the repository, so on a
+  // real server the seed refuses to use it - and refuses a password the application's
+  // own policy would not have let a person choose.
+  if (production) {
+    const chosen = process.env.SEED_ADMIN_PASSWORD;
+    if (!chosen) {
+      throw new Error(
+        "Refusing to seed in production without SEED_ADMIN_PASSWORD. The default password is " +
+          "public. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD, then run the seed again.",
+      );
+    }
+    const check = validatePassword(chosen);
+    if (!check.valid) {
+      throw new Error(`SEED_ADMIN_PASSWORD does not meet the password policy: ${check.errors.join(" ")}`);
+    }
+  }
+
   const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@drivenx.ae").toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe2026Now";
 

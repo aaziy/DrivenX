@@ -2,14 +2,15 @@
 
 SOW §20 requires a deployment runbook as a handover deliverable. This is it.
 
-**Read this first: nothing is deployed yet.** There is no production server, no
-Dockerfile for the application, and no automated deploy. That is not an oversight — the
-VPS has to exist in DrivenX's own name before any of it can be built, and that account is
-still outstanding (see [open-items.md](open-items.md), Q11).
+Everything needed to run DrivenX in production is in the repository: an image, a
+production compose file, HTTPS, the job schedule, encrypted backups and a restore
+rehearsal (§6). The whole stack was run end to end on a development machine — a real
+browser signing in over HTTPS, uploading a 4 MB scan and downloading it back intact, every
+nightly job, and a backup restored and counted.
 
-So this document has two halves. §1–§5 describe what exists today and can be relied on.
-§6 lists exactly what is still to be built, so that the day the server appears the work is
-mechanical rather than exploratory.
+What has not happened yet is running it on a real server, because that server has to be
+in DrivenX's own name (see [open-items.md](open-items.md), Q11). §6 is the procedure for
+the day it exists.
 
 ---
 
@@ -71,7 +72,8 @@ pnpm dev
 
 Postgres publishes on **5433, not 5432**, because a native Postgres on the developer's
 machine would otherwise win the `localhost` race and connections would silently reach the
-wrong database.
+wrong database. If 5433 is taken too, set `POSTGRES_PORT` in `.env` and use the same port
+in both database URLs. Symptom of getting this wrong: `P1010: User was denied access`.
 
 ## 4. The jobs
 
@@ -113,51 +115,110 @@ Deploy order matters: **migrate before the new application starts.** The schema 
 additive in practice, so a brief overlap where the old code runs against the new schema is
 survivable; the reverse is not.
 
-## 6. What is still to be built
+## 6. Production
 
-Each of these is a Phase 4 task. None can be finished without the server existing.
+### What is in `deploy/`
 
-### The VPS (blocked — Q11)
+| File | What it is |
+|---|---|
+| `Dockerfile` (repository root) | One image for the web app, the worker and the one-off tools |
+| `docker-compose.prod.yml` | Postgres, the document store, the app, and Caddy. **Only Caddy publishes a port** — the database and store are reachable from inside Docker alone |
+| `deploy/Caddyfile` | HTTPS with automatic certificates, HSTS, a 14 MB request limit |
+| `deploy/env.production.example` | Every setting the server needs, with how to generate each secret |
+| `deploy/server-setup.sh` | Once, as root, on a fresh Ubuntu 24.04: timezone, Docker, firewall, a `drivenx` user, the backup passphrase |
+| `deploy/deploy.sh` | Every deploy: back up, build, migrate, restart. `--first-run` also creates the bucket and the first admin |
+| `deploy/crontab` | The four nightly jobs and the 03:30 backup |
+| `deploy/backup.sh` | Encrypted backup of the database **and** the documents |
+| `deploy/restore-check.sh` | Restores a backup into a scratch database, counts it, drops it |
 
-Target is a Hostinger KVM 2 running the same Docker stack as development, **registered in
-DrivenX's name**. §20 requires DrivenX to own the hosting outright, so an account in a
-developer's name would have to be migrated later, which is worse than waiting.
+**What has been proven, and how.** On a development machine, under a separate project name
+so it could not touch development data: migrations, bucket creation and seeding inside the
+production image; the app healthy behind Caddy; plain HTTP redirecting to HTTPS; HSTS and
+the security headers present; a browser signing in as the seeded admin with a session
+cookie marked `Secure` and `HttpOnly`; a customer created and a 4 MB scan uploaded and
+downloaded back byte for byte; all four jobs exiting cleanly; and a backup restored into a
+scratch database with the row counts and the ledger's append-only trigger intact.
 
-Until it exists there is no staging environment, and staff cannot try the system against
-data they recognise.
+`server-setup.sh` is the one piece **not yet run anywhere**. It needs a real server to be
+proven on. Read it before running it.
 
-### Dockerfiles and a compose file for production (not written)
+### Bringing up a new server
 
-`docker-compose.yml` today is development only: it runs Postgres and RustFS, and the
-application runs on the host. Production needs an image for `apps/web`, an image for
-`apps/worker`, and a compose file that puts them behind a reverse proxy with TLS.
+1. **Point the domain at the server.** An `A` record for the subdomain DrivenX will use
+   (for example `app.` on the Hostinger domain), set to the VPS's IP. Do this first:
+   Caddy requests the certificate on the first start and fails if the domain does not
+   reach the server yet.
+2. **As root:** run `deploy/server-setup.sh`. It prints a backup passphrase location —
+   **copy `/etc/drivenx/backup.pass` off the server immediately.** The backups cannot be
+   decrypted without it, and if the server is lost the passphrase is lost with it.
+3. **As the `drivenx` user** (`su - drivenx`):
+   ```bash
+   git clone <repository> /opt/drivenx
+   cd /opt/drivenx
+   cp deploy/env.production.example .env    # fill in every line; generate secrets here
+   deploy/deploy.sh --first-run
+   crontab deploy/crontab
+   ```
+4. **Check it.** Open the site, sign in as the `SEED_ADMIN_EMAIL` with its password, and
+   change the password straight away from **Your account** at the bottom of the sidebar.
+   Then remove `SEED_ADMIN_PASSWORD` from `.env` — it has done its job, and a password
+   sitting in a file is a password.
+5. **Prove the backup.** Run `deploy/backup.sh`, then `deploy/restore-check.sh` on the file
+   it wrote, and write the elapsed time below. P4-01 is not done until this has happened on
+   the real server.
 
-Two things that will need deciding then: whether Postgres runs in a container on the same
-box (simplest, and the backup story is the same either way) and whether S3 stays RustFS on
-the same box or moves to a managed provider.
+   > Restore rehearsal on the production server: *not yet performed.*
 
-### Backups and a tested restore (P4-01)
+### Updating
 
-Nothing exists yet. The deliverable is not a backup script — it is a restore that has
-actually been performed, with the elapsed time written down. A backup nobody has restored
-is a belief, not a backup.
+```bash
+cd /opt/drivenx && deploy/deploy.sh
+```
 
-Two things need backing up and they are easy to get wrong separately: the database
-(`pg_dump`, encrypted, off the box) and the S3 bucket (documents, signatures, photographs
-— losing these means losing the evidence that a customer signed anything).
+It backs up, pulls, builds, migrates and restarts, in that order. The site is down for the
+seconds the web container takes to restart.
 
-### Security pass (P4-02)
+### Restoring for real
 
-Rate limiting, at-rest encryption for documents, dependency audit, session hardening,
-security headers. One item is already known and scheduled here: the audit log is not
-transactionally atomic with its mutation on every path, and raw SQL bypasses it entirely.
-The fix is Postgres triggers with the actor passed via `SET LOCAL`, which closes both.
+Deliberately not a script — replacing the live database should be a decision somebody
+makes with the site stopped, not a command that can be run by accident.
 
-### Load test (P4-04, blocked — Q10)
+```bash
+cd /opt/drivenx
+docker compose -f docker-compose.prod.yml stop web caddy
+docker compose -f docker-compose.prod.yml exec -T postgres dropdb -U drivenx drivenx
+docker compose -f docker-compose.prod.yml exec -T postgres createdb -U drivenx drivenx
+openssl enc -d -aes-256-cbc -pbkdf2 -pass file:/etc/drivenx/backup.pass -in <db-backup> \
+  | docker compose -f docker-compose.prod.yml exec -T postgres pg_restore -U drivenx -d drivenx --no-owner
+docker compose -f docker-compose.prod.yml up -d web caddy
+```
 
-The dashboard and reports were benchmarked at 5,000 contracts and 195,000 instalments: the
-worst p95 was 107 ms, comfortably inside the 500 ms budget. But the target is "3× projected
-fleet size", and the projection has not been given.
+Documents are restored by stopping `s3` and unpacking the matching `files-*` archive into
+the `drivenx_s3data` volume. Restore the database and documents **from the same night**:
+a database from Tuesday with documents from Monday knows about a signed form it cannot show.
+
+### Decisions still open
+
+- **Backups must leave the server.** `backup.sh` keeps them on the same disk as the data
+  unless `BACKUP_RSYNC_TARGET` is set, and says so on every run. A backup on the disk it
+  protects survives a bad deploy and nothing else.
+- **The document store is a release candidate.** `rustfs/rustfs:1.0.0-rc.6` was chosen for
+  development when MinIO's images disappeared. Running it for scanned Emirates IDs is a
+  judgement call; the alternative is a managed S3-compatible service (Cloudflare R2,
+  Backblaze B2, AWS), which needs only `S3_ENDPOINT` and the keys changed in `.env` — no code.
+- **The image is about 2 GB.** It keeps development dependencies so the worker can run
+  through `tsx` and migrations through the Prisma CLI. Fine on one server with a 100 GB
+  disk; worth slimming if images are ever shipped through a registry.
+
+### Still to do in Phase 4
+
+- **Security pass (P4-02).** Rate limiting on sign-in beyond the existing lockout,
+  at-rest encryption for documents, a dependency audit. The audit log is not
+  transactionally atomic with its mutation on every path, and raw SQL bypasses it; the fix
+  is Postgres triggers with the actor passed via `SET LOCAL`.
+- **Load test (P4-04, blocked — Q10).** Benchmarked at 5,000 contracts and 195,000
+  instalments: worst p95 107 ms against a 500 ms budget. The target is 3× the projected
+  fleet, and the projection has not been given.
 
 ## 7. CI
 
