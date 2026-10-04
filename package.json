@@ -31,6 +31,7 @@
     "db:reset": "prisma migrate reset --force --schema packages/db/prisma/schema.prisma",
     "db:seed": "tsx packages/db/prisma/seed.ts",
     "db:seed:golden": "tsx packages/db/prisma/seed-golden.ts",
+    "db:seed:demo": "tsx packages/db/prisma/seed-demo.ts",
     "db:studio": "prisma studio --schema packages/db/prisma/schema.prisma",
     "bench:dashboard": "sh -c 'set -a; . ./.env; set +a; DATABASE_URL=$TEST_DATABASE_URL tsx packages/db/scripts/bench-dashboard.ts \"$@\"' --",
     "storage:ensure-bucket": "tsx packages/storage/scripts/ensure-bucket.ts",

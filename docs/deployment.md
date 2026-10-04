@@ -130,6 +130,7 @@ survivable; the reverse is not.
 | `deploy/crontab` | The four nightly jobs and the 03:30 backup |
 | `deploy/backup.sh` | Encrypted backup of the database **and** the documents |
 | `deploy/restore-check.sh` | Restores a backup into a scratch database, counts it, drops it |
+| `deploy/demo-data.sh` | Fills an **empty** server with a made-up business for demonstrations |
 
 **What has been proven, and how.** On a development machine, under a separate project name
 so it could not touch development data: migrations, bucket creation and seeding inside the
@@ -168,6 +169,43 @@ proven on. Read it before running it.
    the real server.
 
    > Restore rehearsal on the production server: *not yet performed.*
+
+### A demo server
+
+To show DrivenX before it holds real data, fill the freshly deployed server with a made-up
+leasing business:
+
+```bash
+cd /opt/drivenx && DEMO_STAFF_PASSWORD='Choose2026Something' deploy/demo-data.sh
+```
+
+Ten cars (two leased in from a supplier), nine customers and nine contracts — one already
+ended with excess mileage settled at return, one customer two months behind and one a few
+days late — with their invoices and payments replayed day by day, so the monthly reports
+have a history. Insurance, services, three fines, an accident with a part-paid claim,
+expenses, a lead pipeline with one lead converted to a contract, a signed handover with
+marked damage, and documents arranged so that a few are expiring or expired and the alerts
+have something to say. Every figure is computed by the application's own rules.
+
+It creates three staff accounts — `layla.hassan@example.com` (sales),
+`karim.nasser@example.com` (operations), `noura.saeed@example.com` (finance) — all with
+`DEMO_STAFF_PASSWORD`, so the roles can be shown side by side. People and companies are
+invented, addresses are at example.com (which never receives mail), and every document is a
+page reading "sample".
+
+The seed refuses to run on a database that holds even one customer.
+
+**Before a demo server becomes the real one, empty it.** Demo records must never mix with
+real ones, and there is no tidy way to pick them out afterwards:
+
+```bash
+cd /opt/drivenx
+docker compose -f docker-compose.prod.yml down
+docker volume rm drivenx_pgdata drivenx_s3data     # deletes ALL data and documents
+deploy/deploy.sh --first-run
+```
+
+Only ever on a server that has never held real customers.
 
 ### Updating
 

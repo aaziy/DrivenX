@@ -227,6 +227,9 @@ importers:
       '@drivenx/auth':
         specifier: workspace:*
         version: link:../auth
+      '@drivenx/storage':
+        specifier: workspace:*
+        version: link:../storage
       prisma:
         specifier: 'catalog:'
         version: 6.19.3(magicast@0.3.5)(typescript@5.9.3)
