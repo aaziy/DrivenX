@@ -56,11 +56,14 @@ export function isKnownCategory(category: string): category is LedgerCategory {
 }
 
 /**
- * The key a label catalogue holds this category under: the part after the dot.
+ * The key a label catalogue holds this category under: the category itself, so labels
+ * nest by side — `ledgerCategories.revenue.insurance`, `ledgerCategories.cost.insurance`.
  *
- * Split that way so the two halves of a category — what it is, and whether it is money
- * in or money out — stay separate in the interface as they are in the ledger.
+ * It used to be the part after the dot alone, and that put two different things under
+ * one name: what a customer is charged for insurance and what DrivenX pays its insurer
+ * both became "insurance", and the cost side was printed as "Insurance charged" — a
+ * report telling its reader the business charges itself for cover.
  */
 export function categoryLabelKey(category: string): string {
-  return category.slice(category.indexOf(".") + 1);
+  return category;
 }
