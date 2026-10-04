@@ -16,8 +16,11 @@ have long lead times, and one of them has already slipped.
 ### WhatsApp Business API template approval
 
 **Blocks:** P3-03, and the reminder delivery the client asked for in §16.
-**Lead time:** weeks. Meta reviews each message template by hand.
-**Status:** not started. The plan said to begin it during Phase 2; Phase 2 is finished.
+**Lead time:** template review is usually fast (minutes to a day or two). The slow parts
+are creating the Meta Business account under DrivenX's name, registering the number, and
+optionally business verification, which can take days to weeks.
+**Status:** number supplied; account and templates not yet created. Step by step, with the
+template wording ready to paste, in [whatsapp-setup.md](whatsapp-setup.md).
 
 This is the only item whose delay cannot be recovered by working faster later. The code
 side is done — the delivery layer built in P3-01 takes WhatsApp as one more adapter — so
