@@ -5,6 +5,7 @@ import {
   readSessionToken,
   SESSION_COOKIE_NAME,
   sessionCookieOptions,
+  usableSessionSecret,
   verifySessionToken,
   type SessionClaims,
 } from "@drivenx/auth";
@@ -14,11 +15,9 @@ import {
  * clear error on the request that needs it, not as an obscure boot failure.
  */
 function sessionSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) {
-    throw new Error("AUTH_SECRET is not set. Copy .env.example to .env and generate one.");
-  }
-  return secret;
+  // Refuses the public placeholder and anything too short in production: the repository
+  // is public, so a known secret would let anybody forge a session for any account.
+  return usableSessionSecret(process.env.AUTH_SECRET, process.env.NODE_ENV === "production");
 }
 
 export async function startSession(userId: string): Promise<void> {

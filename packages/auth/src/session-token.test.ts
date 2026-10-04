@@ -5,6 +5,7 @@ import {
   DEFAULT_SESSION_TTL_SECONDS,
   readSessionToken,
   sessionCookieOptions,
+  usableSessionSecret,
   verifySessionToken,
 } from "./session-token";
 
@@ -123,5 +124,29 @@ describe("reading what a session says", () => {
     expect(readSessionToken(token, "wrong-secret")).toBeNull();
     expect(readSessionToken(token, "secret", new Date("2026-10-05T09:00:00Z"))).toBeNull();
     expect(readSessionToken("not.a-token", "secret")).toBeNull();
+  });
+});
+
+describe("which secrets may sign a production session", () => {
+  const generated = "q7Jk2vXw9LmP4rT8sYb3nC6dF1gH5zA0eRuIoVxWcQk=";
+
+  it("takes a generated secret anywhere", () => {
+    expect(usableSessionSecret(generated, true)).toBe(generated);
+    expect(usableSessionSecret(generated, false)).toBe(generated);
+  });
+
+  it("refuses the public placeholder in production, and allows it in development", () => {
+    // The repository is public: this value is known to anybody who has looked.
+    expect(() => usableSessionSecret("change-me-before-any-deployment", true)).toThrow(/placeholder/);
+    expect(usableSessionSecret("change-me-before-any-deployment", false)).toBe("change-me-before-any-deployment");
+  });
+
+  it("refuses a short secret in production", () => {
+    expect(() => usableSessionSecret("tooshort", true)).toThrow(/at least 32/);
+  });
+
+  it("refuses a missing secret everywhere, and says how to make one", () => {
+    expect(() => usableSessionSecret(undefined, false)).toThrow(/openssl rand/);
+    expect(() => usableSessionSecret("", true)).toThrow(/not set/);
   });
 });

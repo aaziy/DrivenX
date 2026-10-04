@@ -138,3 +138,40 @@ export function sessionCookieOptions(
     maxAge: options.ttlSeconds ?? DEFAULT_SESSION_TTL_SECONDS,
   };
 }
+
+/**
+ * Values that must never sign a production session.
+ *
+ * The repository is public, so anything ever written into `.env.example` is known to the
+ * world. A server started with one of these would let anybody forge a session cookie for
+ * any user id - every account, the Super Admin's included - without a password.
+ */
+const KNOWN_PLACEHOLDER_SECRETS = new Set(["change-me-before-any-deployment", "changeme", "secret"]);
+
+/** Shorter than this cannot have come from `openssl rand -base64 32`, which gives 44. */
+export const MIN_PRODUCTION_SECRET_LENGTH = 32;
+
+/**
+ * The session secret, or an error saying exactly what is wrong with it.
+ *
+ * In development the example file's placeholder is allowed, so a fresh checkout runs.
+ * In production it is refused, as is anything too short to be a generated secret.
+ */
+export function usableSessionSecret(secret: string | undefined, production: boolean): string {
+  if (!secret) {
+    throw new Error("AUTH_SECRET is not set. Generate one with: openssl rand -base64 32");
+  }
+  if (production && KNOWN_PLACEHOLDER_SECRETS.has(secret)) {
+    throw new Error(
+      "AUTH_SECRET is the placeholder from the example file, which is public. " +
+        "Generate a real one with: openssl rand -base64 32",
+    );
+  }
+  if (production && secret.length < MIN_PRODUCTION_SECRET_LENGTH) {
+    throw new Error(
+      `AUTH_SECRET is ${secret.length} characters; production needs at least ` +
+        `${MIN_PRODUCTION_SECRET_LENGTH}. Generate one with: openssl rand -base64 32`,
+    );
+  }
+  return secret;
+}
