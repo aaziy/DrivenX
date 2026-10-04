@@ -2,9 +2,11 @@ import { cookies } from "next/headers";
 
 import {
   createSessionToken,
+  readSessionToken,
   SESSION_COOKIE_NAME,
   sessionCookieOptions,
   verifySessionToken,
+  type SessionClaims,
 } from "@drivenx/auth";
 
 /**
@@ -32,4 +34,10 @@ export async function endSession(): Promise<void> {
 export async function sessionUserId(): Promise<string | null> {
   const store = await cookies();
   return verifySessionToken(store.get(SESSION_COOKIE_NAME)?.value, sessionSecret());
+}
+
+/** The signed-in user and when their session began, or null. */
+export async function sessionClaims(): Promise<SessionClaims | null> {
+  const store = await cookies();
+  return readSessionToken(store.get(SESSION_COOKIE_NAME)?.value, sessionSecret());
 }

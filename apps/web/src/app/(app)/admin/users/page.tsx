@@ -8,6 +8,7 @@ import { seededRoleKey } from "@/i18n/labels";
 import { requirePermission } from "@/lib/auth";
 
 import { CreateUserForm } from "./create-user-form";
+import { ResetPassword } from "./reset-password";
 import { ToggleActive } from "./toggle-active";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -121,7 +122,10 @@ export default async function UsersPage() {
             {tc("you")}
           </span>
         ) : (
-          <ToggleActive userId={user.id} isActive={user.isActive} />
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <ToggleActive userId={user.id} isActive={user.isActive} />
+            <ResetPassword userId={user.id} name={user.fullName} />
+          </div>
         ),
     });
   }

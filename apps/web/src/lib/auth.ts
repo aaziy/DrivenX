@@ -6,7 +6,7 @@ import { can, type PermissionKey, type Principal } from "@drivenx/auth";
 import { loadPrincipal } from "@drivenx/auth/session";
 import { withAuditContext } from "@drivenx/db";
 
-import { sessionUserId } from "./session";
+import { sessionClaims } from "./session";
 
 /**
  * The signed-in user, or null.
@@ -17,9 +17,11 @@ import { sessionUserId } from "./session";
  * packages/auth/src/rbac.ts.
  */
 export const currentPrincipal = cache(async (): Promise<Principal | null> => {
-  const userId = await sessionUserId();
-  if (!userId) return null;
-  return loadPrincipal(userId);
+  const claims = await sessionClaims();
+  if (!claims) return null;
+  // The session's start goes with it, so a session older than the last password change
+  // is treated as signed out (see loadPrincipal).
+  return loadPrincipal(claims.userId, { sessionIssuedAt: claims.issuedAt });
 });
 
 /** Require a signed-in user, or bounce to the login page. */

@@ -16,7 +16,8 @@
     "system": "System",
     "emptyTitle": "Nothing here yet",
     "total": "{count} total",
-    "checkDetails": "Check the details you entered."
+    "checkDetails": "Check the details you entered.",
+    "yourAccount": "Your account"
   },
   "language": {
     "label": "Language"
@@ -904,6 +905,16 @@
       "emailTaken": "A user with that email already exists.",
       "roleGone": "That role no longer exists.",
       "selfDeactivate": "You cannot deactivate your own account."
+    },
+    "resetPassword": {
+      "open": "Set a new password",
+      "label": "New password for {name}",
+      "placeholder": "New password",
+      "submit": "Set",
+      "saving": "Saving…",
+      "done": "Set. They have been signed out everywhere.",
+      "notYourself": "Change your own password from Your account.",
+      "notFound": "That user no longer exists."
     }
   },
   "password": {
@@ -1972,6 +1983,24 @@
       "expenseNotFound": "That expense no longer exists.",
       "money": "Enter a valid amount in AED.",
       "date": "Enter a valid date."
+    }
+  },
+  "account": {
+    "title": "Your account",
+    "passwordTitle": "Password",
+    "passwordHint": "Changing it signs you out everywhere else - on other computers and phones - and keeps you signed in here.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "New password again",
+    "policyHint": "At least 12 characters, with an uppercase letter, a lowercase letter and a digit.",
+    "submit": "Change password",
+    "saving": "Saving…",
+    "changed": "Password changed. Any other sessions have been signed out.",
+    "errors": {
+      "wrongCurrent": "That is not your current password.",
+      "sameAsCurrent": "The new password is the same as the current one.",
+      "mismatch": "The two new passwords do not match.",
+      "notFound": "Your account could not be found. Sign in again."
     }
   }
 }

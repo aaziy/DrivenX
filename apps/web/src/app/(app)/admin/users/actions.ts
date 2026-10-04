@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { hashPassword, validatePassword } from "@drivenx/auth/password";
+import { resetPasswordAsAdmin } from "@drivenx/auth/session";
 import { prisma } from "@drivenx/db";
 import { UserFacingError } from "@drivenx/logger";
 
@@ -107,4 +108,40 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
   });
 
   revalidatePath("/admin/users");
+}
+
+export interface ResetPasswordState {
+  error?: string;
+  success?: string;
+}
+
+/**
+ * Set somebody else's password: the way back from a forgotten one.
+ *
+ * Signs them out everywhere. If the reset is because the old password leaked, a session
+ * opened with it must not outlive the reset. Not offered on your own row - you change your
+ * own on the account page, where the current password is asked for.
+ */
+export async function resetUserPassword(
+  userId: string,
+  _previous: ResetPasswordState,
+  formData: FormData,
+): Promise<ResetPasswordState> {
+  const principal = await requirePermission("user.manage");
+  const [t, tp] = await Promise.all([getTranslations("users.resetPassword"), getTranslations("password")]);
+
+  if (userId === principal.id) return { error: t("notYourself") };
+
+  const password = String(formData.get("password") ?? "");
+  const result = await asActor(principal, () => resetPasswordAsAdmin(userId, password));
+
+  if (!result.ok) {
+    if (result.reason === "policy") {
+      return { error: result.issues.map((issue) => tp(issue.code, issue.params)).join(" ") };
+    }
+    return { error: t("notFound") };
+  }
+
+  revalidatePath("/admin/users");
+  return { success: t("done") };
 }

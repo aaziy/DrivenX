@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createSessionToken,
   DEFAULT_SESSION_TTL_SECONDS,
+  readSessionToken,
   sessionCookieOptions,
   verifySessionToken,
 } from "./session-token";
@@ -102,5 +103,25 @@ describe("sessionCookieOptions", () => {
 
   it("is secure in production", () => {
     expect(sessionCookieOptions({ secure: true }).secure).toBe(true);
+  });
+});
+
+describe("reading what a session says", () => {
+  it("knows when the session began, to the second", () => {
+    const issued = new Date("2026-10-04T09:30:15.750Z");
+    const token = createSessionToken("user-1", "secret", { now: issued });
+
+    const claims = readSessionToken(token, "secret", new Date("2026-10-04T10:00:00Z"));
+
+    expect(claims?.userId).toBe("user-1");
+    // The expiry is stored in whole seconds, so the start is known to the second.
+    expect(claims?.issuedAt.toISOString()).toBe("2026-10-04T09:30:15.000Z");
+  });
+
+  it("refuses the same things the plain check refuses", () => {
+    const token = createSessionToken("user-1", "secret", { now: new Date("2026-10-04T09:00:00Z") });
+    expect(readSessionToken(token, "wrong-secret")).toBeNull();
+    expect(readSessionToken(token, "secret", new Date("2026-10-05T09:00:00Z"))).toBeNull();
+    expect(readSessionToken("not.a-token", "secret")).toBeNull();
   });
 });

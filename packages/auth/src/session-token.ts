@@ -47,18 +47,33 @@ export function createSessionToken(
   return `${payload}.${signature(payload, secret)}`;
 }
 
+/** What a valid token says. */
+export interface SessionClaims {
+  userId: string;
+  /**
+   * When the session began, to the second.
+   *
+   * Not stored in the token: derived from its expiry, because every session is issued
+   * for the default lifetime. That keeps the cookie format unchanged, and it is what
+   * lets a password change end every session that began before it (see `loadPrincipal`).
+   * If sessions are ever issued with a different lifetime, store this in the token
+   * instead — a longer one would make an old session look newer than it is.
+   */
+  issuedAt: Date;
+}
+
 /**
- * Verify a token and return the user id, or null.
+ * Verify a token and return what it says, or null.
  *
  * Every failure mode returns null rather than throwing or distinguishing itself:
  * a tampered signature, an expired token and a malformed string are all simply
  * "not signed in".
  */
-export function verifySessionToken(
+export function readSessionToken(
   token: string | undefined | null,
   secret: string,
   now: Date = new Date(),
-): string | null {
+): SessionClaims | null {
   if (!token || !secret) return null;
 
   const parts = token.split(".");
@@ -81,10 +96,20 @@ export function verifySessionToken(
 
   try {
     const userId = fromBase64url(encodedUserId);
-    return userId.length > 0 ? userId : null;
+    if (userId.length === 0) return null;
+    return { userId, issuedAt: new Date((expiresAt - DEFAULT_SESSION_TTL_SECONDS) * 1000) };
   } catch {
     return null;
   }
+}
+
+/** Verify a token and return the user id, or null. See `readSessionToken`. */
+export function verifySessionToken(
+  token: string | undefined | null,
+  secret: string,
+  now: Date = new Date(),
+): string | null {
+  return readSessionToken(token, secret, now)?.userId ?? null;
 }
 
 export interface SessionCookieOptions {

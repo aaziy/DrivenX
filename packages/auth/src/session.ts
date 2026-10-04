@@ -15,7 +15,10 @@ import {
   type LockoutPolicy,
   registerFailedLogin,
   registerSuccessfulLogin,
+  hashPassword,
+  validatePassword,
   verifyPassword,
+  type PasswordIssue,
 } from "./password";
 import { buildPrincipal, type Principal } from "./rbac";
 
@@ -26,7 +29,17 @@ import { buildPrincipal, type Principal } from "./rbac";
  * deactivated users, so deactivation takes effect on the very next request rather
  * than when the session happens to expire.
  */
-export async function loadPrincipal(userId: string): Promise<Principal | null> {
+export async function loadPrincipal(
+  userId: string,
+  options: {
+    /**
+     * When the caller's session began. A session older than the user's last password
+     * change is refused, so changing a password ends every session that knew the old
+     * one — including one somebody else is holding.
+     */
+    sessionIssuedAt?: Date;
+  } = {},
+): Promise<Principal | null> {
   const user = await prisma.user.findFirst({
     where: { id: userId, deletedAt: null },
     select: {
@@ -34,6 +47,7 @@ export async function loadPrincipal(userId: string): Promise<Principal | null> {
       email: true,
       fullName: true,
       isActive: true,
+      passwordChangedAt: true,
       roles: {
         select: {
           role: {
@@ -48,6 +62,15 @@ export async function loadPrincipal(userId: string): Promise<Principal | null> {
   });
 
   if (!user || !user.isActive) return null;
+
+  // Compared in whole seconds, because that is all a session token records. A session
+  // begun in the same second as the change - the one the change itself starts - survives.
+  if (
+    options.sessionIssuedAt &&
+    Math.floor(options.sessionIssuedAt.getTime() / 1000) < Math.floor(user.passwordChangedAt.getTime() / 1000)
+  ) {
+    return null;
+  }
 
   return buildPrincipal({
     id: user.id,
@@ -173,4 +196,74 @@ let dummyHash: Promise<string> | undefined;
 function getDummyHash(): Promise<string> {
   dummyHash ??= hash(randomBytes(32).toString("hex"), ARGON2_OPTIONS);
   return dummyHash;
+}
+
+export type PasswordChangeResult =
+  | { ok: true }
+  | { ok: false; reason: "wrong_current" | "same_as_current" | "not_found" }
+  | { ok: false; reason: "policy"; issues: PasswordIssue[] };
+
+async function storePassword(userId: string, password: string, now: Date): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash: await hashPassword(password),
+      // Ends every session begun before this moment: see `loadPrincipal`.
+      passwordChangedAt: now,
+      // A new password is a fresh start for the lockout counter too.
+      failedLogins: 0,
+      lockedUntil: null,
+    },
+  });
+}
+
+/**
+ * A person changing their own password.
+ *
+ * Asks for the current one even though they are signed in: a session left open on a
+ * shared computer must not be enough to lock its owner out of their own account.
+ */
+export async function changeOwnPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+  now: Date = new Date(),
+): Promise<PasswordChangeResult> {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null, isActive: true },
+    select: { passwordHash: true },
+  });
+  if (!user) return { ok: false, reason: "not_found" };
+
+  if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+    return { ok: false, reason: "wrong_current" };
+  }
+  if (currentPassword === newPassword) return { ok: false, reason: "same_as_current" };
+
+  const check = validatePassword(newPassword);
+  if (!check.valid) return { ok: false, reason: "policy", issues: check.issues };
+
+  await storePassword(userId, newPassword, now);
+  return { ok: true };
+}
+
+/**
+ * An administrator setting somebody's password - the way back from a forgotten one.
+ *
+ * Signs that person out everywhere, which is the point: if the reset is because the old
+ * password leaked, a session opened with it must not outlive the reset.
+ */
+export async function resetPasswordAsAdmin(
+  userId: string,
+  newPassword: string,
+  now: Date = new Date(),
+): Promise<PasswordChangeResult> {
+  const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null }, select: { id: true } });
+  if (!user) return { ok: false, reason: "not_found" };
+
+  const check = validatePassword(newPassword);
+  if (!check.valid) return { ok: false, reason: "policy", issues: check.issues };
+
+  await storePassword(userId, newPassword, now);
+  return { ok: true };
 }

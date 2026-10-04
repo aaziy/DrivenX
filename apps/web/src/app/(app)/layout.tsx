@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { can, type PermissionKey } from "@drivenx/auth";
@@ -149,6 +150,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <bdi>{principal.email}</bdi>
             </div>
           </div>
+
+          <Link href="/account" className="btn-link">
+            {tc("yourAccount")}
+          </Link>
 
           <form action={logout}>
             <button type="submit" className="btn-link">

@@ -9,9 +9,18 @@ does not include it — see "Who can see what" below.
 
 ## Signing in
 
-Your Super Admin creates your account and gives you a password to change. Five wrong
-passwords locks the account for a while; ask an administrator to unlock it rather than
-waiting.
+Your Super Admin creates your account with a temporary password. Change it the first
+time you sign in: **Your account**, at the bottom of the sidebar. It asks for your current
+password as well as the new one, so a computer left signed in is not enough to take your
+account.
+
+Changing your password signs you out everywhere else — another computer, your phone — and
+keeps you signed in where you made the change. If you think somebody else knows your
+password, that is the fix.
+
+Five wrong passwords locks the account for a while. If you have forgotten yours, an
+administrator can set a new one from the users list (**Set a new password** on your row),
+which also signs you out everywhere. Change it again yourself once you are back in.
 
 The language switch is at the bottom of the sidebar. It is per person, not per computer —
 choose Arabic and it stays Arabic wherever you sign in, and the whole interface mirrors
