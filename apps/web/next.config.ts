@@ -20,6 +20,23 @@ for (const candidate of ["../../.env", ".env"]) {
   }
 }
 
+/**
+ * How large a server action's body may be.
+ *
+ * Next.js caps it at 1 MB unless told otherwise, and rejects anything bigger before our
+ * own upload validation ever runs - so documents above 1 MB failed with a framework error
+ * even though the form promised 10 MB. A phone photo of an Emirates ID is several
+ * megabytes, so this is most real uploads, not an edge case.
+ *
+ * Derived from the same S3_MAX_UPLOAD_BYTES the form and the validator read, plus room
+ * for the rest of the form's fields. Three readings of one limit is how they drift.
+ */
+const FORM_OVERHEAD_BYTES = 2 * 1024 * 1024;
+const configuredUpload = Number(process.env["S3_MAX_UPLOAD_BYTES"]);
+const uploadLimitBytes =
+  (Number.isFinite(configuredUpload) && configuredUpload > 0 ? configuredUpload : 10 * 1024 * 1024) +
+  FORM_OVERHEAD_BYTES;
+
 const config: NextConfig = {
   reactStrictMode: true,
 
@@ -41,6 +58,8 @@ const config: NextConfig = {
   serverExternalPackages: ["@prisma/client", "@node-rs/argon2", "@react-pdf/renderer"],
 
   experimental: {
+    serverActions: { bodySizeLimit: uploadLimitBytes },
+
     // Enables forbidden()/unauthorized() and the forbidden.tsx boundary, so a
     // permission failure renders 403 rather than being conflated with "not signed in".
     authInterrupts: true,

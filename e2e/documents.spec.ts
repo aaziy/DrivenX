@@ -108,6 +108,28 @@ test.describe("documents", () => {
     await expect(page.locator(".alert-error")).toBeVisible();
   });
 
+  test("takes a scan of a realistic size, not only a toy one", async ({ page }) => {
+    // A phone photo of an Emirates ID is several megabytes. Next.js caps a server action's
+    // body at 1 MB unless told otherwise, and rejects anything larger before the 10 MB
+    // check in our own upload validation ever runs - so every other upload test, all of
+    // them a couple of kilobytes, passed while real documents would have failed.
+    await signInExpectingSuccess(page, PERSONAS.management);
+    await createCustomer(page);
+
+    await page.getByLabel("Document type").selectOption({ label: "Emirates ID" });
+    await page.getByLabel("File").setInputFiles({
+      name: "emirates-id-scan.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.concat([Buffer.from("%PDF-1.4\n"), Buffer.alloc(4 * 1024 * 1024, 0x20)]),
+    });
+    await page.getByLabel("Document number").fill("784-1990-2000000-0");
+    await page.getByLabel("Expiry date").fill("2027-12-31");
+
+    await page.getByRole("button", { name: "Attach document" }).click();
+    await expect(page.locator(".alert-success")).toBeVisible();
+    await expect(page.locator('tr:has-text("784-1990-2000000-0")')).toBeVisible();
+  });
+
   test("a download needs a signed-in user with permission", async ({ browser }) => {
     // A fresh context: no session cookie, so the route must refuse rather than serve
     // somebody's identity document to an anonymous request.
